@@ -1,20 +1,26 @@
 name: Windows bootstrap
-
 on:
   push:
-    branches: [main]
+    branches: [main, feat/**]
   pull_request:
-
 permissions:
   contents: read
-
 jobs:
   build-and-test:
     runs-on: windows-2022
     steps:
       - uses: actions/checkout@v4
+      - name: Bootstrap pinned vcpkg
+        uses: lukka/run-vcpkg@v11
+        with:
+          vcpkgGitCommitId: fa8cecf91d7f31a1715a7a6524f208897ffb33ce
+          runVcpkgInstall: true
       - name: Configure
-        run: cmake -S . -B build -G Ninja -DOPENHDK_BUILD_TESTS=ON
+        shell: pwsh
+        run: >-
+          cmake -S . -B build -G Ninja -DOPENHDK_BUILD_TESTS=ON
+          -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake"
+          -DVCPKG_APPLOCAL_DEPS=ON
       - name: Build
         run: cmake --build build --parallel
       - name: Test
