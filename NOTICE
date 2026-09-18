@@ -1,0 +1,14 @@
+OpenHDK
+Copyright (C) 2026 OpenHDK contributors
+
+OpenHDK is a clean modernization line inspired by HandyKaraoke:
+https://github.com/sc28249782/HandyKaraoke
+
+This bootstrap contains no source files copied from HandyKaraoke and no
+BASS-family SDK files.
+
+If HandyKaraoke source is ported later, retain every applicable copyright and
+GPL notice. Each port must identify its upstream path, revision, modification
+date, and substantive OpenHDK changes.
+
+BASS, BASS FX, BASSMIDI, BASSmix, and BASS_VST are not dependencies.

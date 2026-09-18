@@ -1,0 +1,13 @@
+/build/
+/out/
+/cmake-build-*/
+/.vs/
+/.vscode/
+*.user
+*.suo
+/Data/
+/Songs/
+/SoundFonts/
+/VST/
+.DS_Store
+Thumbs.db
