@@ -14,6 +14,7 @@ pinned, SHA-256-verified test SoundFont. It opens no audio device.
 ~~~powershell
 .\build\OpenHDK.exe --list-devices
 .\build\OpenHDK.exe --midi C:\Music\demo.mid --soundfont C:\SoundFonts\demo.sf2
+.\build\OpenHDK.exe --midi C:\Music\demo.mid --soundfont C:\SoundFonts\demo.sf2 --device 0
 .\build\OpenHDK.exe --midi C:\Music\demo.mid --soundfont C:\SoundFonts\demo.sf2 --no-device
 ~~~
 
