@@ -2,17 +2,20 @@
 // Copyright (C) 2026 OpenHDK contributors
 #include "audio/SmfParser.hpp"
 #include "audio/SmfTrackEventDecoder.hpp"
+#include "audio/SmfTimelineCompiler.hpp"
 
 #include <array>
 #include <cstdint>
 #include <iostream>
 #include <span>
 #include <type_traits>
+#include <vector>
 
 namespace {
 
 using OpenHDK::SmfParseErrorCode;
 using OpenHDK::SmfTrackDecodeErrorCode;
+using OpenHDK::SmfTimelineErrorCode;
 
 template <std::size_t Size>
 bool expectsSuccess(const std::array<std::uint8_t, Size>& fixture, std::uint16_t format,
@@ -49,6 +52,8 @@ int main() {
     static_assert(!std::is_default_constructible_v<OpenHDK::SmfParseResult>);
     static_assert(!std::is_default_constructible_v<OpenHDK::SmfTrackEventList>);
     static_assert(!std::is_default_constructible_v<OpenHDK::SmfTrackDecodeResult>);
+    static_assert(!std::is_default_constructible_v<OpenHDK::SmfTimeline>);
+    static_assert(!std::is_default_constructible_v<OpenHDK::SmfTimelineCompileResult>);
 
     constexpr std::array<std::uint8_t, 26> format0{
         'M','T','h','d', 0,0,0,6, 0,0, 0,1, 0,96,
@@ -209,6 +214,105 @@ int main() {
     constexpr std::array<std::uint8_t, 5> trailingDataAfterEndOfTrack{0, 0xff, 0x2f, 0, 0};
     if (!expectsTrackError(trailingDataAfterEndOfTrack,
                            SmfTrackDecodeErrorCode::TrailingDataAfterEndOfTrack, 4U)) return 36;
+
+    constexpr std::array<std::uint8_t, 53> crossTrackTimeline{
+        'M','T','h','d', 0,0,0,6, 0,1, 0,2, 0,96,
+        'M','T','r','k', 0,0,0,12,
+        0, 0x90, 60, 64, 0x60, 0x80, 60, 0, 0, 0xff, 0x2f, 0,
+        'M','T','r','k', 0,0,0,11,
+        0, 0xc0, 5, 0x30, 0xb0, 7, 100, 0x30, 0xff, 0x2f, 0};
+    const auto crossTrackFile = OpenHDK::SmfParser::parse(crossTrackTimeline);
+    if (!crossTrackFile.file()) return 37;
+    const auto crossTrackResult = OpenHDK::SmfTimelineCompiler::compile(*crossTrackFile.file());
+    if (!crossTrackResult.succeeded() || !crossTrackResult.timeline() || crossTrackResult.error()) return 38;
+    const auto crossTrackEvents = crossTrackResult.timeline()->events();
+    if (crossTrackEvents.size() != 6U || crossTrackEvents[0].trackIndex() != 0U
+        || crossTrackEvents[1].trackIndex() != 1U || crossTrackEvents[0].tick() != 0U
+        || crossTrackEvents[1].tick() != 0U || crossTrackEvents[2].tick() != 48U
+        || crossTrackEvents[2].timeMicroseconds() != 250000U
+        || crossTrackEvents[3].tick() != 96U || crossTrackEvents[3].trackIndex() != 0U
+        || crossTrackEvents[3].timeMicroseconds() != 500000U
+        || crossTrackEvents[5].event().kind() != OpenHDK::SmfMidiEventKind::EndOfTrack) return 39;
+
+    constexpr std::array<std::uint8_t, 48> tempoTimeline{
+        'M','T','h','d', 0,0,0,6, 0,0, 0,1, 0,100,
+        'M','T','r','k', 0,0,0,26,
+        0, 0xff, 0x51, 3, 7, 0xa1, 0x20,
+        0x64, 0x90, 60, 64,
+        0x64, 0xff, 0x51, 3, 3, 0xd0, 0x90,
+        0x64, 0x80, 60, 0,
+        0, 0xff, 0x2f, 0};
+    const auto tempoFile = OpenHDK::SmfParser::parse(tempoTimeline);
+    if (!tempoFile.file()) return 40;
+    const auto tempoResult = OpenHDK::SmfTimelineCompiler::compile(*tempoFile.file());
+    if (!tempoResult.timeline() || tempoResult.timeline()->events().size() != 5U) return 41;
+    const auto tempoEvents = tempoResult.timeline()->events();
+    if (tempoEvents[1].timeMicroseconds() != 500000U
+        || tempoEvents[2].timeMicroseconds() != 1000000U
+        || tempoEvents[3].timeMicroseconds() != 1250000U) return 42;
+
+    constexpr std::array<std::uint8_t, 56> sameTickTempoTimeline{
+        'M','T','h','d', 0,0,0,6, 0,1, 0,2, 0,100,
+        'M','T','r','k', 0,0,0,11,
+        0, 0xff, 0x51, 3, 7, 0xa1, 0x20, 0x64, 0xff, 0x2f, 0,
+        'M','T','r','k', 0,0,0,15,
+        0, 0xff, 0x51, 3, 3, 0xd0, 0x90,
+        0x64, 0x90, 60, 64, 0, 0xff, 0x2f, 0};
+    const auto sameTickTempoFile = OpenHDK::SmfParser::parse(sameTickTempoTimeline);
+    if (!sameTickTempoFile.file()) return 43;
+    const auto sameTickTempoResult = OpenHDK::SmfTimelineCompiler::compile(*sameTickTempoFile.file());
+    if (!sameTickTempoResult.timeline() || sameTickTempoResult.timeline()->events().size() != 5U) return 44;
+    const auto sameTickTempoEvents = sameTickTempoResult.timeline()->events();
+    if (sameTickTempoEvents[0].trackIndex() != 0U || sameTickTempoEvents[1].trackIndex() != 1U
+        || sameTickTempoEvents[3].event().kind() != OpenHDK::SmfMidiEventKind::NoteOn
+        || sameTickTempoEvents[3].timeMicroseconds() != 250000U) return 45;
+
+    constexpr std::array<std::uint8_t, 26> decoderFailureTimeline{
+        'M','T','h','d', 0,0,0,6, 0,0, 0,1, 0,96,
+        'M','T','r','k', 0,0,0,4, 0, 0x90, 60, 64};
+    const auto decoderFailureFile = OpenHDK::SmfParser::parse(decoderFailureTimeline);
+    if (!decoderFailureFile.file()) return 46;
+    const auto decoderFailureResult = OpenHDK::SmfTimelineCompiler::compile(*decoderFailureFile.file());
+    if (decoderFailureResult.succeeded() || !decoderFailureResult.error()
+        || decoderFailureResult.error()->code() != SmfTimelineErrorCode::TrackDecodeFailed
+        || decoderFailureResult.error()->trackIndex() != 0U
+        || !decoderFailureResult.error()->trackDecodeError()
+        || decoderFailureResult.error()->trackDecodeError()->code != SmfTrackDecodeErrorCode::MissingEndOfTrack
+        || decoderFailureResult.error()->trackDecodeError()->offset != 4U) return 47;
+
+    constexpr std::array<std::uint8_t, 24> smpteTimeline{
+        'M','T','h','d', 0,0,0,6, 0,0, 0,1, 0xe7,40,
+        'M','T','r','k', 0,0,0,2, 0, 0x90};
+    const auto smpteFile = OpenHDK::SmfParser::parse(smpteTimeline);
+    if (!smpteFile.file()) return 48;
+    const auto smpteResult = OpenHDK::SmfTimelineCompiler::compile(*smpteFile.file());
+    if (smpteResult.succeeded() || !smpteResult.error()
+        || smpteResult.error()->code() != SmfTimelineErrorCode::UnsupportedSmpteDivision) return 49;
+
+    constexpr std::array<std::uint8_t, 34> fractionalTimeline{
+        'M','T','h','d', 0,0,0,6, 0,0, 0,1, 0,3,
+        'M','T','r','k', 0,0,0,12,
+        1, 0x90, 60, 64, 1, 0x80, 60, 0, 0, 0xff, 0x2f, 0};
+    const auto fractionalFile = OpenHDK::SmfParser::parse(fractionalTimeline);
+    if (!fractionalFile.file()) return 52;
+    const auto fractionalResult = OpenHDK::SmfTimelineCompiler::compile(*fractionalFile.file());
+    if (!fractionalResult.timeline() || fractionalResult.timeline()->events().size() != 3U
+        || fractionalResult.timeline()->events()[0].timeMicroseconds() != 166666U
+        || fractionalResult.timeline()->events()[1].timeMicroseconds() != 333333U) return 53;
+
+    std::vector<std::uint8_t> overflowTimeline{
+        'M','T','h','d', 0,0,0,6, 0,0, 0,1, 0,1,
+        'M','T','r','k', 0,0,0x70,0x12,
+        0, 0xff, 0x51, 3, 0xff, 0xff, 0xff};
+    for (std::size_t index = 0U; index < 4097U; ++index) {
+        overflowTimeline.insert(overflowTimeline.end(), {0xff, 0xff, 0xff, 0x7f, 0x90, 60, 64});
+    }
+    overflowTimeline.insert(overflowTimeline.end(), {0, 0xff, 0x2f, 0});
+    const auto overflowFile = OpenHDK::SmfParser::parse(overflowTimeline);
+    if (!overflowFile.file()) return 50;
+    const auto overflowResult = OpenHDK::SmfTimelineCompiler::compile(*overflowFile.file());
+    if (overflowResult.succeeded() || !overflowResult.error()
+        || overflowResult.error()->code() != SmfTimelineErrorCode::TimeOverflow) return 51;
 
     std::cout << "SMF parser fixtures passed\n";
     return 0;
