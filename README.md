@@ -6,7 +6,11 @@ OpenHDK is a separate development line from [HandyKaraoke](https://github.com/sc
 
 ## Status
 
-`0.1.0-dev` — bootstrap repository. The current target is a buildable CMake skeleton; it does not yet play audio or load songs.
+`0.1.0-dev` — proof-of-concept groundwork. Optional, pinned FluidSynth and
+miniaudio dependencies support the audio POC, while deterministic SMF parsing,
+event decoding, timeline compilation, and PlaybackSession timing and
+event-dispatch groundwork are in place. The application does not yet provide
+complete user-facing playback.
 
 ## Principles
 
@@ -26,15 +30,26 @@ OpenHDK is a separate development line from [HandyKaraoke](https://github.com/sc
 
 See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), [docs/ROADMAP.md](docs/ROADMAP.md), and [docs/DEPENDENCY-POLICY.md](docs/DEPENDENCY-POLICY.md).
 
-## Build the bootstrap
+## Build the proof of concept
 
 ```powershell
-cmake -S . -B build
+cmake -S . -B build -G Ninja -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake"
 cmake --build build --parallel
 ctest --test-dir build --output-on-failure
 ```
 
-The bootstrap intentionally has no network-fetched or binary audio dependency.
+The default POC configuration uses pinned FluidSynth and miniaudio dependencies
+(and downloads a pinned test SoundFont when audio POC tests are enabled). For
+the hardware-free SMF parser fixtures, use:
+
+```powershell
+cmake -S . -B build-parser -DOPENHDK_BUILD_AUDIO_POC=OFF -DOPENHDK_BUILD_TESTS=ON
+cmake --build build-parser --parallel
+ctest --test-dir build-parser --output-on-failure
+```
+
+The POC command uses vcpkg's checked-in `vcpkg-configuration.json`, including
+its pinned registry baseline, to resolve FluidSynth reproducibly.
 
 ## License
 
