@@ -12,9 +12,12 @@ The test creates an independently authored middle-C MIDI file and downloads a
 pinned, SHA-256-verified test SoundFont. It opens no audio device.
 
 ~~~powershell
+.\build\OpenHDK.exe --list-devices
 .\build\OpenHDK.exe --midi C:\Music\demo.mid --soundfont C:\SoundFonts\demo.sf2
 .\build\OpenHDK.exe --midi C:\Music\demo.mid --soundfont C:\SoundFonts\demo.sf2 --no-device
 ~~~
 
-The second command validates the MIDI-to-PCM path without hardware. This PoC
+The device command enumerates endpoints without opening a playback stream; an
+asterisk marks the default endpoint. The final command validates MIDI-to-PCM
+without hardware. This PoC
 does not add Qt, KAR/NCN, HNK/HNK3, MIDI hardware, VST/VST3, or any BASS API.

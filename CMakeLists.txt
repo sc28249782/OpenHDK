@@ -10,7 +10,10 @@ add_library(openhdk_miniaudio STATIC "${miniaudio_SOURCE_DIR}/miniaudio.c")
 add_library(OpenHDK::miniaudio ALIAS openhdk_miniaudio)
 target_include_directories(openhdk_miniaudio SYSTEM PUBLIC "${miniaudio_SOURCE_DIR}")
 set_target_properties(openhdk_miniaudio PROPERTIES C_STANDARD 99 C_STANDARD_REQUIRED YES)
-add_library(openhdk_core STATIC audio/FluidSynthBackend.cpp)
+add_library(openhdk_core STATIC
+  audio/AudioDeviceDiagnostics.cpp
+  audio/FluidSynthBackend.cpp
+)
 add_library(OpenHDK::core ALIAS openhdk_core)
 target_include_directories(openhdk_core PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
 target_compile_features(openhdk_core PUBLIC cxx_std_20)
@@ -36,5 +39,6 @@ if(OPENHDK_BUILD_TESTS)
     target_link_libraries(openhdk_bootstrap_smoke PRIVATE OpenHDK::core)
     target_compile_definitions(openhdk_bootstrap_smoke PRIVATE OPENHDK_TEST_SOUNDFONT_PATH="${OPENHDK_TEST_SOUNDFONT}")
     add_test(NAME fluidsynth-headless-poc COMMAND openhdk_bootstrap_smoke)
+    add_test(NAME openhdk-cli-help COMMAND OpenHDK --help)
   endif()
 endif()
