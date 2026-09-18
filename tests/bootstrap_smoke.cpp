@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 OpenHDK contributors
 #include "audio/FluidSynthBackend.hpp"
+#include "audio/SmfByteReader.hpp"
 #include <algorithm>
 #include <array>
 #include <chrono>
@@ -21,6 +22,15 @@ std::filesystem::path writeMidi() {
 }
 }
 int main() {
+  constexpr std::array<std::uint8_t, 2> delta{0x81U, 0x00U};
+  OpenHDK::SmfByteReader reader(delta);
+  if (reader.readVariableLength() != 128U) return 10;
+  constexpr std::array<std::uint8_t, 1> incompleteDelta{0x80U};
+  OpenHDK::SmfByteReader incompleteReader(incompleteDelta);
+  if (incompleteReader.readVariableLength().has_value()) return 11;
+  constexpr std::array<std::uint8_t, 5> overlongDelta{0x81U, 0x80U, 0x80U, 0x80U, 0x00U};
+  OpenHDK::SmfByteReader overlongReader(overlongDelta);
+  if (overlongReader.readVariableLength().has_value()) return 12;
   OpenHDK::FluidSynthBackend backend; OpenHDK::AudioBackendStatus status;
   if (backend.info().id != "fluidsynth-miniaudio") return 1;
   if (backend.initialize({.soundFontPath = "does-not-exist.sf2", .enableDeviceOutput = false, .volume = 1.1F}, status)
