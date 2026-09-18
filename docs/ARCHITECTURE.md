@@ -37,4 +37,8 @@ FluidSynthBackend will synthesize MIDI through an SF2 SoundFont. Generated PCM
 will feed a miniaudio device callback. MIDI I/O stays a separate adapter,
 initially RtMidi or libremidi after evaluation.
 
+The 0.1 PoC uses FluidSynth's file player only to prove MIDI-to-PCM flow. It
+does not establish the OpenHDK playback-clock contract; the 0.2 scheduler must
+use a monotonic OpenHDK session clock before karaoke timing is introduced.
+
 VST/VST3 hosting is outside the first backend scope.

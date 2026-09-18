@@ -14,6 +14,10 @@ which remains the compatibility/recovery release.
 Exit gate: reproducible Windows build; MIDI fixture produces PCM/audio; no
 BASS artefact enters the repository.
 
+Implementation note: feat/fluidsynth-miniaudio-poc adds the pinned dependency
+path, FluidSynthBackend, miniaudio device callback, and a headless CI test.
+The remaining 0.1 gate is hosted CI plus a manual Windows audio-device check.
+
 ## 0.2.0 — playback foundation
 
 - MIDI file scheduler and SF2 selection.

@@ -1,0 +1,1 @@
+{"name":"openhdk","version-string":"0.1.0-dev","description":"Open Handy Karaoke audio modernization proof of concept","license":"GPL-3.0-or-later","dependencies":["fluidsynth"]}
