@@ -12,7 +12,7 @@ void ok(AudioBackendStatus& s) { s = {}; }
 void fail(AudioBackendStatus& s, AudioBackendError e, std::string text) { s.error = e; s.message = std::move(text); }
 }
 struct FluidSynthBackend::Impl {
-  fluid_settings_t* settings{}; fluid_synth_t* synth{}; fluid_player_t* player{}; ma_context context{}; ma_device device{}; bool contextInitialized{}; bool deviceInitialized{}; bool initialized{};
+  fluid_settings_t* settings{}; fluid_synth_t* synth{}; fluid_player_t* player{}; ma_context context{}; ma_device device{}; float volume{1.0F}; bool muted{}; bool contextInitialized{}; bool deviceInitialized{}; bool initialized{};
   static void callback(ma_device* device, void* output, const void*, ma_uint32 frames) {
     auto* self = static_cast<Impl*>(device->pUserData); auto* samples = static_cast<float*>(output);
     if (self == nullptr || self->synth == nullptr || fluid_synth_write_float(self->synth, static_cast<int>(frames), samples, 0, 2, samples, 1, 2) != FLUID_OK)
@@ -32,6 +32,7 @@ bool FluidSynthBackend::initialize(const AudioBackendConfig& config, AudioBacken
   fluid_settings_setnum(impl_->settings, "synth.sample-rate", static_cast<double>(config.sampleRate));
   impl_->synth = new_fluid_synth(impl_->settings);
   if (impl_->synth == nullptr) { shutdown(); fail(status, AudioBackendError::InvalidConfiguration, "FluidSynth could not create a synthesizer."); return false; }
+  impl_->volume = config.volume; impl_->muted = config.muted;
   fluid_synth_set_gain(impl_->synth, config.muted ? 0.0 : static_cast<double>(config.volume));
   if (fluid_synth_sfload(impl_->synth, config.soundFontPath.string().c_str(), 1) == FLUID_FAILED) { shutdown(); fail(status, AudioBackendError::SoundFontLoadFailed, "FluidSynth could not load SoundFont: " + config.soundFontPath.string()); return false; }
   if (config.enableDeviceOutput) {
@@ -72,6 +73,17 @@ bool FluidSynthBackend::renderStereo(std::span<float> pcm, AudioBackendStatus& s
   if (fluid_synth_write_float(impl_->synth, static_cast<int>(pcm.size() / kChannels), pcm.data(), 0, 2, pcm.data(), 1, 2) != FLUID_OK) { std::fill(pcm.begin(), pcm.end(), 0.0F); fail(status, AudioBackendError::RenderFailed, "FluidSynth could not render PCM."); return false; }
   ok(status); return true;
 }
+bool FluidSynthBackend::setVolume(float value, AudioBackendStatus& status) {
+  if (!impl_->initialized || impl_->synth == nullptr) { fail(status, AudioBackendError::InvalidConfiguration, "Initialize the audio backend before changing volume."); return false; }
+  if (value < 0.0F || value > 1.0F) { fail(status, AudioBackendError::InvalidConfiguration, "Volume must be between 0.0 and 1.0."); return false; }
+  impl_->volume = value; fluid_synth_set_gain(impl_->synth, impl_->muted ? 0.0 : static_cast<double>(value)); ok(status); return true;
+}
+bool FluidSynthBackend::setMuted(bool value, AudioBackendStatus& status) {
+  if (!impl_->initialized || impl_->synth == nullptr) { fail(status, AudioBackendError::InvalidConfiguration, "Initialize the audio backend before changing mute state."); return false; }
+  impl_->muted = value; fluid_synth_set_gain(impl_->synth, value ? 0.0 : static_cast<double>(impl_->volume)); ok(status); return true;
+}
+float FluidSynthBackend::volume() const noexcept { return impl_->volume; }
+bool FluidSynthBackend::isMuted() const noexcept { return impl_->muted; }
 bool FluidSynthBackend::isPlaying() const noexcept { return impl_->player != nullptr && fluid_player_get_status(impl_->player) == FLUID_PLAYER_PLAYING; }
 bool FluidSynthBackend::hasActiveDevice() const noexcept { return impl_->deviceInitialized; }
 void FluidSynthBackend::shutdown() noexcept {
