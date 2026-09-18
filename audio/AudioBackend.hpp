@@ -21,6 +21,10 @@ public:
   virtual bool initialize(const AudioBackendConfig&, AudioBackendStatus&) = 0;
   virtual bool playMidiFile(const std::filesystem::path&, AudioBackendStatus&) = 0;
   virtual bool renderStereo(std::span<float>, AudioBackendStatus&) = 0;
+  virtual bool setVolume(float volume, AudioBackendStatus&) = 0;
+  virtual bool setMuted(bool muted, AudioBackendStatus&) = 0;
+  [[nodiscard]] virtual float volume() const noexcept = 0;
+  [[nodiscard]] virtual bool isMuted() const noexcept = 0;
   [[nodiscard]] virtual bool isPlaying() const noexcept = 0;
   [[nodiscard]] virtual bool hasActiveDevice() const noexcept = 0;
   virtual void shutdown() noexcept = 0;

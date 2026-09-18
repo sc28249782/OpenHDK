@@ -29,6 +29,8 @@ int main() {
       || status.error != OpenHDK::AudioBackendError::SoundFontNotFound) return 2;
   const auto midi = writeMidi();
   if (!backend.initialize({.soundFontPath = OPENHDK_TEST_SOUNDFONT_PATH, .enableDeviceOutput = false}, status) || backend.hasActiveDevice()) return 3;
+  if (!backend.setVolume(0.5F, status) || backend.volume() != 0.5F || !backend.setMuted(true, status) || !backend.isMuted()) return 8;
+  if (!backend.setMuted(false, status) || backend.isMuted() || backend.setVolume(1.1F, status)) return 9;
   if (!backend.playMidiFile(midi, status)) return 4;
   std::this_thread::sleep_for(std::chrono::milliseconds(25));
   std::vector<float> pcm(4096U);

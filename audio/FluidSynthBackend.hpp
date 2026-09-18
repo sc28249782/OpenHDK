@@ -14,6 +14,10 @@ public:
   bool initialize(const AudioBackendConfig&, AudioBackendStatus&) override;
   bool playMidiFile(const std::filesystem::path&, AudioBackendStatus&) override;
   bool renderStereo(std::span<float>, AudioBackendStatus&) override;
+  bool setVolume(float volume, AudioBackendStatus&) override;
+  bool setMuted(bool muted, AudioBackendStatus&) override;
+  [[nodiscard]] float volume() const noexcept override;
+  [[nodiscard]] bool isMuted() const noexcept override;
   [[nodiscard]] bool isPlaying() const noexcept override;
   [[nodiscard]] bool hasActiveDevice() const noexcept override;
   void shutdown() noexcept override;
