@@ -3,10 +3,12 @@
 #include "audio/SmfParser.hpp"
 #include "audio/SmfTrackEventDecoder.hpp"
 #include "audio/SmfTimelineCompiler.hpp"
+#include "audio/PlaybackSession.hpp"
 
 #include <array>
 #include <cstdint>
 #include <iostream>
+#include <limits>
 #include <span>
 #include <type_traits>
 #include <vector>
@@ -313,6 +315,71 @@ int main() {
     const auto overflowResult = OpenHDK::SmfTimelineCompiler::compile(*overflowFile.file());
     if (overflowResult.succeeded() || !overflowResult.error()
         || overflowResult.error()->code() != SmfTimelineErrorCode::TimeOverflow) return 51;
+
+    OpenHDK::PlaybackSession invalidSession;
+    const auto invalidPrepare = invalidSession.prepare(*crossTrackResult.timeline(), 0U);
+    if (invalidPrepare.succeeded() || !invalidPrepare.error()
+        || invalidPrepare.error()->code() != OpenHDK::PlaybackSessionErrorCode::InvalidSampleRate
+        || invalidSession.state() != OpenHDK::PlaybackSessionState::Failed) return 54;
+    if (!invalidSession.stop().succeeded() || invalidSession.state() != OpenHDK::PlaybackSessionState::Idle) return 55;
+
+    OpenHDK::PlaybackSession session;
+    const auto idlePlay = session.play();
+    if (idlePlay.succeeded() || !idlePlay.error()
+        || idlePlay.error()->code() != OpenHDK::PlaybackSessionErrorCode::IllegalTransition
+        || session.state() != OpenHDK::PlaybackSessionState::Idle) return 56;
+    if (!session.prepare(*crossTrackResult.timeline(), 1000000U).succeeded()
+        || session.state() != OpenHDK::PlaybackSessionState::Ready) return 57;
+    if (session.pause().succeeded()) return 58;
+    if (!session.play().succeeded() || session.state() != OpenHDK::PlaybackSessionState::Playing) return 59;
+
+    const auto zeroBlock = session.render(0U);
+    if (!zeroBlock.succeeded() || zeroBlock.blockStartMicroseconds() != 0U
+        || zeroBlock.blockEndMicroseconds() != 0U || zeroBlock.events().size() != 2U
+        || zeroBlock.events()[0].trackIndex() != 0U || zeroBlock.events()[1].trackIndex() != 1U
+        || session.mediaTimeMicroseconds() != 0U) return 60;
+    const auto prematureComplete = session.completeReleaseTail();
+    if (prematureComplete.succeeded() || !prematureComplete.error()
+        || prematureComplete.error()->code()
+            != OpenHDK::PlaybackSessionErrorCode::CompletionBeforeEndOfTimeline) return 61;
+
+    if (!session.pause().succeeded() || session.state() != OpenHDK::PlaybackSessionState::Paused) return 62;
+    const auto pausedBlock = session.render(100U);
+    if (!pausedBlock.succeeded() || !pausedBlock.events().empty()
+        || pausedBlock.blockStartMicroseconds() != 0U || pausedBlock.blockEndMicroseconds() != 0U
+        || session.mediaTimeMicroseconds() != 0U) return 63;
+    if (!session.play().succeeded()) return 64;
+    const auto boundaryBlock = session.render(250000U);
+    if (!boundaryBlock.succeeded() || boundaryBlock.blockStartMicroseconds() != 0U
+        || boundaryBlock.blockEndMicroseconds() != 250000U || boundaryBlock.events().size() != 1U
+        || boundaryBlock.events()[0].timeMicroseconds() != 250000U) return 65;
+    const auto finalBlock = session.render(250000U);
+    if (!finalBlock.succeeded() || finalBlock.events().size() != 3U
+        || finalBlock.blockStartMicroseconds() != 250000U || finalBlock.blockEndMicroseconds() != 500000U
+        || !session.endOfTimelineReached() || session.state() != OpenHDK::PlaybackSessionState::Playing) return 66;
+    if (!session.completeReleaseTail().succeeded()
+        || session.state() != OpenHDK::PlaybackSessionState::Finished) return 67;
+    if (!session.stop().succeeded() || session.state() != OpenHDK::PlaybackSessionState::Idle
+        || session.mediaTimeMicroseconds() != 0U) return 68;
+    if (session.stop().succeeded()) return 69;
+
+    OpenHDK::PlaybackSession splitOneBlock;
+    OpenHDK::PlaybackSession splitTwoBlocks;
+    if (!splitOneBlock.prepare(*crossTrackResult.timeline(), 3U).succeeded()
+        || !splitTwoBlocks.prepare(*crossTrackResult.timeline(), 3U).succeeded()
+        || !splitOneBlock.play().succeeded() || !splitTwoBlocks.play().succeeded()) return 70;
+    if (!splitOneBlock.render(2U).succeeded() || !splitTwoBlocks.render(1U).succeeded()
+        || !splitTwoBlocks.render(1U).succeeded()
+        || splitOneBlock.mediaTimeMicroseconds() != 666666U
+        || splitTwoBlocks.mediaTimeMicroseconds() != 666666U) return 71;
+
+    OpenHDK::PlaybackSession overflowSession;
+    if (!overflowSession.prepare(*crossTrackResult.timeline(), 1U).succeeded()
+        || !overflowSession.play().succeeded()) return 72;
+    const auto clockOverflow = overflowSession.render(std::numeric_limits<std::uint64_t>::max());
+    if (clockOverflow.succeeded() || !clockOverflow.error()
+        || clockOverflow.error()->code() != OpenHDK::PlaybackSessionErrorCode::ClockOverflow
+        || overflowSession.state() != OpenHDK::PlaybackSessionState::Failed) return 73;
 
     std::cout << "SMF parser fixtures passed\n";
     return 0;
