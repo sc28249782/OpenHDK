@@ -4,6 +4,7 @@
 #include "audio/SmfTrackEventDecoder.hpp"
 #include "audio/SmfTimelineCompiler.hpp"
 #include "audio/PlaybackSession.hpp"
+#include "audio/SmfMidiEventDispatcher.hpp"
 
 #include <array>
 #include <cstdint>
@@ -18,6 +19,51 @@ namespace {
 using OpenHDK::SmfParseErrorCode;
 using OpenHDK::SmfTrackDecodeErrorCode;
 using OpenHDK::SmfTimelineErrorCode;
+
+enum class FakeMidiCommandKind {
+    NoteOn,
+    NoteOff,
+    Controller,
+    ProgramChange,
+    PitchBend,
+};
+
+struct FakeMidiCommand {
+    FakeMidiCommandKind kind;
+    std::uint8_t channel;
+    std::uint8_t first;
+    std::uint16_t second;
+};
+
+class FakeMidiCommandSink final : public OpenHDK::MidiCommandSink {
+public:
+    void noteOn(std::uint8_t channel, std::uint8_t note, std::uint8_t velocity) override {
+        commands_[count_++] = {FakeMidiCommandKind::NoteOn, channel, note, velocity};
+    }
+
+    void noteOff(std::uint8_t channel, std::uint8_t note, std::uint8_t velocity) override {
+        commands_[count_++] = {FakeMidiCommandKind::NoteOff, channel, note, velocity};
+    }
+
+    void controller(std::uint8_t channel, std::uint8_t controller, std::uint8_t value) override {
+        commands_[count_++] = {FakeMidiCommandKind::Controller, channel, controller, value};
+    }
+
+    void programChange(std::uint8_t channel, std::uint8_t program) override {
+        commands_[count_++] = {FakeMidiCommandKind::ProgramChange, channel, program, 0U};
+    }
+
+    void pitchBend(std::uint8_t channel, std::uint16_t value) override {
+        commands_[count_++] = {FakeMidiCommandKind::PitchBend, channel, 0U, value};
+    }
+
+    [[nodiscard]] std::size_t count() const { return count_; }
+    [[nodiscard]] const FakeMidiCommand& command(std::size_t index) const { return commands_[index]; }
+
+private:
+    std::array<FakeMidiCommand, 8> commands_{};
+    std::size_t count_{};
+};
 
 template <std::size_t Size>
 bool expectsSuccess(const std::array<std::uint8_t, Size>& fixture, std::uint16_t format,
@@ -338,6 +384,12 @@ int main() {
         || zeroBlock.blockEndMicroseconds() != 0U || zeroBlock.events().size() != 2U
         || zeroBlock.events()[0].trackIndex() != 0U || zeroBlock.events()[1].trackIndex() != 1U
         || session.mediaTimeMicroseconds() != 0U) return 60;
+    FakeMidiCommandSink sameTickSink;
+    OpenHDK::SmfMidiEventDispatcher::dispatch(zeroBlock.events(), sameTickSink);
+    if (sameTickSink.count() != 2U || sameTickSink.command(0).kind != FakeMidiCommandKind::NoteOn
+        || sameTickSink.command(0).channel != 0U
+        || sameTickSink.command(1).kind != FakeMidiCommandKind::ProgramChange
+        || sameTickSink.command(1).channel != 0U || sameTickSink.command(1).first != 5U) return 82;
     const auto prematureComplete = session.completeReleaseTail();
     if (prematureComplete.succeeded() || !prematureComplete.error()
         || prematureComplete.error()->code()
@@ -380,6 +432,77 @@ int main() {
     if (clockOverflow.succeeded() || !clockOverflow.error()
         || clockOverflow.error()->code() != OpenHDK::PlaybackSessionErrorCode::ClockOverflow
         || overflowSession.state() != OpenHDK::PlaybackSessionState::Failed) return 73;
+
+    constexpr std::array<std::uint8_t, 45> dispatchChannelEvents{
+        'M','T','h','d', 0,0,0,6, 0,0, 0,1, 0,96,
+        'M','T','r','k', 0,0,0,23,
+        0, 0x90, 60, 100,
+        0, 0x80, 60, 12,
+        0, 0xb1, 7, 101,
+        0, 0xc2, 5,
+        0, 0xe3, 0, 64,
+        0, 0xff, 0x2f, 0};
+    const auto dispatchChannelFile = OpenHDK::SmfParser::parse(dispatchChannelEvents);
+    if (!dispatchChannelFile.file()) return 74;
+    const auto dispatchChannelTimeline = OpenHDK::SmfTimelineCompiler::compile(*dispatchChannelFile.file());
+    if (!dispatchChannelTimeline.timeline()) return 75;
+    OpenHDK::PlaybackSession dispatchChannelSession;
+    if (!dispatchChannelSession.prepare(*dispatchChannelTimeline.timeline(), 1000000U).succeeded()
+        || !dispatchChannelSession.play().succeeded()) return 76;
+    const auto dispatchChannelBlock = dispatchChannelSession.render(0U);
+    FakeMidiCommandSink channelSink;
+    OpenHDK::SmfMidiEventDispatcher::dispatch(dispatchChannelBlock.events(), channelSink);
+    if (!dispatchChannelBlock.succeeded() || channelSink.count() != 5U
+        || channelSink.command(0).kind != FakeMidiCommandKind::NoteOn
+        || channelSink.command(0).channel != 0U || channelSink.command(0).first != 60U
+        || channelSink.command(0).second != 100U
+        || channelSink.command(1).kind != FakeMidiCommandKind::NoteOff
+        || channelSink.command(1).second != 12U
+        || channelSink.command(2).kind != FakeMidiCommandKind::Controller
+        || channelSink.command(2).channel != 1U || channelSink.command(2).first != 7U
+        || channelSink.command(2).second != 101U
+        || channelSink.command(3).kind != FakeMidiCommandKind::ProgramChange
+        || channelSink.command(3).channel != 2U || channelSink.command(3).first != 5U
+        || channelSink.command(4).kind != FakeMidiCommandKind::PitchBend
+        || channelSink.command(4).channel != 3U || channelSink.command(4).second != 8192U) return 77;
+
+    constexpr std::array<std::uint8_t, 30> noteOnZeroVelocity{
+        'M','T','h','d', 0,0,0,6, 0,0, 0,1, 0,96,
+        'M','T','r','k', 0,0,0,8,
+        0, 0x94, 61, 0, 0, 0xff, 0x2f, 0};
+    const auto noteOnZeroFile = OpenHDK::SmfParser::parse(noteOnZeroVelocity);
+    if (!noteOnZeroFile.file()) return 78;
+    const auto noteOnZeroTimeline = OpenHDK::SmfTimelineCompiler::compile(*noteOnZeroFile.file());
+    if (!noteOnZeroTimeline.timeline()) return 79;
+    OpenHDK::PlaybackSession noteOnZeroSession;
+    if (!noteOnZeroSession.prepare(*noteOnZeroTimeline.timeline(), 1000000U).succeeded()
+        || !noteOnZeroSession.play().succeeded()) return 80;
+    FakeMidiCommandSink zeroVelocitySink;
+    OpenHDK::SmfMidiEventDispatcher::dispatch(noteOnZeroSession.render(0U).events(), zeroVelocitySink);
+    if (zeroVelocitySink.count() != 1U
+        || zeroVelocitySink.command(0).kind != FakeMidiCommandKind::NoteOff
+        || zeroVelocitySink.command(0).channel != 4U || zeroVelocitySink.command(0).first != 61U
+        || zeroVelocitySink.command(0).second != 0U) return 81;
+
+    constexpr std::array<std::uint8_t, 47> ignoredDispatchEvents{
+        'M','T','h','d', 0,0,0,6, 0,0, 0,1, 0,96,
+        'M','T','r','k', 0,0,0,25,
+        0, 0xff, 0x51, 3, 7, 0xa1, 0x20,
+        0, 0xff, 1, 1, 'x',
+        0, 0xf0, 2, 0x7d, 1,
+        0, 0x90, 60, 1,
+        0, 0xff, 0x2f, 0};
+    const auto ignoredDispatchFile = OpenHDK::SmfParser::parse(ignoredDispatchEvents);
+    if (!ignoredDispatchFile.file()) return 83;
+    const auto ignoredDispatchTimeline = OpenHDK::SmfTimelineCompiler::compile(*ignoredDispatchFile.file());
+    if (!ignoredDispatchTimeline.timeline()) return 84;
+    OpenHDK::PlaybackSession ignoredDispatchSession;
+    if (!ignoredDispatchSession.prepare(*ignoredDispatchTimeline.timeline(), 1000000U).succeeded()
+        || !ignoredDispatchSession.play().succeeded()) return 85;
+    FakeMidiCommandSink ignoredSink;
+    OpenHDK::SmfMidiEventDispatcher::dispatch(ignoredDispatchSession.render(0U).events(), ignoredSink);
+    if (ignoredSink.count() != 1U || ignoredSink.command(0).kind != FakeMidiCommandKind::NoteOn
+        || ignoredSink.command(0).first != 60U || ignoredSink.command(0).second != 1U) return 86;
 
     std::cout << "SMF parser fixtures passed\n";
     return 0;
