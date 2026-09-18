@@ -25,12 +25,14 @@ AudioBackendInfo FluidSynthBackend::info() const noexcept { return {"fluidsynth-
 bool FluidSynthBackend::initialize(const AudioBackendConfig& config, AudioBackendStatus& status) {
   shutdown();
   if (config.sampleRate == 0U) { fail(status, AudioBackendError::InvalidConfiguration, "Sample rate must be greater than zero."); return false; }
+  if (config.volume < 0.0F || config.volume > 1.0F) { fail(status, AudioBackendError::InvalidConfiguration, "Volume must be between 0.0 and 1.0."); return false; }
   if (!std::filesystem::is_regular_file(config.soundFontPath)) { fail(status, AudioBackendError::SoundFontNotFound, "SoundFont was not found: " + config.soundFontPath.string()); return false; }
   impl_->settings = new_fluid_settings();
   if (impl_->settings == nullptr) { fail(status, AudioBackendError::InvalidConfiguration, "FluidSynth could not allocate settings."); return false; }
   fluid_settings_setnum(impl_->settings, "synth.sample-rate", static_cast<double>(config.sampleRate));
   impl_->synth = new_fluid_synth(impl_->settings);
   if (impl_->synth == nullptr) { shutdown(); fail(status, AudioBackendError::InvalidConfiguration, "FluidSynth could not create a synthesizer."); return false; }
+  fluid_synth_set_gain(impl_->synth, config.muted ? 0.0 : static_cast<double>(config.volume));
   if (fluid_synth_sfload(impl_->synth, config.soundFontPath.string().c_str(), 1) == FLUID_FAILED) { shutdown(); fail(status, AudioBackendError::SoundFontLoadFailed, "FluidSynth could not load SoundFont: " + config.soundFontPath.string()); return false; }
   if (config.enableDeviceOutput) {
     const auto contextResult = ma_context_init(nullptr, 0, nullptr, &impl_->context);

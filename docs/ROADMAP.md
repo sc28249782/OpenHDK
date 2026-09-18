@@ -23,6 +23,7 @@ command. The remaining 0.1 gate is a manual Windows audio-device check.
 
 - Select an output endpoint by the index shown by --list-devices.
 - Reject unavailable endpoint indices and --device with --no-device.
+- Set initial FluidSynth output gain with --volume or mute it with --mute.
 
 - MIDI file scheduler and SF2 selection.
 - Audio-device selection, volume, mixer routing and safe fallback.
