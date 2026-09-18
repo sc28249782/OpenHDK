@@ -23,6 +23,8 @@ std::filesystem::path writeMidi() {
 int main() {
   OpenHDK::FluidSynthBackend backend; OpenHDK::AudioBackendStatus status;
   if (backend.info().id != "fluidsynth-miniaudio") return 1;
+  if (backend.initialize({.soundFontPath = "does-not-exist.sf2", .enableDeviceOutput = false, .volume = 1.1F}, status)
+      || status.error != OpenHDK::AudioBackendError::InvalidConfiguration) return 7;
   if (backend.initialize({.soundFontPath = "does-not-exist.sf2", .enableDeviceOutput = false}, status)
       || status.error != OpenHDK::AudioBackendError::SoundFontNotFound) return 2;
   const auto midi = writeMidi();

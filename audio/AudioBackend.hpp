@@ -13,7 +13,7 @@ constexpr AudioCapability operator|(AudioCapability left, AudioCapability right)
 struct AudioBackendInfo { std::string_view id; std::string_view displayName; AudioCapability capabilities; };
 enum class AudioBackendError { None, InvalidConfiguration, SoundFontNotFound, SoundFontLoadFailed, MidiFileNotFound, MidiPlaybackFailed, AudioDeviceUnavailable, AudioDeviceNotFound, RenderFailed };
 struct AudioBackendStatus { AudioBackendError error{AudioBackendError::None}; std::string message{}; [[nodiscard]] explicit operator bool() const noexcept { return error == AudioBackendError::None; } };
-struct AudioBackendConfig { std::filesystem::path soundFontPath; std::uint32_t sampleRate{44100}; bool enableDeviceOutput{true}; std::optional<std::uint32_t> outputDeviceIndex{}; };
+struct AudioBackendConfig { std::filesystem::path soundFontPath; std::uint32_t sampleRate{44100}; bool enableDeviceOutput{true}; std::optional<std::uint32_t> outputDeviceIndex{}; float volume{1.0F}; bool muted{false}; };
 class AudioBackend {
 public:
   virtual ~AudioBackend() = default;
