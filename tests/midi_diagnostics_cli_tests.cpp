@@ -40,25 +40,22 @@ int main() {
     std::filesystem::remove(path, error);
     if (exitCode != 0 || !standardError.str().empty()) return 2;
 
-    const std::string expected =
-        "MIDI diagnostics: SMF format 1, tracks 2\n"
-        "Channel 1: note-ons=1; programs=3,41; final-cc7=64\n"
-        "Channel 2: note-ons=0; programs=unavailable; final-cc7=unavailable\n"
-        "Channel 3: note-ons=0; programs=unavailable; final-cc7=unavailable\n"
-        "Channel 4: note-ons=0; programs=unavailable; final-cc7=unavailable\n"
-        "Channel 5: note-ons=0; programs=unavailable; final-cc7=unavailable\n"
-        "Channel 6: note-ons=0; programs=unavailable; final-cc7=unavailable\n"
-        "Channel 7: note-ons=0; programs=unavailable; final-cc7=unavailable\n"
-        "Channel 8: note-ons=0; programs=unavailable; final-cc7=unavailable\n"
-        "Channel 9: note-ons=0; programs=unavailable; final-cc7=unavailable\n"
-        "Channel 10: note-ons=1; programs=unavailable; final-cc7=unavailable\n"
-        "Channel 11: note-ons=0; programs=unavailable; final-cc7=unavailable\n"
-        "Channel 12: note-ons=0; programs=unavailable; final-cc7=unavailable\n"
-        "Channel 13: note-ons=0; programs=unavailable; final-cc7=unavailable\n"
-        "Channel 14: note-ons=0; programs=unavailable; final-cc7=unavailable\n"
-        "Channel 15: note-ons=0; programs=unavailable; final-cc7=unavailable\n"
-        "Channel 16: note-ons=0; programs=unavailable; final-cc7=unavailable\n";
-    if (standardOutput.str() != expected) {
+    const auto diagnostics = standardOutput.str();
+    const std::string expectedChannelOne =
+        "Channel 1: note-ons=1; programs=3,41; "
+        "cc7=first=80@0t/0us,pre-note=unavailable,final=64@0t/0us,range=64..80,changes=1; "
+        "effective-cc7=first=80@0t/0us,pre-note=unavailable,final=64@0t/0us,range=64..80,changes=1; "
+        "cc7-14bit=unavailable; cc39=unavailable; cc11=unavailable; "
+        "cc11-14bit=unavailable; cc43=unavailable; cc121-resets=0\n";
+    const std::string expectedChannelTen =
+        "Channel 10: note-ons=1; programs=unavailable; cc7=unavailable; "
+        "effective-cc7=unavailable; "
+        "cc7-14bit=unavailable; cc39=unavailable; cc11=unavailable; "
+        "cc11-14bit=unavailable; cc43=unavailable; cc121-resets=0\n";
+    if (!diagnostics.starts_with("MIDI diagnostics: SMF format 1, tracks 2\n")
+        || diagnostics.find(expectedChannelOne) == std::string::npos
+        || diagnostics.find(expectedChannelTen) == std::string::npos
+        || diagnostics.find("final-cc7") != std::string::npos) {
         std::cerr << "Unexpected MIDI diagnostics output:\n" << standardOutput.str();
         return 3;
     }

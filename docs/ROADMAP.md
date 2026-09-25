@@ -37,7 +37,9 @@ non-distributable validation assets.
 - [x] Dispatch rendered SMF channel events to an
   abstract MIDI command sink, preserving timeline order without timing or I/O.
 - [x] Add read-only per-channel SMF diagnostics for note-on counts, observed
-  programs, and final CC7 without requiring a SoundFont or audio device.
+  programs, CC7/CC11 history, optional CC39/CC43 14-bit pairs, and deterministic
+  event positions, including an OpenHDK effective-CC7 view after CC121, without
+  requiring a SoundFont or audio device.
 
 Next unfinished work: a runtime-safe mixer API, velocity curves, channel
 mute/solo presets, and a master limiter. This does not yet provide complete

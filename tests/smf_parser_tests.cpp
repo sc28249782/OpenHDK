@@ -580,11 +580,65 @@ int main() {
         || !diagnostics[0].observedPrograms[2]
         || !diagnostics[0].observedPrograms[40]
         || diagnostics[0].observedPrograms[3]
-        || diagnostics[0].finalCc7Volume != 64U
+        || !diagnostics[0].cc7.first || diagnostics[0].cc7.first->value != 80U
+        || !diagnostics[0].cc7.final || diagnostics[0].cc7.final->value != 64U
+        || diagnostics[0].cc7.beforeFirstNote.has_value()
+        || diagnostics[0].cc7.minimum != 64U || diagnostics[0].cc7.maximum != 80U
+        || diagnostics[0].cc7.changeCount != 1U
+        || !diagnostics[0].effectiveCc7.final
+        || diagnostics[0].effectiveCc7.final->value != 64U
         || diagnostics[9].noteOnCount != 1U
-        || diagnostics[9].finalCc7Volume.has_value()
+        || diagnostics[9].cc7.final.has_value()
         || diagnostics[15].noteOnCount != 0U
-        || diagnostics[15].finalCc7Volume.has_value()) return 98;
+        || diagnostics[15].cc7.final.has_value()) return 98;
+
+    constexpr std::array<std::uint8_t, 62> controllerHistoryEvents{
+        'M','T','h','d', 0,0,0,6, 0,0, 0,1, 0,96,
+        'M','T','r','k', 0,0,0,40,
+        0, 0xb0, 7, 100,
+        0, 0xb0, 39, 3,
+        0, 0xb0, 11, 127,
+        0, 0xb0, 43, 2,
+        96, 0x90, 60, 100,
+        96, 0xb0, 7, 0,
+        0, 0xb0, 11, 64,
+        0, 0xb0, 39, 4,
+        0, 0xb0, 121, 0,
+        0, 0xff, 0x2f, 0};
+    const auto controllerHistoryFile = OpenHDK::SmfParser::parse(controllerHistoryEvents);
+    if (!controllerHistoryFile.file()) return 99;
+    const auto controllerHistoryTimeline = OpenHDK::SmfTimelineCompiler::compile(
+        *controllerHistoryFile.file());
+    if (!controllerHistoryTimeline.timeline()) return 100;
+    const auto controllerHistory = OpenHDK::MidiChannelDiagnostics::aggregate(
+        *controllerHistoryTimeline.timeline());
+    const auto& history = controllerHistory[0];
+    if (history.noteOnCount != 1U
+        || !history.cc7.first || history.cc7.first->value != 100U
+        || history.cc7.first->tick != 0U || history.cc7.first->timeMicroseconds != 0U
+        || !history.cc7.beforeFirstNote || history.cc7.beforeFirstNote->value != 100U
+        || !history.cc7.final || history.cc7.final->value != 0U
+        || history.cc7.final->tick != 192U || history.cc7.final->timeMicroseconds != 1000000U
+        || history.cc7.minimum != 0U || history.cc7.maximum != 100U
+        || history.cc7.changeCount != 1U || history.finalCc7FourteenBit != 4U
+        || !history.effectiveCc7.first || history.effectiveCc7.first->value != 100U
+        || !history.effectiveCc7.beforeFirstNote
+        || history.effectiveCc7.beforeFirstNote->value != 100U
+        || !history.effectiveCc7.final || history.effectiveCc7.final->value != 100U
+        || history.effectiveCc7.final->tick != 192U
+        || history.effectiveCc7.final->timeMicroseconds != 1000000U
+        || history.effectiveCc7.minimum != 0U || history.effectiveCc7.maximum != 100U
+        || history.effectiveCc7.changeCount != 2U
+        || !history.cc39.final || history.cc39.final->value != 4U
+        || history.cc39.changeCount != 1U
+        || !history.cc11.beforeFirstNote || history.cc11.beforeFirstNote->value != 127U
+        || !history.cc11.final || history.cc11.final->value != 64U
+        || history.cc11.minimum != 64U || history.cc11.maximum != 127U
+        || history.cc11.changeCount != 1U || history.finalCc11FourteenBit != 8194U
+        || !history.cc43.final || history.cc43.final->value != 2U
+        || history.cc43.changeCount != 0U || history.resetAllControllersCount != 1U
+        || !history.finalCc121Reset || history.finalCc121Reset->tick != 192U
+        || history.finalCc121Reset->timeMicroseconds != 1000000U) return 101;
 
     std::cout << "SMF parser fixtures passed\n";
     return 0;

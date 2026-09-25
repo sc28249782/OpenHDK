@@ -35,11 +35,18 @@ acceptance and error-offset rules; it is not implied by the current parser.
 
 `MidiChannelDiagnostics` is an output-independent aggregate over the compiled
 timeline. It uses fixed-size per-channel and per-program storage, counts only
-note-on messages with nonzero velocity, records the set of observed programs,
-and retains the final CC7 value in deterministic timeline order. The CLI owns
-text formatting and file I/O. Its standalone `--midi-diagnostics` path exits
-before constructing the audio backend, so inspection has no SoundFont or audio
-device dependency.
+note-on messages with nonzero velocity, and records the set of observed
+programs. For CC7, CC39, CC11, and CC43, it retains first, pre-first-note,
+final, minimum, maximum, and value-change observations in deterministic
+timeline order. It reports a 14-bit final value only after both the controller
+MSB and LSB have appeared on the same channel, and counts CC121 reset events.
+It also reports `effective-cc7`, the source CC7 state OpenHDK will send before
+the launch-time channel gain: each CC121 makes that state 100 at the reset's
+timeline position. This is an OpenHDK playback-contract view, distinct from
+the raw CC7 events in the SMF.
+The CLI owns text formatting and file I/O. Its standalone `--midi-diagnostics`
+path exits before constructing the audio backend, so inspection has no
+SoundFont or audio device dependency.
 
 ## Current audio proof of concept
 

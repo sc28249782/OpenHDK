@@ -44,6 +44,32 @@ namespace OpenHDK {
 inline void printMidiDiagnostics(const SmfFile& file, const SmfTimeline& timeline,
                                  std::ostream& output) {
     const auto summary = MidiChannelDiagnostics::aggregate(timeline);
+    const auto printSample = [&output](const MidiChannelDiagnostic::ControllerSample& sample) {
+        output << static_cast<unsigned>(sample.value) << "@" << sample.tick << "t/"
+               << sample.timeMicroseconds << "us";
+    };
+    const auto printSeries = [&output, &printSample](
+                                 const char* name,
+                                 const MidiChannelDiagnostic::ControllerSeries& series,
+                                 std::uint64_t noteOnCount) {
+        output << name << '=';
+        if (!series.final) {
+            output << "unavailable";
+            return;
+        }
+        output << "first=";
+        printSample(*series.first);
+        output << ",pre-note=";
+        if (noteOnCount != 0U && series.beforeFirstNote) {
+            printSample(*series.beforeFirstNote);
+        } else {
+            output << "unavailable";
+        }
+        output << ",final=";
+        printSample(*series.final);
+        output << ",range=" << static_cast<unsigned>(*series.minimum) << ".."
+               << static_cast<unsigned>(*series.maximum) << ",changes=" << series.changeCount;
+    };
     output << "MIDI diagnostics: SMF format " << file.format() << ", tracks "
            << file.tracks().size() << '\n';
     for (std::size_t channel = 0U; channel < summary.size(); ++channel) {
@@ -58,11 +84,32 @@ inline void printMidiDiagnostics(const SmfFile& file, const SmfTimeline& timelin
             anyProgram = true;
         }
         if (!anyProgram) output << "unavailable";
-        output << "; final-cc7=";
-        if (diagnostic.finalCc7Volume) {
-            output << static_cast<unsigned>(*diagnostic.finalCc7Volume);
+        output << "; ";
+        printSeries("cc7", diagnostic.cc7, diagnostic.noteOnCount);
+        output << "; ";
+        printSeries("effective-cc7", diagnostic.effectiveCc7, diagnostic.noteOnCount);
+        output << "; cc7-14bit=";
+        if (diagnostic.finalCc7FourteenBit) {
+            output << *diagnostic.finalCc7FourteenBit;
         } else {
             output << "unavailable";
+        }
+        output << "; ";
+        printSeries("cc39", diagnostic.cc39, diagnostic.noteOnCount);
+        output << "; ";
+        printSeries("cc11", diagnostic.cc11, diagnostic.noteOnCount);
+        output << "; cc11-14bit=";
+        if (diagnostic.finalCc11FourteenBit) {
+            output << *diagnostic.finalCc11FourteenBit;
+        } else {
+            output << "unavailable";
+        }
+        output << "; ";
+        printSeries("cc43", diagnostic.cc43, diagnostic.noteOnCount);
+        output << "; cc121-resets=" << diagnostic.resetAllControllersCount;
+        if (diagnostic.finalCc121Reset) {
+            output << ",last=" << diagnostic.finalCc121Reset->tick << "t/"
+                   << diagnostic.finalCc121Reset->timeMicroseconds << "us";
         }
         output << '\n';
     }
