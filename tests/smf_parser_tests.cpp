@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 OpenHDK contributors
+#include "audio/AudioBackend.hpp"
+#include "audio/MidiChannelDiagnostics.hpp"
 #include "audio/SmfParser.hpp"
 #include "audio/SmfTrackEventDecoder.hpp"
 #include "audio/SmfTimelineCompiler.hpp"
@@ -102,6 +104,20 @@ int main() {
     static_assert(!std::is_default_constructible_v<OpenHDK::SmfTrackDecodeResult>);
     static_assert(!std::is_default_constructible_v<OpenHDK::SmfTimeline>);
     static_assert(!std::is_default_constructible_v<OpenHDK::SmfTimelineCompileResult>);
+    if (OpenHDK::isNormalizedVolume(std::numeric_limits<float>::quiet_NaN())
+        || OpenHDK::isNormalizedVolume(std::numeric_limits<float>::infinity())
+        || OpenHDK::isNormalizedVolume(-std::numeric_limits<float>::infinity())
+        || !OpenHDK::isNormalizedVolume(0.0F) || !OpenHDK::isNormalizedVolume(1.0F)
+        || OpenHDK::isNormalizedVolume(-0.01F) || OpenHDK::isNormalizedVolume(1.01F)) return 87;
+    const auto defaultChannelGains = OpenHDK::defaultMidiChannelGains();
+    if (!OpenHDK::areNormalizedMidiChannelGains(defaultChannelGains)
+        || OpenHDK::applyMidiChannelGain(100U, 1.0F) != 100U
+        || OpenHDK::applyMidiChannelGain(100U, 0.5F) != 50U
+        || OpenHDK::applyMidiChannelGain(127U, 0.5F) != 64U
+        || OpenHDK::applyMidiChannelGain(127U, 0.0F) != 0U) return 94;
+    auto invalidChannelGains = defaultChannelGains;
+    invalidChannelGains[9] = std::numeric_limits<float>::quiet_NaN();
+    if (OpenHDK::areNormalizedMidiChannelGains(invalidChannelGains)) return 95;
 
     constexpr std::array<std::uint8_t, 26> format0{
         'M','T','h','d', 0,0,0,6, 0,0, 0,1, 0,96,
@@ -244,6 +260,9 @@ int main() {
 
     constexpr std::array<std::uint8_t, 6> invalidTempoLength{0, 0xff, 0x51, 2, 0, 0};
     if (!expectsTrackError(invalidTempoLength, SmfTrackDecodeErrorCode::InvalidMetaLength, 3U)) return 30;
+
+    constexpr std::array<std::uint8_t, 7> invalidZeroTempo{0, 0xff, 0x51, 3, 0, 0, 0};
+    if (!expectsTrackError(invalidZeroTempo, SmfTrackDecodeErrorCode::InvalidTempoValue, 4U)) return 88;
 
     constexpr std::array<std::uint8_t, 5> truncatedMetaPayload{0, 0xff, 1, 2, 'x'};
     if (!expectsTrackError(truncatedMetaPayload, SmfTrackDecodeErrorCode::TruncatedEvent, 5U)) return 31;
@@ -503,6 +522,69 @@ int main() {
     OpenHDK::SmfMidiEventDispatcher::dispatch(ignoredDispatchSession.render(0U).events(), ignoredSink);
     if (ignoredSink.count() != 1U || ignoredSink.command(0).kind != FakeMidiCommandKind::NoteOn
         || ignoredSink.command(0).first != 60U || ignoredSink.command(0).second != 1U) return 86;
+
+    constexpr std::array<std::uint8_t, 41> pressureCompatibilityEvents{
+        'M','T','h','d', 0,0,0,6, 0,0, 0,1, 0,96,
+        'M','T','r','k', 0,0,0,19,
+        0, 0xa2, 60, 50,
+        0, 0xd3, 40,
+        0, 0x90, 61, 64,
+        0, 0xb4, 7, 100,
+        0, 0xff, 0x2f, 0};
+    const auto pressureCompatibilityFile = OpenHDK::SmfParser::parse(pressureCompatibilityEvents);
+    if (!pressureCompatibilityFile.file()) return 89;
+    const auto pressureCompatibilityTimeline = OpenHDK::SmfTimelineCompiler::compile(
+        *pressureCompatibilityFile.file());
+    if (!pressureCompatibilityTimeline.timeline()
+        || pressureCompatibilityTimeline.timeline()->events().size() != 5U
+        || pressureCompatibilityTimeline.timeline()->events()[0].event().kind()
+            != OpenHDK::SmfMidiEventKind::PolyphonicKeyPressure
+        || pressureCompatibilityTimeline.timeline()->events()[1].event().kind()
+            != OpenHDK::SmfMidiEventKind::ChannelPressure) return 90;
+    OpenHDK::PlaybackSession pressureCompatibilitySession;
+    if (!pressureCompatibilitySession.prepare(*pressureCompatibilityTimeline.timeline(), 1000000U).succeeded()
+        || !pressureCompatibilitySession.play().succeeded()) return 91;
+    FakeMidiCommandSink pressureCompatibilitySink;
+    OpenHDK::SmfMidiEventDispatcher::dispatch(
+        pressureCompatibilitySession.render(0U).events(), pressureCompatibilitySink);
+    if (pressureCompatibilitySink.count() != 2U
+        || pressureCompatibilitySink.command(0).kind != FakeMidiCommandKind::NoteOn
+        || pressureCompatibilitySink.command(0).channel != 0U
+        || pressureCompatibilitySink.command(0).first != 61U
+        || pressureCompatibilitySink.command(1).kind != FakeMidiCommandKind::Controller
+        || pressureCompatibilitySink.command(1).channel != 4U
+        || pressureCompatibilitySink.command(1).first != 7U
+        || pressureCompatibilitySink.command(1).second != 100U) return 92;
+
+    constexpr std::array<std::uint8_t, 67> diagnosticEvents{
+        'M','T','h','d', 0,0,0,6, 0,1, 0,2, 0,96,
+        'M','T','r','k', 0,0,0,22,
+        0, 0xc0, 40,
+        0, 0x90, 60, 100,
+        0, 0x90, 61, 0,
+        0, 0xb0, 7, 80,
+        0, 0xc0, 2,
+        0, 0xff, 0x2f, 0,
+        'M','T','r','k', 0,0,0,15,
+        0, 0xc0, 40,
+        0, 0xb0, 7, 64,
+        0, 0x99, 36, 127,
+        0, 0xff, 0x2f, 0};
+    const auto diagnosticFile = OpenHDK::SmfParser::parse(diagnosticEvents);
+    if (!diagnosticFile.file()) return 96;
+    const auto diagnosticTimeline = OpenHDK::SmfTimelineCompiler::compile(*diagnosticFile.file());
+    if (!diagnosticTimeline.timeline()) return 97;
+    const auto diagnostics = OpenHDK::MidiChannelDiagnostics::aggregate(
+        *diagnosticTimeline.timeline());
+    if (diagnostics[0].noteOnCount != 1U
+        || !diagnostics[0].observedPrograms[2]
+        || !diagnostics[0].observedPrograms[40]
+        || diagnostics[0].observedPrograms[3]
+        || diagnostics[0].finalCc7Volume != 64U
+        || diagnostics[9].noteOnCount != 1U
+        || diagnostics[9].finalCc7Volume.has_value()
+        || diagnostics[15].noteOnCount != 0U
+        || diagnostics[15].finalCc7Volume.has_value()) return 98;
 
     std::cout << "SMF parser fixtures passed\n";
     return 0;

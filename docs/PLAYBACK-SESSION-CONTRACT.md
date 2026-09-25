@@ -1,47 +1,74 @@
 # Playback session contract
 
-## Purpose
+## Current boundary
 
-The current 0.1 proof of concept uses FluidSynth's file player only to prove
-MIDI-to-PCM output. OpenHDK 0.2 must own the playback timeline so karaoke
-lyrics, seek, transpose, tempo, and audio backends share one deterministic
-contract.
+`PlaybackSession` owns timing and due-event selection for an already compiled
+immutable `SmfTimeline`. `prepare()` copies that timeline's ordered events into
+the session; it does not parse SMF bytes, create a backend, or render PCM.
 
-## Clock
+The retained FluidSynth file-player API remains available for isolated legacy
+tests, but the CLI proof of concept uses this compiled timeline path.
 
-A playback session exposes a monotonic media position in microseconds. It
-advances only while the session is Playing. The implementation must derive it
-from a monotonic clock plus accumulated rendered frames; it must never use wall
-clock time.
+## Frame-derived clock
 
-## States
+Media time is measured in microseconds and advances only while Playing. Every
+`render(frames)` derives its advance from rendered frame count and the prepared
+sample rate. The fractional numerator remainder is carried between calls, so a
+given total frame count produces the same media time regardless of block
+splitting. The clock never reads wall-clock time.
 
-| State | Meaning | Legal next states |
+A Playing render block covers `[blockStart, blockEnd]`. It returns each
+remaining timeline event whose timestamp is at or before the inclusive block
+end, exactly once, in the compiler's existing order. `render()` returns a
+due-event span only; it does not synthesize or render PCM. A Paused render
+returns no events and does not advance the clock.
+
+The returned event span remains valid until the next `prepare()` or `stop()`
+call on that session.
+
+## State transitions
+
+Preparing and Stopping are synchronous internal states. The public legal
+transitions are:
+
+| Current state | Operation | Result |
 |---|---|---|
-| Idle | No prepared MIDI session | Preparing |
-| Preparing | MIDI/SF2 validation and event schedule construction | Ready, Failed |
-| Ready | Timeline prepared, position is zero | Playing, Idle |
-| Playing | Events are dispatched and PCM is rendered | Paused, Finished, Failed, Stopping |
-| Paused | Media position is frozen; no new events dispatch | Playing, Stopping |
-| Stopping | Stop all active notes and release backend resources | Idle |
-| Finished | End-of-file reached and release tail drained | Ready, Idle |
-| Failed | Recoverable failure with status | Idle |
+| Idle | `prepare(timeline, sampleRate)` | Ready, or Failed for sample rate zero |
+| Ready | `play()` | Playing |
+| Playing | `pause()` | Paused |
+| Paused | `play()` | Playing |
+| Playing or Paused, after all timeline events are due | `completeReleaseTail()` | Finished |
+| Ready, Playing, Paused, Finished, or Failed | `stop()` | Idle |
 
-## Scheduling rules
+All other requested transitions return an IllegalTransition error. Reaching the
+end of the timeline does not automatically enter Finished: an explicit
+`completeReleaseTail()` acknowledges that any future synthesis release tail is
+complete. Calling it before the event cursor reaches the end returns
+CompletionBeforeEndOfTimeline.
 
-- Parse MIDI events into an immutable event list expressed in media time.
-- Dispatch all events with event time less than or equal to the render block
-  end; preserve file order for equal timestamps.
-- The audio callback must never perform file I/O, allocation, parsing, or UI
-  work.
-- Seek requires a deterministic reconstruction of active MIDI state before the
-  next audio block; this is deferred until the initial scheduler is proven.
-- Tempo, transpose, and lyric timing are session policies, not FluidSynth API
-  aliases.
+## Dispatcher boundary
 
-## Boundary for the first scheduler PR
+The caller passes the due-event span to `SmfMidiEventDispatcher` and a
+hardware-independent `MidiCommandSink`. The dispatcher preserves span order,
+has no clock, playback state, sorting, allocation, or I/O, and currently maps
+note-on/off, controller, program-change, and pitch-bend only. It normalizes a
+zero-velocity note-on to note-off and deliberately ignores tempo, End-of-Track,
+generic Meta, SysEx, Polyphonic Key Pressure, and Channel Pressure records.
 
-The first implementation will support Standard MIDI File format 0/1 note,
-program, controller, pitch-bend, and tempo events; it will render through the
-existing FluidSynthBackend. It will not add KAR/NCN parsing, Qt UI, MIDI
-hardware, VST/VST3, HNK/HNK3, or any BASS-family compatibility layer.
+`FluidSynthBackend::playCompiledTimeline()` binds this boundary to FluidSynth
+and miniaudio. It stops an initialized device before preparing or replacing the
+session, then starts the device only after the prepared session is published.
+The callback-visible active flag is lock-free atomic; session mutation remains
+confined to the stopped-device control path or the callback itself. Each
+callback block selects due events, dispatches them to a private
+FluidSynth-backed sink at their clamped frame offsets, and renders the PCM
+segments between those offsets. The callback performs no parsing, allocation,
+file I/O, locks, or UI work.
+
+The adapter does not invent a release-tail duration. After it renders the block
+that reaches the end of the timeline, it explicitly calls
+`completeReleaseTail()` immediately, silences active FluidSynth notes and
+sounds, and marks compiled playback complete. A future adapter that needs a
+synthesis tail must make that completion decision explicit rather than adding
+an implicit duration. The legacy FluidSynth file player and compiled-timeline
+entry points cannot control the synth together.

@@ -1,44 +1,73 @@
 # OpenHDK architecture
 
-## Goal
-
-Separate karaoke-domain behaviour from the audio implementation so a backend
-can evolve without changing song indexing, lyric timing, settings, or UI
-contracts.
-
-## Layers
+## Implemented deterministic SMF path
 
 ~~~text
-Qt application and settings
+bounded canonical SMF bytes
         ↓
-Karaoke domain: library, playlist, KAR/NCN parsers, lyric timeline
+SmfParser
         ↓
-AudioBackend interface
+SmfTrackEventDecoder
         ↓
-FluidSynth backend → miniaudio output
+SmfTimelineCompiler
         ↓
-Windows audio device
+    SmfTimeline
+      ↙     ↘
+MidiChannelDiagnostics    PlaybackSession
+(read-only aggregate)     (frame-derived timing and due-event spans)
+                                ↓
+                    SmfMidiEventDispatcher
+                                ↓
+                    abstract MidiCommandSink
 ~~~
 
-The bootstrap has no Qt dependency yet. It validates the CMake and architecture
-base before a deliberate UI migration.
+The parser supports SMF formats 0 and 1. The decoder retains supported channel
+events plus tempo, Meta, SysEx, and End-of-Track records; the dispatcher sends
+only its supported channel subset to the sink. Timeline ordering is by tick,
+file track index, and source index. `PlaybackSession` returns due events but
+does not render PCM. `FluidSynthBackend::playCompiledTimeline()` binds those
+due-event spans to a private FluidSynth sink and miniaudio render blocks.
 
-## Backend rules
+The current policy is strict canonical SMF input: bounded MThd/MTrk structure,
+required End-of-Track, and no trailing track or file data. A compatibility mode
+for legacy padding would require an explicit future design, including exact
+acceptance and error-offset rules; it is not implied by the current parser.
 
-- audio/AudioBackend.hpp is the only application-facing audio contract.
-- No backend-specific header may appear outside audio/.
-- MIDI scheduling uses the playback session monotonic clock, never wall clock.
-- Song parsing and lyric timing remain deterministic without an audio device.
-- A backend failure returns a recoverable error; it must not terminate the UI.
+`MidiChannelDiagnostics` is an output-independent aggregate over the compiled
+timeline. It uses fixed-size per-channel and per-program storage, counts only
+note-on messages with nonzero velocity, records the set of observed programs,
+and retains the final CC7 value in deterministic timeline order. The CLI owns
+text formatting and file I/O. Its standalone `--midi-diagnostics` path exits
+before constructing the audio backend, so inspection has no SoundFont or audio
+device dependency.
 
-## Initial backend
+## Current audio proof of concept
 
-FluidSynthBackend will synthesize MIDI through an SF2 SoundFont. Generated PCM
-will feed a miniaudio device callback. MIDI I/O stays a separate adapter,
-initially RtMidi or libremidi after evaluation.
+`AudioBackend` separates the 0.1 FluidSynth + miniaudio proof of concept from
+the SMF path above. Its explicit compiled-timeline entry prepares a
+`PlaybackSession` outside the callback, renders PCM segments between due-event
+frame offsets in the callback, and dispatches events at those offsets. The CLI
+reads, parses, and compiles SMF before activating the backend, then uses this
+compiled-timeline entry and supports a launch-time per-channel gain table. The
+FluidSynth MIDI sink keeps
+each channel's source CC7 value, applies its configured gain to that value, and
+then sends the resulting CC7 value to FluidSynth. Therefore a trim preserves
+the volume automation in an SMF instead of replacing it. Reset All Controllers
+(CC121) restores the GM default CC7 value before that same gain is applied.
+This table is prepared before playback; changing channel gains while a device
+callback is running is intentionally deferred to a later, synchronization-safe
+mixer API.
+The legacy file-player path is not permitted to run alongside compiled-timeline
+playback on the same synth.
 
-The 0.1 PoC uses FluidSynth's file player only to prove MIDI-to-PCM flow. It
-does not establish the OpenHDK playback-clock contract; the 0.2 scheduler must
-use a monotonic OpenHDK session clock before karaoke timing is introduced.
+The POC has no implicit or bundled SoundFont fallback. A missing or unloadable
+configured SoundFont returns the existing structured recoverable error.
 
-VST/VST3 hosting is outside the first backend scope.
+## Deferred layers
+
+Qt migration, karaoke library work, KAR/NCN parsing and lyric timelines,
+physical MIDI hardware and RtMidi/libremidi, HNK/HNK3 compatibility, and
+VST2/VST3 are deferred. They are not part of the implemented SMF path or the
+audio proof of concept. No BASS-family component belongs in any layer.
+
+Audio callbacks must not perform file I/O, allocation, parsing, or UI work.

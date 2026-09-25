@@ -30,6 +30,10 @@ if(OPENHDK_BUILD_TESTS)
     target_include_directories(openhdk_smf_parser_tests PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
     target_compile_features(openhdk_smf_parser_tests PRIVATE cxx_std_20)
     add_test(NAME smf-parser-fixtures COMMAND openhdk_smf_parser_tests)
+    add_executable(openhdk_midi_diagnostics_cli_tests tests/midi_diagnostics_cli_tests.cpp)
+    target_include_directories(openhdk_midi_diagnostics_cli_tests PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
+    target_compile_features(openhdk_midi_diagnostics_cli_tests PRIVATE cxx_std_20)
+    add_test(NAME midi-diagnostics-cli-success COMMAND openhdk_midi_diagnostics_cli_tests)
     if(OPENHDK_BUILD_AUDIO_POC)
       if(NOT OPENHDK_FETCH_TEST_FIXTURES)
         message(FATAL_ERROR "Audio proof-of-concept tests require OPENHDK_FETCH_TEST_FIXTURES=ON.")
@@ -48,6 +52,12 @@ if(OPENHDK_BUILD_TESTS)
       target_compile_definitions(openhdk_bootstrap_smoke PRIVATE OPENHDK_TEST_SOUNDFONT_PATH="${OPENHDK_TEST_SOUNDFONT}")
       add_test(NAME fluidsynth-headless-poc COMMAND openhdk_bootstrap_smoke)
       add_test(NAME openhdk-cli-help COMMAND OpenHDK --help)
+      add_test(NAME openhdk-midi-diagnostics-errors
+        COMMAND "${CMAKE_COMMAND}"
+          "-DOPENHDK_EXE=$<TARGET_FILE:OpenHDK>"
+          "-DMALFORMED_INPUT=${CMAKE_CURRENT_SOURCE_DIR}/CMakeLists.txt"
+          "-DMISSING_INPUT=${CMAKE_BINARY_DIR}/missing-diagnostics-input.mid"
+          -P "${CMAKE_CURRENT_SOURCE_DIR}/tests/midi_diagnostics_cli_errors.cmake")
     endif()
   endif()
 endif()
