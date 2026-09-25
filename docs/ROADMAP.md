@@ -41,9 +41,9 @@ non-distributable validation assets.
   event positions, including an OpenHDK effective-CC7 view after CC121, without
   requiring a SoundFont or audio device.
 
-Next unfinished work: a runtime-safe mixer API, velocity curves, channel
-mute/solo presets, and a master limiter. This does not yet provide complete
-user-facing playback.
+Next unfinished work: add velocity curves and named channel-mute/solo presets,
+then add a master limiter. This does not yet provide complete user-facing
+playback.
 
 Exit gate: fixtures behave correctly and no crash occurs when a SoundFont or
 audio device is unavailable.

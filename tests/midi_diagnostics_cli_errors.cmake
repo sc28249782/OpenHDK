@@ -18,5 +18,6 @@ function(expect_diagnostic_error expected_exit expected_pattern)
 endfunction()
 
 expect_diagnostic_error(64 "Unknown or incomplete argument: --midi-diagnostics")
+expect_diagnostic_error(64 "--midi-diagnostics cannot be combined with playback or device options" "${MISSING_INPUT}" --interactive-mixer)
 expect_diagnostic_error(1 "MIDI file could not be read:" "${MISSING_INPUT}")
 expect_diagnostic_error(1 "MIDI parse failed at byte 0: expected MThd header chunk" "${MALFORMED_INPUT}")

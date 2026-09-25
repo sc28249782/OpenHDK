@@ -26,6 +26,12 @@ a reset. Missing controller data is printed as `unavailable`. Diagnostics is a
 standalone, read-only mode and cannot be combined with playback or device
 options.
 
+For a Windows device-output playback session, add `--interactive-mixer` and
+enter `gain <1-16> <0-100>`, `mute <1-16>`, `unmute <1-16>`, `solo <1-16>`,
+`unsolo <1-16>`, `reset`, `help`, or `quit` in the console. It controls the
+runtime mixer at render-block boundaries; it does not alter the MIDI file or
+SoundFont.
+
 ## Principles
 
 - No BASS, BASS FX, BASSMIDI, BASSmix, BASS_VST binaries, headers, libraries or build scripts are included.

@@ -69,6 +69,9 @@ its private FluidSynth sink. This preserves source CC7 automation and never
 calls FluidSynth from the control thread. Its API uses zero-based channel
 indices 0–15; the CLI's existing `--channel-volume` remains one-based 1–16.
 `resetRuntimeMixer()` clears all runtime gains, mutes, and solos.
+On Windows, `--interactive-mixer` is a main-thread console polling surface for
+those same operations. It does not create a second callback or a worker thread;
+the callback remains the only path that calls FluidSynth for runtime changes.
 The legacy file-player path is not permitted to run alongside compiled-timeline
 playback on the same synth.
 
