@@ -2,7 +2,9 @@
 // Copyright (C) 2026 OpenHDK contributors
 #pragma once
 #include "audio/MidiChannelMix.hpp"
+#include "audio/MidiRuntimeMixer.hpp"
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
 #include <filesystem>
 #include <optional>
@@ -30,6 +32,10 @@ public:
   virtual bool renderStereo(std::span<float>, AudioBackendStatus&) = 0;
   virtual bool setVolume(float volume, AudioBackendStatus&) = 0;
   virtual bool setMuted(bool muted, AudioBackendStatus&) = 0;
+  virtual bool setRuntimeChannelGain(std::size_t channel, float gain, AudioBackendStatus&) = 0;
+  virtual bool setRuntimeChannelMuted(std::size_t channel, bool muted, AudioBackendStatus&) = 0;
+  virtual bool setRuntimeChannelSoloed(std::size_t channel, bool soloed, AudioBackendStatus&) = 0;
+  virtual bool resetRuntimeMixer(AudioBackendStatus&) = 0;
   [[nodiscard]] virtual float volume() const noexcept = 0;
   [[nodiscard]] virtual bool isMuted() const noexcept = 0;
   [[nodiscard]] virtual bool isPlaying() const noexcept = 0;

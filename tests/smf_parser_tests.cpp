@@ -2,6 +2,7 @@
 // Copyright (C) 2026 OpenHDK contributors
 #include "audio/AudioBackend.hpp"
 #include "audio/MidiChannelDiagnostics.hpp"
+#include "audio/MidiRuntimeMixer.hpp"
 #include "audio/SmfParser.hpp"
 #include "audio/SmfTrackEventDecoder.hpp"
 #include "audio/SmfTimelineCompiler.hpp"
@@ -118,6 +119,25 @@ int main() {
     auto invalidChannelGains = defaultChannelGains;
     invalidChannelGains[9] = std::numeric_limits<float>::quiet_NaN();
     if (OpenHDK::areNormalizedMidiChannelGains(invalidChannelGains)) return 95;
+    OpenHDK::MidiRuntimeMixer runtimeMixer;
+    const auto defaultMixer = runtimeMixer.snapshot();
+    if (defaultMixer.revision != 0U || defaultMixer.outputGain(0U) != 1.0F
+        || defaultMixer.outputGain(OpenHDK::kMidiChannelCount) != 0.0F
+        || !runtimeMixer.isDefault()) return 102;
+    if (!runtimeMixer.setGain(9U, 0.5F) || !runtimeMixer.setMuted(1U, true)
+        || !runtimeMixer.setSoloed(9U, true) || runtimeMixer.setGain(16U, 0.5F)
+        || runtimeMixer.setGain(0U, std::numeric_limits<float>::infinity())
+        || runtimeMixer.setMuted(16U, true) || runtimeMixer.setSoloed(16U, true)) return 103;
+    const auto soloedMixer = runtimeMixer.snapshot();
+    if (soloedMixer.revision != 3U || soloedMixer.outputGain(1U) != 0.0F
+        || soloedMixer.outputGain(8U) != 0.0F || soloedMixer.outputGain(9U) != 0.5F
+        || OpenHDK::applyMidiChannelGain(110U, soloedMixer.outputGain(9U)) != 55U
+        || runtimeMixer.isDefault()) return 104;
+    if (!runtimeMixer.setSoloed(9U, false) || !runtimeMixer.setMuted(1U, false)
+        || !runtimeMixer.setGain(9U, 1.0F) || !runtimeMixer.isDefault()) return 105;
+    if (!runtimeMixer.setGain(9U, 0.5F)) return 106;
+    runtimeMixer.reset();
+    if (!runtimeMixer.isDefault()) return 107;
 
     constexpr std::array<std::uint8_t, 26> format0{
         'M','T','h','d', 0,0,0,6, 0,0, 0,1, 0,96,

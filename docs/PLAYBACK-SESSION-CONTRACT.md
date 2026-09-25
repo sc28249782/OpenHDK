@@ -62,8 +62,11 @@ The callback-visible active flag is lock-free atomic; session mutation remains
 confined to the stopped-device control path or the callback itself. Each
 callback block selects due events, dispatches them to a private
 FluidSynth-backed sink at their clamped frame offsets, and renders the PCM
-segments between those offsets. The callback performs no parsing, allocation,
-file I/O, locks, or UI work.
+segments between those offsets. Before selecting events, it may apply a
+published `MidiRuntimeMixer` snapshot. Runtime gain, mute, and solo changes
+therefore take effect at the next render-block boundary, retain the SMF's CC7
+automation, and do not call FluidSynth from the control thread. The callback
+performs no parsing, allocation, file I/O, locks, or UI work.
 
 The adapter does not invent a release-tail duration. After it renders the block
 that reaches the end of the timeline, it explicitly calls

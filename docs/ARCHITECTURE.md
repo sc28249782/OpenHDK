@@ -62,8 +62,13 @@ then sends the resulting CC7 value to FluidSynth. Therefore a trim preserves
 the volume automation in an SMF instead of replacing it. Reset All Controllers
 (CC121) restores the GM default CC7 value before that same gain is applied.
 This table is prepared before playback; changing channel gains while a device
-callback is running is intentionally deferred to a later, synchronization-safe
-mixer API.
+callback is running uses `MidiRuntimeMixer`. The control path publishes
+lock-free atomic gain, mute, and solo state; the callback observes that state
+only at a render-block boundary and issues the corresponding CC7 changes from
+its private FluidSynth sink. This preserves source CC7 automation and never
+calls FluidSynth from the control thread. Its API uses zero-based channel
+indices 0–15; the CLI's existing `--channel-volume` remains one-based 1–16.
+`resetRuntimeMixer()` clears all runtime gains, mutes, and solos.
 The legacy file-player path is not permitted to run alongside compiled-timeline
 playback on the same synth.
 

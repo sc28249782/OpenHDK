@@ -20,9 +20,11 @@ Inspect a supported SMF format 0 or 1 file without a SoundFont or audio device:
 
 The deterministic report always lists user-facing MIDI channels 1–16 with
 nonzero-velocity note-on counts, distinct observed program numbers (shown as
-1–128), and the final observed CC7 value (0–127). Missing program or CC7 data
-is printed as `unavailable`. Diagnostics is a standalone, read-only mode and
-cannot be combined with playback or device options.
+1–128), and controller-state history for CC7/CC11. It reports optional
+CC39/CC43 14-bit pairs, CC121 resets, and OpenHDK's effective CC7 state after
+a reset. Missing controller data is printed as `unavailable`. Diagnostics is a
+standalone, read-only mode and cannot be combined with playback or device
+options.
 
 ## Principles
 

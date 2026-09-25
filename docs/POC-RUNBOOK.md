@@ -45,6 +45,10 @@ shown (using the conventional 1–16 numbering; channel 10 is percussion). It
 multiplies the SMF's CC7 channel volume, including the default CC7 value of
 100, without changing the MIDI file or SoundFont. It applies only to compiled
 timeline playback; master `--volume` remains a separate final output gain.
+The backend also exposes a zero-based 0–15 runtime API for channel gain, mute,
+and solo. It is intentionally not a CLI option or UI yet; a caller publishes
+state from its control thread and the audio callback applies it at the next
+render-block boundary. `resetRuntimeMixer()` clears all of that runtime state.
 This PoC has no implicit or bundled SoundFont fallback: a missing or unloadable
 configured SoundFont returns a structured recoverable error. This PoC
 does not add Qt, KAR/NCN, HNK/HNK3, MIDI hardware, VST/VST3, or any BASS API.

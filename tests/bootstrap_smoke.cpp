@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <array>
 #include <chrono>
+#include <cmath>
 #include <filesystem>
 #include <fstream>
 #include <limits>
@@ -73,16 +74,39 @@ int main() {
       || backend.setVolume(std::numeric_limits<float>::quiet_NaN(), status)
       || backend.setVolume(std::numeric_limits<float>::infinity(), status)
       || backend.setVolume(-std::numeric_limits<float>::infinity(), status)) return 9;
+  if (!backend.setRuntimeChannelGain(0U, 0.5F, status)
+      || !backend.setRuntimeChannelMuted(0U, false, status)
+      || !backend.setRuntimeChannelSoloed(0U, true, status)
+      || !backend.setRuntimeChannelSoloed(0U, false, status)
+      || backend.setRuntimeChannelGain(16U, 0.5F, status)
+      || backend.setRuntimeChannelGain(0U, std::numeric_limits<float>::infinity(), status)
+      || backend.setRuntimeChannelMuted(16U, true, status)
+      || backend.setRuntimeChannelSoloed(16U, true, status)) return 23;
   if (!backend.playCompiledTimeline(*compiledTimeline.timeline(), status) || !backend.isPlaying()) return 18;
   if (backend.playMidiFile(midi, status) || status.error != OpenHDK::AudioBackendError::MidiPlaybackFailed) return 19;
   std::array<float, 256> compiledPcm{};
+  if (!backend.setRuntimeChannelMuted(0U, true, status)) return 24;
+  if (!backend.renderStereo(compiledPcm, status)) return 27;
+  constexpr float runtimeMuteSilenceThreshold = 1.0e-6F;
+  if (std::any_of(compiledPcm.begin(), compiledPcm.end(), [runtimeMuteSilenceThreshold](float sample) {
+        return std::abs(sample) > runtimeMuteSilenceThreshold;
+      })) return 28;
+  if (!backend.setRuntimeChannelMuted(0U, false, status)) return 29;
+  for (std::size_t block = 0U; block < 1024U && backend.isPlaying(); ++block) {
+    if (!backend.renderStereo(compiledPcm, status)) return 20;
+  }
+  if (backend.isPlaying()) return 21;
+  if (!backend.playCompiledTimeline(*compiledTimeline.timeline(), status) || !backend.isPlaying()) return 30;
   bool compiledHeard{};
   for (std::size_t block = 0U; block < 1024U && backend.isPlaying(); ++block) {
     if (!backend.renderStereo(compiledPcm, status)) return 20;
     compiledHeard = compiledHeard || std::any_of(compiledPcm.begin(), compiledPcm.end(), [](float x) { return x > 0.0001F || x < -0.0001F; });
   }
   if (backend.isPlaying() || !compiledHeard) return 21;
+  if (!backend.resetRuntimeMixer(status)) return 26;
   if (!backend.playMidiFile(midi, status)) return 4;
+  if (backend.setRuntimeChannelMuted(0U, true, status)
+      || status.error != OpenHDK::AudioBackendError::MidiPlaybackFailed) return 25;
   std::this_thread::sleep_for(std::chrono::milliseconds(25));
   std::vector<float> pcm(4096U);
   if (!backend.renderStereo(pcm, status)) return 5;

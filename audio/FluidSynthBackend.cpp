@@ -18,9 +18,14 @@ void ok(AudioBackendStatus& s) { s = {}; }
 void fail(AudioBackendStatus& s, AudioBackendError e, std::string text) { s.error = e; s.message = std::move(text); }
 class FluidSynthMidiCommandSink final : public MidiCommandSink {
 public:
-  FluidSynthMidiCommandSink(fluid_synth_t* synth, MidiChannelGains channelGains)
-      : synth_(synth), channelGains_(std::move(channelGains)) {
+  FluidSynthMidiCommandSink(fluid_synth_t* synth, MidiChannelGains channelGains,
+                            const MidiRuntimeMixer* runtimeMixer)
+      : synth_(synth), channelGains_(std::move(channelGains)), runtimeMixer_(runtimeMixer) {
     sourceVolumes_.fill(kMidiDefaultChannelVolume);
+    if (runtimeMixer_ != nullptr) {
+      mixerSnapshot_ = runtimeMixer_->snapshot();
+      mixerRevision_ = mixerSnapshot_.revision;
+    }
   }
   void resetChannelVolumes() {
     sourceVolumes_.fill(kMidiDefaultChannelVolume);
@@ -28,7 +33,23 @@ public:
       sendScaledChannelVolume(static_cast<std::uint8_t>(channel));
     }
   }
-  void noteOn(std::uint8_t channel, std::uint8_t note, std::uint8_t velocity) override { fluid_synth_noteon(synth_, channel, note, velocity); }
+  void synchronizeRuntimeMixer() {
+    if (runtimeMixer_ == nullptr || runtimeMixer_->revision() == mixerRevision_) return;
+    const auto previousSnapshot = mixerSnapshot_;
+    mixerSnapshot_ = runtimeMixer_->snapshot();
+    mixerRevision_ = mixerSnapshot_.revision;
+    for (std::size_t channel = 0U; channel < kMidiChannelCount; ++channel) {
+      if (previousSnapshot.outputGain(channel) != 0.0F
+          && mixerSnapshot_.outputGain(channel) == 0.0F) {
+        fluid_synth_cc(synth_, static_cast<int>(channel), 120, 0);
+      }
+      sendScaledChannelVolume(static_cast<std::uint8_t>(channel));
+    }
+  }
+  void noteOn(std::uint8_t channel, std::uint8_t note, std::uint8_t velocity) override {
+    if (mixerSnapshot_.outputGain(channel) == 0.0F) return;
+    fluid_synth_noteon(synth_, channel, note, velocity);
+  }
   void noteOff(std::uint8_t channel, std::uint8_t note, std::uint8_t) override { fluid_synth_noteoff(synth_, channel, note); }
   void controller(std::uint8_t channel, std::uint8_t controller, std::uint8_t value) override {
     if (controller == kMidiChannelVolumeController) {
@@ -46,16 +67,20 @@ public:
   void pitchBend(std::uint8_t channel, std::uint16_t value) override { fluid_synth_pitch_bend(synth_, channel, value); }
 private:
   void sendScaledChannelVolume(std::uint8_t channel) {
+    const auto gain = channelGains_[channel] * mixerSnapshot_.outputGain(channel);
     fluid_synth_cc(synth_, channel, kMidiChannelVolumeController,
-                   applyMidiChannelGain(sourceVolumes_[channel], channelGains_[channel]));
+                   applyMidiChannelGain(sourceVolumes_[channel], gain));
   }
   fluid_synth_t* synth_;
   MidiChannelGains channelGains_;
+  const MidiRuntimeMixer* runtimeMixer_;
+  MidiRuntimeMixerSnapshot mixerSnapshot_{};
+  std::uint32_t mixerRevision_{};
   std::array<std::uint8_t, kMidiChannelCount> sourceVolumes_{};
 };
 }
 struct FluidSynthBackend::Impl {
-  fluid_settings_t* settings{}; fluid_synth_t* synth{}; fluid_player_t* player{}; ma_context context{}; ma_device device{}; PlaybackSession session{}; std::unique_ptr<FluidSynthMidiCommandSink> midiSink{}; MidiChannelGains channelGains{defaultMidiChannelGains()}; float volume{1.0F}; std::uint32_t sampleRate{}; bool muted{}; std::atomic<bool> sessionActive{false}; bool contextInitialized{}; bool deviceInitialized{}; bool initialized{};
+  fluid_settings_t* settings{}; fluid_synth_t* synth{}; fluid_player_t* player{}; ma_context context{}; ma_device device{}; PlaybackSession session{}; std::unique_ptr<FluidSynthMidiCommandSink> midiSink{}; MidiRuntimeMixer runtimeMixer{}; MidiChannelGains channelGains{defaultMidiChannelGains()}; float volume{1.0F}; std::uint32_t sampleRate{}; bool muted{}; std::atomic<bool> sessionActive{false}; bool contextInitialized{}; bool deviceInitialized{}; bool initialized{};
   void silenceActiveSounds() {
     if (synth == nullptr) return;
     for (int channel = 0; channel < 16; ++channel) {
@@ -100,6 +125,7 @@ struct FluidSynthBackend::Impl {
   bool renderFrames(float* samples, std::size_t frames) {
     if (synth == nullptr) return false;
     if (sessionActive.load(std::memory_order_acquire)) {
+      midiSink->synchronizeRuntimeMixer();
       const auto renderResult = session.render(frames);
       if (!renderResult.succeeded()) {
         discardSession();
@@ -155,7 +181,7 @@ struct FluidSynthBackend::Impl {
 };
 FluidSynthBackend::FluidSynthBackend() : impl_(std::make_unique<Impl>()) {}
 FluidSynthBackend::~FluidSynthBackend() { shutdown(); }
-AudioBackendInfo FluidSynthBackend::info() const noexcept { return {"fluidsynth-miniaudio", "FluidSynth + miniaudio", AudioCapability::MidiSynthesis | AudioCapability::DeviceOutput}; }
+AudioBackendInfo FluidSynthBackend::info() const noexcept { return {"fluidsynth-miniaudio", "FluidSynth + miniaudio", AudioCapability::MidiSynthesis | AudioCapability::DeviceOutput | AudioCapability::Mixing}; }
 bool FluidSynthBackend::initialize(const AudioBackendConfig& config, AudioBackendStatus& status) {
   shutdown();
   if (config.sampleRate == 0U) { fail(status, AudioBackendError::InvalidConfiguration, "Sample rate must be greater than zero."); return false; }
@@ -166,10 +192,10 @@ bool FluidSynthBackend::initialize(const AudioBackendConfig& config, AudioBacken
   fluid_settings_setnum(impl_->settings, "synth.sample-rate", static_cast<double>(config.sampleRate));
   impl_->synth = new_fluid_synth(impl_->settings);
   if (impl_->synth == nullptr) { shutdown(); fail(status, AudioBackendError::InvalidConfiguration, "FluidSynth could not create a synthesizer."); return false; }
-  impl_->channelGains = config.channelGains; impl_->volume = config.volume; impl_->sampleRate = config.sampleRate; impl_->muted = config.muted;
+  impl_->channelGains = config.channelGains; impl_->runtimeMixer.reset(); impl_->volume = config.volume; impl_->sampleRate = config.sampleRate; impl_->muted = config.muted;
   fluid_synth_set_gain(impl_->synth, config.muted ? 0.0 : static_cast<double>(config.volume));
   if (fluid_synth_sfload(impl_->synth, config.soundFontPath.string().c_str(), 1) == FLUID_FAILED) { shutdown(); fail(status, AudioBackendError::SoundFontLoadFailed, "FluidSynth could not load SoundFont: " + config.soundFontPath.string()); return false; }
-  impl_->midiSink = std::make_unique<FluidSynthMidiCommandSink>(impl_->synth, impl_->channelGains);
+  impl_->midiSink = std::make_unique<FluidSynthMidiCommandSink>(impl_->synth, impl_->channelGains, &impl_->runtimeMixer);
   impl_->midiSink->resetChannelVolumes();
   if (config.enableDeviceOutput) {
     const auto contextResult = ma_context_init(nullptr, 0, nullptr, &impl_->context);
@@ -195,7 +221,7 @@ bool FluidSynthBackend::initialize(const AudioBackendConfig& config, AudioBacken
 bool FluidSynthBackend::playMidiFile(const std::filesystem::path& midi, AudioBackendStatus& status) {
   if (!impl_->initialized || impl_->synth == nullptr) { fail(status, AudioBackendError::InvalidConfiguration, "Initialize the audio backend before MIDI playback."); return false; }
   if (impl_->sessionActive.load(std::memory_order_acquire)) { fail(status, AudioBackendError::MidiPlaybackFailed, "Compiled timeline playback is active."); return false; }
-  if (impl_->channelGains != defaultMidiChannelGains()) { fail(status, AudioBackendError::MidiPlaybackFailed, "MIDI channel gains require compiled timeline playback."); return false; }
+  if (impl_->channelGains != defaultMidiChannelGains() || !impl_->runtimeMixer.isDefault()) { fail(status, AudioBackendError::MidiPlaybackFailed, "MIDI channel mixing requires compiled timeline playback."); return false; }
   if (!std::filesystem::is_regular_file(midi)) { fail(status, AudioBackendError::MidiFileNotFound, "MIDI file was not found: " + midi.string()); return false; }
   if (impl_->player != nullptr) { delete_fluid_player(impl_->player); impl_->player = nullptr; }
   impl_->player = new_fluid_player(impl_->synth);
@@ -240,6 +266,29 @@ bool FluidSynthBackend::setVolume(float value, AudioBackendStatus& status) {
 bool FluidSynthBackend::setMuted(bool value, AudioBackendStatus& status) {
   if (!impl_->initialized || impl_->synth == nullptr) { fail(status, AudioBackendError::InvalidConfiguration, "Initialize the audio backend before changing mute state."); return false; }
   impl_->muted = value; fluid_synth_set_gain(impl_->synth, value ? 0.0 : static_cast<double>(impl_->volume)); ok(status); return true;
+}
+bool FluidSynthBackend::setRuntimeChannelGain(std::size_t channel, float gain, AudioBackendStatus& status) {
+  if (!impl_->initialized || impl_->synth == nullptr) { fail(status, AudioBackendError::InvalidConfiguration, "Initialize the audio backend before changing MIDI channel mixing."); return false; }
+  if (impl_->player != nullptr) { fail(status, AudioBackendError::MidiPlaybackFailed, "Runtime MIDI channel mixing requires compiled timeline playback."); return false; }
+  if (!impl_->runtimeMixer.setGain(channel, gain)) { fail(status, AudioBackendError::InvalidConfiguration, "MIDI channel gain requires a channel from 0 to 15 and a finite value from 0.0 to 1.0."); return false; }
+  ok(status); return true;
+}
+bool FluidSynthBackend::setRuntimeChannelMuted(std::size_t channel, bool muted, AudioBackendStatus& status) {
+  if (!impl_->initialized || impl_->synth == nullptr) { fail(status, AudioBackendError::InvalidConfiguration, "Initialize the audio backend before changing MIDI channel mixing."); return false; }
+  if (impl_->player != nullptr) { fail(status, AudioBackendError::MidiPlaybackFailed, "Runtime MIDI channel mixing requires compiled timeline playback."); return false; }
+  if (!impl_->runtimeMixer.setMuted(channel, muted)) { fail(status, AudioBackendError::InvalidConfiguration, "MIDI channel index must be from 0 to 15."); return false; }
+  ok(status); return true;
+}
+bool FluidSynthBackend::setRuntimeChannelSoloed(std::size_t channel, bool soloed, AudioBackendStatus& status) {
+  if (!impl_->initialized || impl_->synth == nullptr) { fail(status, AudioBackendError::InvalidConfiguration, "Initialize the audio backend before changing MIDI channel mixing."); return false; }
+  if (impl_->player != nullptr) { fail(status, AudioBackendError::MidiPlaybackFailed, "Runtime MIDI channel mixing requires compiled timeline playback."); return false; }
+  if (!impl_->runtimeMixer.setSoloed(channel, soloed)) { fail(status, AudioBackendError::InvalidConfiguration, "MIDI channel index must be from 0 to 15."); return false; }
+  ok(status); return true;
+}
+bool FluidSynthBackend::resetRuntimeMixer(AudioBackendStatus& status) {
+  if (!impl_->initialized || impl_->synth == nullptr) { fail(status, AudioBackendError::InvalidConfiguration, "Initialize the audio backend before changing MIDI channel mixing."); return false; }
+  impl_->runtimeMixer.reset();
+  ok(status); return true;
 }
 float FluidSynthBackend::volume() const noexcept { return impl_->volume; }
 bool FluidSynthBackend::isMuted() const noexcept { return impl_->muted; }
