@@ -28,7 +28,7 @@ complete user-facing playback.
 - miniaudio — device output and mixing
 - SoundTouch or Rubber Band — later tempo/pitch processing
 
-See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), [docs/ROADMAP.md](docs/ROADMAP.md), and [docs/DEPENDENCY-POLICY.md](docs/DEPENDENCY-POLICY.md).
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), [docs/ROADMAP.md](docs/ROADMAP.md), [docs/DEPENDENCY-POLICY.md](docs/DEPENDENCY-POLICY.md), [docs/WRITING-STYLE.md](docs/WRITING-STYLE.md), and [docs/GLOSSARY.md](docs/GLOSSARY.md).
 
 ## Build the proof of concept
 
