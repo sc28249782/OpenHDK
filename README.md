@@ -71,6 +71,11 @@ ctest --test-dir build-parser --output-on-failure
 The POC command uses vcpkg's checked-in `vcpkg-configuration.json`, including
 its pinned registry baseline, to resolve FluidSynth reproducibly.
 
+## Specification
+
+The normative contract for this implemented playback baseline is
+[docs/SPECIFICATION.md](docs/SPECIFICATION.md).
+
 ## License
 
 OpenHDK is licensed under GPL-3.0-or-later. See [LICENSE](LICENSE).

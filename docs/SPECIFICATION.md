@@ -1,0 +1,212 @@
+# OpenHDK System Specification
+
+**Specification ID:** OHK-SPEC
+**Status:** Normative draft
+**Baseline:** `feat/fluidsynth-session-bridge` through `813a111`
+**Scope:** implemented deterministic SMF and FluidSynth/miniaudio playback foundation
+
+This document specifies the behavior that OpenHDK currently guarantees. It is
+not a specification for a complete karaoke product. A feature listed as
+deferred or out of scope is not available merely because a related legacy
+application provided it.
+
+The key words **MUST**, **MUST NOT**, **SHOULD**, **SHOULD NOT**, and **MAY**
+are normative.
+
+## 1. Product identity and scope
+
+OpenHDK is an independent GPL-3.0-or-later modernization project for Windows
+karaoke playback. It is not a renamed HandyKaraoke release and MUST NOT import
+or depend on BASS, BASS FX, BASSMIDI, BASSmix, BASS_VST, or related BASS
+artifacts.
+
+The baseline implements these layers:
+
+1. bounded canonical Standard MIDI File (SMF) parsing;
+2. deterministic event decoding and timeline compilation;
+3. frame-derived playback-session timing;
+4. ordered MIDI-command dispatch;
+5. FluidSynth SoundFont synthesis and miniaudio device or headless PCM output;
+6. read-only MIDI channel diagnostics; and
+7. launch-time and runtime-safe per-channel mixing controls.
+
+KAR and NCN parsing, lyric display, song database/library management, Qt UI,
+physical MIDI I/O, VST/VST3 hosting, HNK/HNK3 compatibility, and packaged
+end-user karaoke workflows are outside this baseline.
+
+## 2. Architectural boundaries
+
+```text
+SMF bytes
+  -> SmfParser
+  -> SmfTrackEventDecoder
+  -> SmfTimelineCompiler
+  -> PlaybackSession
+  -> SmfMidiEventDispatcher
+  -> MidiCommandSink
+  -> FluidSynthBackend
+  -> miniaudio device callback or headless PCM render
+```
+
+Each stage MUST have one responsibility. Parsing, timeline ordering, session
+timing, MIDI dispatch, synthesis, and device output MUST NOT be conflated.
+`AudioBackend` is the boundary between application control code and an audio
+implementation. Backend-specific types MUST NOT leak through its public
+contract.
+
+The legacy FluidSynth file-player path is retained only for isolated backend
+compatibility tests. It MUST NOT drive the same synthesizer concurrently with
+compiled-timeline playback.
+
+## 3. SMF input contract
+
+OpenHDK MUST accept only canonical, bounded SMF formats 0 and 1 with PPQN time
+division. It MUST reject SMPTE time division, malformed or truncated chunks,
+invalid header lengths, invalid track structure, missing End-of-Track events,
+overflowing lengths or time values, and trailing data after the canonical file
+end.
+
+Input parsing MUST own the accepted bytes or otherwise retain valid storage for
+the lifetime of parsed data. It MUST report a structured error code, byte
+offset, and safe diagnostic message; malformed input MUST NOT cause undefined
+behavior or an unbounded allocation.
+
+The decoder MUST preserve deterministic source order. It recognizes channel
+events, tempo meta-events, ordinary meta-events, SysEx, and End-of-Track. The
+dispatcher currently emits only note-on/off, controller, program-change, and
+pitch-bend commands. A note-on with velocity zero MUST be emitted as note-off.
+Polyphonic key pressure and channel pressure are decoded but deliberately
+ignored by the current dispatch contract.
+
+## 4. Timeline and playback-session contract
+
+Timeline compilation MUST order events by absolute tick, then source track
+index, then source event index. Tempo conversion MUST use checked arithmetic
+and carry fractional microseconds so the result does not depend on how a
+timeline is segmented. Tempo value zero is invalid.
+
+`PlaybackSession` accepts an already compiled immutable timeline and a nonzero
+sample rate. It MUST measure media time from rendered frame count, never from
+wall-clock time. Fractional frame-time remainder MUST carry across render calls
+so equivalent total frame counts produce equivalent media time regardless of
+audio block size.
+
+During Playing, each render block covers an inclusive time interval and returns
+each due event exactly once in compiled order. A Paused block returns no events
+and does not advance media time. Completion is explicit: after the last event,
+the renderer decides when a synthesis release tail is complete and then marks
+the session finished. The current FluidSynth adapter completes immediately
+after the final event block; it does not invent a release-tail duration.
+
+## 5. Audio rendering and device lifecycle
+
+Before compiled playback replaces a session, `FluidSynthBackend` MUST stop an
+initialized miniaudio device. It MUST publish a prepared playback session
+before starting the device. If preparation, session start, or device restart
+fails after a successful device stop, the backend MUST make a best-effort
+device restart before returning its recoverable error.
+
+When a legacy FluidSynth player exists but is no longer playing, compiled
+playback MUST release that player before it prepares a new session. If the
+legacy player is still playing, compiled playback MUST fail rather than allow
+two playback authorities to control one synth.
+
+The callback renders PCM segments up to each due event's frame offset,
+dispatches the event, and then renders the following segment. It MUST use
+integer frame accounting for event placement. It MUST NOT parse files,
+allocate, lock, log, perform file I/O, or perform UI work.
+
+Headless operation (`--no-device`) MUST render PCM without creating an output
+device. Audio device enumeration and selected-device validation MUST be
+non-invasive: listing devices does not begin playback.
+
+## 6. MIDI volume and runtime mixer contract
+
+Master output volume is normalized from the CLI range 0 through 100. The
+backend MUST reject non-finite values and values outside the normalized range.
+Mute forces master output to zero without changing the configured volume.
+
+Each MIDI channel has a source CC7 value and a channel gain. Launch-time
+`--channel-volume <1-16>:<0-100>` supplies a gain table; repeated entries for a
+channel use the last supplied value. The output CC7 is derived from source CC7
+and the configured gain. Therefore a channel trim MUST preserve SMF CC7
+automation instead of replacing it. CC121 (Reset All Controllers) restores the
+GM-default source CC7 before the gain is applied.
+
+Runtime channel gain, mute, solo, reset, and revision state MUST cross from a
+control path into the callback through lock-free atomic state. The callback
+MUST NOT call FluidSynth from a control thread or wait for a control lock.
+Torn observations across channels MAY be corrected on the next callback block;
+they MUST NOT cause a permanent stale mixer state.
+
+When mute or solo makes a channel's effective gain zero, the renderer sends
+CC120 (All Sound Off) to stop voices already sounding on that channel.
+Unmuting or removing solo does not reconstruct those killed voices; it affects
+subsequent note-on events.
+
+The interactive runtime mixer console provides `mute`, `unmute`, `solo`,
+`unsolo`, `gain`, `reset`, and `quit` commands for a one-based channel number.
+Invalid commands or values MUST fail safely without changing mixer state.
+
+## 7. Command-line contract
+
+The application provides these modes:
+
+| Mode | Required behavior |
+| --- | --- |
+| `--list-devices` | List available playback devices and exit without playback. |
+| `--midi-diagnostics <file.mid>` | Parse the file and report read-only per-channel observations without requiring a SoundFont or audio device. |
+| `--midi <file.mid> --soundfont <file.sf2>` | Parse, compile, initialize, and play the SMF timeline. |
+
+Playback accepts optional `--device <index>`, `--volume <0-100>`, repeated
+`--channel-volume <1-16>:<0-100>`, `--mute`, and `--no-device` arguments.
+`--device` and `--no-device` are mutually exclusive. Unknown, incomplete, or
+invalid CLI input MUST report usage and return a nonzero usage error. A
+backend, SMF, SoundFont, or audio-device failure MUST report a safe diagnostic
+and return nonzero.
+
+`--midi-diagnostics` reports SMF format and track count, then each channel's
+note-on count, observed programs, CC7 and CC11 history, optional CC39/CC43
+14-bit pairs, effective CC7 after CC121, and controller-reset observations.
+Diagnostics are observational; they MUST NOT modify playback state or create a
+synthesizer/device.
+
+## 8. Error, resource, and concurrency rules
+
+Recoverable failures MUST be represented through `AudioBackendStatus` or the
+SMF parser/compiler error model. Public code MUST NOT depend on raw FluidSynth,
+miniaudio, filesystem, or exception messages as its error contract.
+
+All backend resources MUST have deterministic shutdown order. Stopping or
+replacing a playback session MUST clear callback-visible session activity before
+its dependent synthesizer/device resources are released. A failed operation
+MUST leave the backend reusable or return a structured error that requires a
+documented reinitialization step.
+
+Control-path mutation is permitted only when its callback-visible handoff is
+defined. The audio callback is a real-time boundary and takes precedence over
+convenience code.
+
+## 9. Verification and acceptance
+
+Every change that affects this specification MUST update the relevant test and
+documentation in the same change set. At minimum, the Windows CMake/Ninja
+build and CTest suite MUST pass. The baseline suite covers parser fixtures,
+diagnostics CLI success and error cases, runtime mixer console behavior,
+FluidSynth headless playback, CLI help, and bootstrap audio behavior.
+
+Manual validation with a user-supplied MIDI and SoundFont remains required for
+audible balance changes and audio-device behavior. Such assets MUST NOT be
+committed unless their redistribution rights are verified.
+
+## 10. Deferred work and change control
+
+The following require separate designs and acceptance before they may be
+claimed as supported: velocity curves, master limiter, karaoke lyrics and
+timelines, song library/database, UI, physical MIDI, external effects/plugins,
+cross-platform guarantees, and any permissive parser compatibility mode.
+
+Changes to parser strictness, event ordering, time conversion, session
+completion, callback rules, channel-volume semantics, or CLI argument behavior
+are compatibility changes. They MUST update this document, regression tests,
+and release notes together.
