@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 OpenHDK contributors
+#include "TestCheck.hpp"
 #include "app/RuntimeMixerConsole.hpp"
 
 #include <sstream>
@@ -50,24 +51,24 @@ int main() {
   ConsoleBackend backend;
   std::ostringstream output;
   std::ostringstream error;
-  if (run("gain 10 50", backend, output, error) != OpenHDK::RuntimeMixerConsoleResult::Continue
-      || backend.gainCalls != 1 || backend.lastChannel != 9U || backend.lastGain != 0.5F) return 1;
-  if (run("mute 10", backend, output, error) != OpenHDK::RuntimeMixerConsoleResult::Continue
-      || backend.muteCalls != 1 || backend.lastChannel != 9U || !backend.lastEnabled) return 2;
-  if (run("unmute 10", backend, output, error) != OpenHDK::RuntimeMixerConsoleResult::Continue
-      || backend.muteCalls != 2 || backend.lastEnabled) return 3;
-  if (run("solo 10", backend, output, error) != OpenHDK::RuntimeMixerConsoleResult::Continue
-      || backend.soloCalls != 1 || !backend.lastEnabled) return 4;
-  if (run("unsolo 10", backend, output, error) != OpenHDK::RuntimeMixerConsoleResult::Continue
-      || backend.soloCalls != 2 || backend.lastEnabled) return 5;
-  if (run("reset", backend, output, error) != OpenHDK::RuntimeMixerConsoleResult::Continue
-      || backend.resetCalls != 1) return 6;
-  if (run("gain 17 50", backend, output, error) != OpenHDK::RuntimeMixerConsoleResult::Continue
-      || backend.gainCalls != 1 || error.str().find("Channel must be") == std::string::npos) return 7;
-  if (run("gain 10 101", backend, output, error) != OpenHDK::RuntimeMixerConsoleResult::Continue
-      || backend.gainCalls != 1 || error.str().find("Gain must be") == std::string::npos) return 8;
-  if (run("help", backend, output, error) != OpenHDK::RuntimeMixerConsoleResult::Continue
-      || output.str().find("Mixer commands:") == std::string::npos) return 9;
-  if (run("quit", backend, output, error) != OpenHDK::RuntimeMixerConsoleResult::Quit) return 10;
+  OPENHDK_FAIL_IF(1, run("gain 10 50", backend, output, error) != OpenHDK::RuntimeMixerConsoleResult::Continue
+      || backend.gainCalls != 1 || backend.lastChannel != 9U || backend.lastGain != 0.5F);
+  OPENHDK_FAIL_IF(2, run("mute 10", backend, output, error) != OpenHDK::RuntimeMixerConsoleResult::Continue
+      || backend.muteCalls != 1 || backend.lastChannel != 9U || !backend.lastEnabled);
+  OPENHDK_FAIL_IF(3, run("unmute 10", backend, output, error) != OpenHDK::RuntimeMixerConsoleResult::Continue
+      || backend.muteCalls != 2 || backend.lastEnabled);
+  OPENHDK_FAIL_IF(4, run("solo 10", backend, output, error) != OpenHDK::RuntimeMixerConsoleResult::Continue
+      || backend.soloCalls != 1 || !backend.lastEnabled);
+  OPENHDK_FAIL_IF(5, run("unsolo 10", backend, output, error) != OpenHDK::RuntimeMixerConsoleResult::Continue
+      || backend.soloCalls != 2 || backend.lastEnabled);
+  OPENHDK_FAIL_IF(6, run("reset", backend, output, error) != OpenHDK::RuntimeMixerConsoleResult::Continue
+      || backend.resetCalls != 1);
+  OPENHDK_FAIL_IF(7, run("gain 17 50", backend, output, error) != OpenHDK::RuntimeMixerConsoleResult::Continue
+      || backend.gainCalls != 1 || error.str().find("Channel must be") == std::string::npos);
+  OPENHDK_FAIL_IF(8, run("gain 10 101", backend, output, error) != OpenHDK::RuntimeMixerConsoleResult::Continue
+      || backend.gainCalls != 1 || error.str().find("Gain must be") == std::string::npos);
+  OPENHDK_FAIL_IF(9, run("help", backend, output, error) != OpenHDK::RuntimeMixerConsoleResult::Continue
+      || output.str().find("Mixer commands:") == std::string::npos);
+  OPENHDK_FAIL_IF(10, run("quit", backend, output, error) != OpenHDK::RuntimeMixerConsoleResult::Quit);
   return 0;
 }

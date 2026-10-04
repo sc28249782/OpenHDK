@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 OpenHDK contributors
+#include "TestCheck.hpp"
 #include "audio/AudioBackend.hpp"
 #include "audio/MidiChannelDiagnostics.hpp"
 #include "audio/MidiRuntimeMixer.hpp"
@@ -105,133 +106,133 @@ int main() {
     static_assert(!std::is_default_constructible_v<OpenHDK::SmfTrackDecodeResult>);
     static_assert(!std::is_default_constructible_v<OpenHDK::SmfTimeline>);
     static_assert(!std::is_default_constructible_v<OpenHDK::SmfTimelineCompileResult>);
-    if (OpenHDK::isNormalizedVolume(std::numeric_limits<float>::quiet_NaN())
+    OPENHDK_FAIL_IF(87, OpenHDK::isNormalizedVolume(std::numeric_limits<float>::quiet_NaN())
         || OpenHDK::isNormalizedVolume(std::numeric_limits<float>::infinity())
         || OpenHDK::isNormalizedVolume(-std::numeric_limits<float>::infinity())
         || !OpenHDK::isNormalizedVolume(0.0F) || !OpenHDK::isNormalizedVolume(1.0F)
-        || OpenHDK::isNormalizedVolume(-0.01F) || OpenHDK::isNormalizedVolume(1.01F)) return 87;
+        || OpenHDK::isNormalizedVolume(-0.01F) || OpenHDK::isNormalizedVolume(1.01F));
     const auto defaultChannelGains = OpenHDK::defaultMidiChannelGains();
-    if (!OpenHDK::areNormalizedMidiChannelGains(defaultChannelGains)
+    OPENHDK_FAIL_IF(94, !OpenHDK::areNormalizedMidiChannelGains(defaultChannelGains)
         || OpenHDK::applyMidiChannelGain(100U, 1.0F) != 100U
         || OpenHDK::applyMidiChannelGain(100U, 0.5F) != 50U
         || OpenHDK::applyMidiChannelGain(127U, 0.5F) != 64U
-        || OpenHDK::applyMidiChannelGain(127U, 0.0F) != 0U) return 94;
+        || OpenHDK::applyMidiChannelGain(127U, 0.0F) != 0U);
     auto invalidChannelGains = defaultChannelGains;
     invalidChannelGains[9] = std::numeric_limits<float>::quiet_NaN();
-    if (OpenHDK::areNormalizedMidiChannelGains(invalidChannelGains)) return 95;
+    OPENHDK_FAIL_IF(95, OpenHDK::areNormalizedMidiChannelGains(invalidChannelGains));
     OpenHDK::MidiRuntimeMixer runtimeMixer;
     const auto defaultMixer = runtimeMixer.snapshot();
-    if (defaultMixer.revision != 0U || defaultMixer.outputGain(0U) != 1.0F
+    OPENHDK_FAIL_IF(102, defaultMixer.revision != 0U || defaultMixer.outputGain(0U) != 1.0F
         || defaultMixer.outputGain(OpenHDK::kMidiChannelCount) != 0.0F
-        || !runtimeMixer.isDefault()) return 102;
-    if (!runtimeMixer.setGain(9U, 0.5F) || !runtimeMixer.setMuted(1U, true)
+        || !runtimeMixer.isDefault());
+    OPENHDK_FAIL_IF(103, !runtimeMixer.setGain(9U, 0.5F) || !runtimeMixer.setMuted(1U, true)
         || !runtimeMixer.setSoloed(9U, true) || runtimeMixer.setGain(16U, 0.5F)
         || runtimeMixer.setGain(0U, std::numeric_limits<float>::infinity())
-        || runtimeMixer.setMuted(16U, true) || runtimeMixer.setSoloed(16U, true)) return 103;
+        || runtimeMixer.setMuted(16U, true) || runtimeMixer.setSoloed(16U, true));
     const auto soloedMixer = runtimeMixer.snapshot();
-    if (soloedMixer.revision != 3U || soloedMixer.outputGain(1U) != 0.0F
+    OPENHDK_FAIL_IF(104, soloedMixer.revision != 3U || soloedMixer.outputGain(1U) != 0.0F
         || soloedMixer.outputGain(8U) != 0.0F || soloedMixer.outputGain(9U) != 0.5F
         || OpenHDK::applyMidiChannelGain(110U, soloedMixer.outputGain(9U)) != 55U
-        || runtimeMixer.isDefault()) return 104;
-    if (!runtimeMixer.setSoloed(9U, false) || !runtimeMixer.setMuted(1U, false)
-        || !runtimeMixer.setGain(9U, 1.0F) || !runtimeMixer.isDefault()) return 105;
-    if (!runtimeMixer.setGain(9U, 0.5F)) return 106;
+        || runtimeMixer.isDefault());
+    OPENHDK_FAIL_IF(105, !runtimeMixer.setSoloed(9U, false) || !runtimeMixer.setMuted(1U, false)
+        || !runtimeMixer.setGain(9U, 1.0F) || !runtimeMixer.isDefault());
+    OPENHDK_FAIL_IF(106, !runtimeMixer.setGain(9U, 0.5F));
     runtimeMixer.reset();
-    if (!runtimeMixer.isDefault()) return 107;
+    OPENHDK_FAIL_IF(107, !runtimeMixer.isDefault());
 
     constexpr std::array<std::uint8_t, 26> format0{
         'M','T','h','d', 0,0,0,6, 0,0, 0,1, 0,96,
         'M','T','r','k', 0,0,0,4, 0,0xff,0x2f,0};
-    if (!expectsSuccess(format0, 0U, 96U, 1U)) return 1;
+    OPENHDK_FAIL_IF(1, !expectsSuccess(format0, 0U, 96U, 1U));
     auto mutableFormat0 = format0;
     const auto ownedResult = OpenHDK::SmfParser::parse(mutableFormat0);
     mutableFormat0[22] = 0x7fU;
-    if (!ownedResult.file() || ownedResult.file()->tracks()[0].bytes()[0] != 0U) return 7;
+    OPENHDK_FAIL_IF(7, !ownedResult.file() || ownedResult.file()->tracks()[0].bytes()[0] != 0U);
     const auto decodedOwnedTrack = OpenHDK::SmfTrackEventDecoder::decode(ownedResult.file()->tracks()[0]);
-    if (!decodedOwnedTrack.succeeded() || !decodedOwnedTrack.events()
-        || decodedOwnedTrack.events()->events().size() != 1U) return 23;
+    OPENHDK_FAIL_IF(23, !decodedOwnedTrack.succeeded() || !decodedOwnedTrack.events()
+        || decodedOwnedTrack.events()->events().size() != 1U);
 
     constexpr std::array<std::uint8_t, 34> format1{
         'M','T','h','d', 0,0,0,6, 0,1, 0,2, 1,0xe0,
         'M','T','r','k', 0,0,0,2, 0,0xff,
         'M','T','r','k', 0,0,0,2, 0,0xff};
-    if (!expectsSuccess(format1, 1U, 480U, 2U)) return 2;
+    OPENHDK_FAIL_IF(2, !expectsSuccess(format1, 1U, 480U, 2U));
 
     constexpr std::array<std::uint8_t, 7> truncatedHeader{'M','T','h','d', 0,0,0};
-    if (!expectsError(truncatedHeader, SmfParseErrorCode::TruncatedHeader, 7U)) return 3;
+    OPENHDK_FAIL_IF(3, !expectsError(truncatedHeader, SmfParseErrorCode::TruncatedHeader, 7U));
 
     constexpr std::array<std::uint8_t, 8> invalidHeaderLength{
         'M','T','h','d', 0,0,0,5};
-    if (!expectsError(invalidHeaderLength, SmfParseErrorCode::InvalidHeaderLength, 4U)) return 8;
+    OPENHDK_FAIL_IF(8, !expectsError(invalidHeaderLength, SmfParseErrorCode::InvalidHeaderLength, 4U));
 
     constexpr std::array<std::uint8_t, 4> invalidMThdId{'M','T','x','d'};
-    if (!expectsError(invalidMThdId, SmfParseErrorCode::InvalidHeaderChunk, 2U)) return 19;
+    OPENHDK_FAIL_IF(19, !expectsError(invalidMThdId, SmfParseErrorCode::InvalidHeaderChunk, 2U));
 
     constexpr std::array<std::uint8_t, 14> unsupportedFormat{
         'M','T','h','d', 0,0,0,6, 0,2, 0,1, 0,96};
-    if (!expectsError(unsupportedFormat, SmfParseErrorCode::UnsupportedFormat, 8U)) return 4;
+    OPENHDK_FAIL_IF(4, !expectsError(unsupportedFormat, SmfParseErrorCode::UnsupportedFormat, 8U));
 
     constexpr std::array<std::uint8_t, 14> invalidDivision{
         'M','T','h','d', 0,0,0,6, 0,0, 0,1, 0,0};
-    if (!expectsError(invalidDivision, SmfParseErrorCode::InvalidDivision, 12U)) return 5;
+    OPENHDK_FAIL_IF(5, !expectsError(invalidDivision, SmfParseErrorCode::InvalidDivision, 12U));
 
     constexpr std::array<std::uint8_t, 22> truncatedTrack{
         'M','T','h','d', 0,0,0,6, 0,0, 0,1, 0,96,
         'M','T','r','k', 0,0,0,1};
-    if (!expectsError(truncatedTrack, SmfParseErrorCode::TruncatedTrackChunk, 22U)) return 6;
+    OPENHDK_FAIL_IF(6, !expectsError(truncatedTrack, SmfParseErrorCode::TruncatedTrackChunk, 22U));
 
     constexpr std::array<std::uint8_t, 3> partialMThdId{'M','T','h'};
-    if (!expectsError(partialMThdId, SmfParseErrorCode::TruncatedHeader, 3U)) return 9;
+    OPENHDK_FAIL_IF(9, !expectsError(partialMThdId, SmfParseErrorCode::TruncatedHeader, 3U));
 
     constexpr std::array<std::uint8_t, 6> partialMThdLength{'M','T','h','d', 0,0};
-    if (!expectsError(partialMThdLength, SmfParseErrorCode::TruncatedHeader, 6U)) return 10;
+    OPENHDK_FAIL_IF(10, !expectsError(partialMThdLength, SmfParseErrorCode::TruncatedHeader, 6U));
 
     constexpr std::array<std::uint8_t, 12> partialMThdFields{
         'M','T','h','d', 0,0,0,6, 0,0, 0,1};
-    if (!expectsError(partialMThdFields, SmfParseErrorCode::TruncatedHeader, 12U)) return 11;
+    OPENHDK_FAIL_IF(11, !expectsError(partialMThdFields, SmfParseErrorCode::TruncatedHeader, 12U));
 
     constexpr std::array<std::uint8_t, 9> partialMThdFormat{
         'M','T','h','d', 0,0,0,6, 0};
-    if (!expectsError(partialMThdFormat, SmfParseErrorCode::TruncatedHeader, 9U)) return 20;
+    OPENHDK_FAIL_IF(20, !expectsError(partialMThdFormat, SmfParseErrorCode::TruncatedHeader, 9U));
 
     constexpr std::array<std::uint8_t, 11> partialMThdTrackCount{
         'M','T','h','d', 0,0,0,6, 0,0, 0};
-    if (!expectsError(partialMThdTrackCount, SmfParseErrorCode::TruncatedHeader, 11U)) return 21;
+    OPENHDK_FAIL_IF(21, !expectsError(partialMThdTrackCount, SmfParseErrorCode::TruncatedHeader, 11U));
 
     constexpr std::array<std::uint8_t, 13> partialMThdDivision{
         'M','T','h','d', 0,0,0,6, 0,0, 0,1, 0};
-    if (!expectsError(partialMThdDivision, SmfParseErrorCode::TruncatedHeader, 13U)) return 22;
+    OPENHDK_FAIL_IF(22, !expectsError(partialMThdDivision, SmfParseErrorCode::TruncatedHeader, 13U));
 
     constexpr std::array<std::uint8_t, 17> partialMTrkId{
         'M','T','h','d', 0,0,0,6, 0,0, 0,1, 0,96, 'M','T','r'};
-    if (!expectsError(partialMTrkId, SmfParseErrorCode::TruncatedTrackChunk, 17U)) return 12;
+    OPENHDK_FAIL_IF(12, !expectsError(partialMTrkId, SmfParseErrorCode::TruncatedTrackChunk, 17U));
 
     constexpr std::array<std::uint8_t, 20> partialMTrkLength{
         'M','T','h','d', 0,0,0,6, 0,0, 0,1, 0,96, 'M','T','r','k', 0,0};
-    if (!expectsError(partialMTrkLength, SmfParseErrorCode::TruncatedTrackChunk, 20U)) return 13;
+    OPENHDK_FAIL_IF(13, !expectsError(partialMTrkLength, SmfParseErrorCode::TruncatedTrackChunk, 20U));
 
     constexpr std::array<std::uint8_t, 23> truncatedPayload{
         'M','T','h','d', 0,0,0,6, 0,0, 0,1, 0,96,
         'M','T','r','k', 0,0,0,2, 0};
-    if (!expectsError(truncatedPayload, SmfParseErrorCode::TruncatedTrackChunk, 23U)) return 14;
+    OPENHDK_FAIL_IF(14, !expectsError(truncatedPayload, SmfParseErrorCode::TruncatedTrackChunk, 23U));
 
     constexpr std::array<std::uint8_t, 22> invalidMTrkId{
         'M','T','h','d', 0,0,0,6, 0,0, 0,1, 0,96,
         'M','T','x','k', 0,0,0,0};
-    if (!expectsError(invalidMTrkId, SmfParseErrorCode::InvalidTrackChunk, 16U)) return 15;
+    OPENHDK_FAIL_IF(15, !expectsError(invalidMTrkId, SmfParseErrorCode::InvalidTrackChunk, 16U));
 
     constexpr std::array<std::uint8_t, 14> format0TwoTracks{
         'M','T','h','d', 0,0,0,6, 0,0, 0,2, 0,96};
-    if (!expectsError(format0TwoTracks, SmfParseErrorCode::InvalidTrackCount, 10U)) return 16;
+    OPENHDK_FAIL_IF(16, !expectsError(format0TwoTracks, SmfParseErrorCode::InvalidTrackCount, 10U));
 
     constexpr std::array<std::uint8_t, 14> format1ZeroTracks{
         'M','T','h','d', 0,0,0,6, 0,1, 0,0, 0,96};
-    if (!expectsError(format1ZeroTracks, SmfParseErrorCode::InvalidTrackCount, 10U)) return 17;
+    OPENHDK_FAIL_IF(17, !expectsError(format1ZeroTracks, SmfParseErrorCode::InvalidTrackCount, 10U));
 
     constexpr std::array<std::uint8_t, 27> trailingData{
         'M','T','h','d', 0,0,0,6, 0,0, 0,1, 0,96,
         'M','T','r','k', 0,0,0,4, 0,0xff,0x2f,0, 0};
-    if (!expectsError(trailingData, SmfParseErrorCode::TrailingData, 26U)) return 18;
+    OPENHDK_FAIL_IF(18, !expectsError(trailingData, SmfParseErrorCode::TrailingData, 26U));
 
     constexpr std::array<std::uint8_t, 42> validEvents{
         0, 0x90, 60, 100,
@@ -244,9 +245,9 @@ int main() {
         0, 0xf0, 2, 0x7d, 1,
         0, 0xff, 0x2f, 0};
     const auto validEventsResult = OpenHDK::SmfTrackEventDecoder::decode(validEvents);
-    if (!validEventsResult.succeeded() || !validEventsResult.events() || validEventsResult.error()) return 24;
+    OPENHDK_FAIL_IF(24, !validEventsResult.succeeded() || !validEventsResult.events() || validEventsResult.error());
     const auto events = validEventsResult.events()->events();
-    if (events.size() != 9U || events[0].kind() != OpenHDK::SmfMidiEventKind::NoteOn
+    OPENHDK_FAIL_IF(25, events.size() != 9U || events[0].kind() != OpenHDK::SmfMidiEventKind::NoteOn
         || events[1].kind() != OpenHDK::SmfMidiEventKind::NoteOff || events[1].tick() != 128U
         || events[2].kind() != OpenHDK::SmfMidiEventKind::Controller || events[2].tick() != 128U
         || events[3].kind() != OpenHDK::SmfMidiEventKind::ProgramChange
@@ -254,53 +255,53 @@ int main() {
         || events[5].kind() != OpenHDK::SmfMidiEventKind::Tempo || events[5].data().size() != 3U
         || events[6].kind() != OpenHDK::SmfMidiEventKind::Meta
         || events[7].kind() != OpenHDK::SmfMidiEventKind::SysEx
-        || events[8].kind() != OpenHDK::SmfMidiEventKind::EndOfTrack) return 25;
+        || events[8].kind() != OpenHDK::SmfMidiEventKind::EndOfTrack);
     auto mutableEvents = validEvents;
     const auto ownedEventsResult = OpenHDK::SmfTrackEventDecoder::decode(mutableEvents);
     mutableEvents[3] = 0U;
-    if (!ownedEventsResult.events() || ownedEventsResult.events()->events()[0].data()[1] != 100U) return 33;
+    OPENHDK_FAIL_IF(33, !ownedEventsResult.events() || ownedEventsResult.events()->events()[0].data()[1] != 100U);
 
     constexpr std::array<std::uint8_t, 11> runningStatus{
         0, 0x90, 60, 64, 5, 61, 65, 0, 0xff, 0x2f, 0};
     const auto runningStatusResult = OpenHDK::SmfTrackEventDecoder::decode(runningStatus);
-    if (!runningStatusResult.succeeded() || !runningStatusResult.events()
+    OPENHDK_FAIL_IF(26, !runningStatusResult.succeeded() || !runningStatusResult.events()
         || runningStatusResult.events()->events().size() != 3U
         || runningStatusResult.events()->events()[1].tick() != 5U
         || runningStatusResult.events()->events()[1].data()[0] != 61U
-        || runningStatusResult.events()->events()[2].kind() != OpenHDK::SmfMidiEventKind::EndOfTrack) return 26;
+        || runningStatusResult.events()->events()[2].kind() != OpenHDK::SmfMidiEventKind::EndOfTrack);
 
     constexpr std::array<std::uint8_t, 4> malformedVlq{0x81, 0x80, 0x80, 0x80};
-    if (!expectsTrackError(malformedVlq, SmfTrackDecodeErrorCode::MalformedVlq, 3U)) return 27;
+    OPENHDK_FAIL_IF(27, !expectsTrackError(malformedVlq, SmfTrackDecodeErrorCode::MalformedVlq, 3U));
 
     constexpr std::array<std::uint8_t, 2> missingRunningStatus{0, 60};
-    if (!expectsTrackError(missingRunningStatus, SmfTrackDecodeErrorCode::MissingRunningStatus, 1U)) return 28;
+    OPENHDK_FAIL_IF(28, !expectsTrackError(missingRunningStatus, SmfTrackDecodeErrorCode::MissingRunningStatus, 1U));
 
     constexpr std::array<std::uint8_t, 3> truncatedEventData{0, 0x90, 60};
-    if (!expectsTrackError(truncatedEventData, SmfTrackDecodeErrorCode::TruncatedEvent, 3U)) return 29;
+    OPENHDK_FAIL_IF(29, !expectsTrackError(truncatedEventData, SmfTrackDecodeErrorCode::TruncatedEvent, 3U));
 
     constexpr std::array<std::uint8_t, 6> invalidTempoLength{0, 0xff, 0x51, 2, 0, 0};
-    if (!expectsTrackError(invalidTempoLength, SmfTrackDecodeErrorCode::InvalidMetaLength, 3U)) return 30;
+    OPENHDK_FAIL_IF(30, !expectsTrackError(invalidTempoLength, SmfTrackDecodeErrorCode::InvalidMetaLength, 3U));
 
     constexpr std::array<std::uint8_t, 7> invalidZeroTempo{0, 0xff, 0x51, 3, 0, 0, 0};
-    if (!expectsTrackError(invalidZeroTempo, SmfTrackDecodeErrorCode::InvalidTempoValue, 4U)) return 88;
+    OPENHDK_FAIL_IF(88, !expectsTrackError(invalidZeroTempo, SmfTrackDecodeErrorCode::InvalidTempoValue, 4U));
 
     constexpr std::array<std::uint8_t, 5> truncatedMetaPayload{0, 0xff, 1, 2, 'x'};
-    if (!expectsTrackError(truncatedMetaPayload, SmfTrackDecodeErrorCode::TruncatedEvent, 5U)) return 31;
+    OPENHDK_FAIL_IF(31, !expectsTrackError(truncatedMetaPayload, SmfTrackDecodeErrorCode::TruncatedEvent, 5U));
 
     constexpr std::array<std::uint8_t, 4> truncatedSysExPayload{0, 0xf0, 2, 0x7d};
-    if (!expectsTrackError(truncatedSysExPayload, SmfTrackDecodeErrorCode::TruncatedEvent, 4U)) return 32;
+    OPENHDK_FAIL_IF(32, !expectsTrackError(truncatedSysExPayload, SmfTrackDecodeErrorCode::TruncatedEvent, 4U));
 
     constexpr std::array<std::uint8_t, 4> missingEndOfTrack{0, 0x90, 60, 64};
-    if (!expectsTrackError(missingEndOfTrack, SmfTrackDecodeErrorCode::MissingEndOfTrack, 4U)) return 34;
+    OPENHDK_FAIL_IF(34, !expectsTrackError(missingEndOfTrack, SmfTrackDecodeErrorCode::MissingEndOfTrack, 4U));
 
     constexpr std::array<std::uint8_t, 8> trailingEventAfterEndOfTrack{
         0, 0xff, 0x2f, 0, 0, 0x90, 60, 64};
-    if (!expectsTrackError(trailingEventAfterEndOfTrack,
-                           SmfTrackDecodeErrorCode::TrailingDataAfterEndOfTrack, 4U)) return 35;
+    OPENHDK_FAIL_IF(35, !expectsTrackError(trailingEventAfterEndOfTrack,
+                           SmfTrackDecodeErrorCode::TrailingDataAfterEndOfTrack, 4U));
 
     constexpr std::array<std::uint8_t, 5> trailingDataAfterEndOfTrack{0, 0xff, 0x2f, 0, 0};
-    if (!expectsTrackError(trailingDataAfterEndOfTrack,
-                           SmfTrackDecodeErrorCode::TrailingDataAfterEndOfTrack, 4U)) return 36;
+    OPENHDK_FAIL_IF(36, !expectsTrackError(trailingDataAfterEndOfTrack,
+                           SmfTrackDecodeErrorCode::TrailingDataAfterEndOfTrack, 4U));
 
     constexpr std::array<std::uint8_t, 53> crossTrackTimeline{
         'M','T','h','d', 0,0,0,6, 0,1, 0,2, 0,96,
@@ -309,17 +310,17 @@ int main() {
         'M','T','r','k', 0,0,0,11,
         0, 0xc0, 5, 0x30, 0xb0, 7, 100, 0x30, 0xff, 0x2f, 0};
     const auto crossTrackFile = OpenHDK::SmfParser::parse(crossTrackTimeline);
-    if (!crossTrackFile.file()) return 37;
+    OPENHDK_FAIL_IF(37, !crossTrackFile.file());
     const auto crossTrackResult = OpenHDK::SmfTimelineCompiler::compile(*crossTrackFile.file());
-    if (!crossTrackResult.succeeded() || !crossTrackResult.timeline() || crossTrackResult.error()) return 38;
+    OPENHDK_FAIL_IF(38, !crossTrackResult.succeeded() || !crossTrackResult.timeline() || crossTrackResult.error());
     const auto crossTrackEvents = crossTrackResult.timeline()->events();
-    if (crossTrackEvents.size() != 6U || crossTrackEvents[0].trackIndex() != 0U
+    OPENHDK_FAIL_IF(39, crossTrackEvents.size() != 6U || crossTrackEvents[0].trackIndex() != 0U
         || crossTrackEvents[1].trackIndex() != 1U || crossTrackEvents[0].tick() != 0U
         || crossTrackEvents[1].tick() != 0U || crossTrackEvents[2].tick() != 48U
         || crossTrackEvents[2].timeMicroseconds() != 250000U
         || crossTrackEvents[3].tick() != 96U || crossTrackEvents[3].trackIndex() != 0U
         || crossTrackEvents[3].timeMicroseconds() != 500000U
-        || crossTrackEvents[5].event().kind() != OpenHDK::SmfMidiEventKind::EndOfTrack) return 39;
+        || crossTrackEvents[5].event().kind() != OpenHDK::SmfMidiEventKind::EndOfTrack);
 
     constexpr std::array<std::uint8_t, 48> tempoTimeline{
         'M','T','h','d', 0,0,0,6, 0,0, 0,1, 0,100,
@@ -330,13 +331,13 @@ int main() {
         0x64, 0x80, 60, 0,
         0, 0xff, 0x2f, 0};
     const auto tempoFile = OpenHDK::SmfParser::parse(tempoTimeline);
-    if (!tempoFile.file()) return 40;
+    OPENHDK_FAIL_IF(40, !tempoFile.file());
     const auto tempoResult = OpenHDK::SmfTimelineCompiler::compile(*tempoFile.file());
-    if (!tempoResult.timeline() || tempoResult.timeline()->events().size() != 5U) return 41;
+    OPENHDK_FAIL_IF(41, !tempoResult.timeline() || tempoResult.timeline()->events().size() != 5U);
     const auto tempoEvents = tempoResult.timeline()->events();
-    if (tempoEvents[1].timeMicroseconds() != 500000U
+    OPENHDK_FAIL_IF(42, tempoEvents[1].timeMicroseconds() != 500000U
         || tempoEvents[2].timeMicroseconds() != 1000000U
-        || tempoEvents[3].timeMicroseconds() != 1250000U) return 42;
+        || tempoEvents[3].timeMicroseconds() != 1250000U);
 
     constexpr std::array<std::uint8_t, 56> sameTickTempoTimeline{
         'M','T','h','d', 0,0,0,6, 0,1, 0,2, 0,100,
@@ -346,46 +347,46 @@ int main() {
         0, 0xff, 0x51, 3, 3, 0xd0, 0x90,
         0x64, 0x90, 60, 64, 0, 0xff, 0x2f, 0};
     const auto sameTickTempoFile = OpenHDK::SmfParser::parse(sameTickTempoTimeline);
-    if (!sameTickTempoFile.file()) return 43;
+    OPENHDK_FAIL_IF(43, !sameTickTempoFile.file());
     const auto sameTickTempoResult = OpenHDK::SmfTimelineCompiler::compile(*sameTickTempoFile.file());
-    if (!sameTickTempoResult.timeline() || sameTickTempoResult.timeline()->events().size() != 5U) return 44;
+    OPENHDK_FAIL_IF(44, !sameTickTempoResult.timeline() || sameTickTempoResult.timeline()->events().size() != 5U);
     const auto sameTickTempoEvents = sameTickTempoResult.timeline()->events();
-    if (sameTickTempoEvents[0].trackIndex() != 0U || sameTickTempoEvents[1].trackIndex() != 1U
+    OPENHDK_FAIL_IF(45, sameTickTempoEvents[0].trackIndex() != 0U || sameTickTempoEvents[1].trackIndex() != 1U
         || sameTickTempoEvents[3].event().kind() != OpenHDK::SmfMidiEventKind::NoteOn
-        || sameTickTempoEvents[3].timeMicroseconds() != 250000U) return 45;
+        || sameTickTempoEvents[3].timeMicroseconds() != 250000U);
 
     constexpr std::array<std::uint8_t, 26> decoderFailureTimeline{
         'M','T','h','d', 0,0,0,6, 0,0, 0,1, 0,96,
         'M','T','r','k', 0,0,0,4, 0, 0x90, 60, 64};
     const auto decoderFailureFile = OpenHDK::SmfParser::parse(decoderFailureTimeline);
-    if (!decoderFailureFile.file()) return 46;
+    OPENHDK_FAIL_IF(46, !decoderFailureFile.file());
     const auto decoderFailureResult = OpenHDK::SmfTimelineCompiler::compile(*decoderFailureFile.file());
-    if (decoderFailureResult.succeeded() || !decoderFailureResult.error()
+    OPENHDK_FAIL_IF(47, decoderFailureResult.succeeded() || !decoderFailureResult.error()
         || decoderFailureResult.error()->code() != SmfTimelineErrorCode::TrackDecodeFailed
         || decoderFailureResult.error()->trackIndex() != 0U
         || !decoderFailureResult.error()->trackDecodeError()
         || decoderFailureResult.error()->trackDecodeError()->code != SmfTrackDecodeErrorCode::MissingEndOfTrack
-        || decoderFailureResult.error()->trackDecodeError()->offset != 4U) return 47;
+        || decoderFailureResult.error()->trackDecodeError()->offset != 4U);
 
     constexpr std::array<std::uint8_t, 24> smpteTimeline{
         'M','T','h','d', 0,0,0,6, 0,0, 0,1, 0xe7,40,
         'M','T','r','k', 0,0,0,2, 0, 0x90};
     const auto smpteFile = OpenHDK::SmfParser::parse(smpteTimeline);
-    if (!smpteFile.file()) return 48;
+    OPENHDK_FAIL_IF(48, !smpteFile.file());
     const auto smpteResult = OpenHDK::SmfTimelineCompiler::compile(*smpteFile.file());
-    if (smpteResult.succeeded() || !smpteResult.error()
-        || smpteResult.error()->code() != SmfTimelineErrorCode::UnsupportedSmpteDivision) return 49;
+    OPENHDK_FAIL_IF(49, smpteResult.succeeded() || !smpteResult.error()
+        || smpteResult.error()->code() != SmfTimelineErrorCode::UnsupportedSmpteDivision);
 
     constexpr std::array<std::uint8_t, 34> fractionalTimeline{
         'M','T','h','d', 0,0,0,6, 0,0, 0,1, 0,3,
         'M','T','r','k', 0,0,0,12,
         1, 0x90, 60, 64, 1, 0x80, 60, 0, 0, 0xff, 0x2f, 0};
     const auto fractionalFile = OpenHDK::SmfParser::parse(fractionalTimeline);
-    if (!fractionalFile.file()) return 52;
+    OPENHDK_FAIL_IF(52, !fractionalFile.file());
     const auto fractionalResult = OpenHDK::SmfTimelineCompiler::compile(*fractionalFile.file());
-    if (!fractionalResult.timeline() || fractionalResult.timeline()->events().size() != 3U
+    OPENHDK_FAIL_IF(53, !fractionalResult.timeline() || fractionalResult.timeline()->events().size() != 3U
         || fractionalResult.timeline()->events()[0].timeMicroseconds() != 166666U
-        || fractionalResult.timeline()->events()[1].timeMicroseconds() != 333333U) return 53;
+        || fractionalResult.timeline()->events()[1].timeMicroseconds() != 333333U);
 
     std::vector<std::uint8_t> overflowTimeline{
         'M','T','h','d', 0,0,0,6, 0,0, 0,1, 0,1,
@@ -396,81 +397,81 @@ int main() {
     }
     overflowTimeline.insert(overflowTimeline.end(), {0, 0xff, 0x2f, 0});
     const auto overflowFile = OpenHDK::SmfParser::parse(overflowTimeline);
-    if (!overflowFile.file()) return 50;
+    OPENHDK_FAIL_IF(50, !overflowFile.file());
     const auto overflowResult = OpenHDK::SmfTimelineCompiler::compile(*overflowFile.file());
-    if (overflowResult.succeeded() || !overflowResult.error()
-        || overflowResult.error()->code() != SmfTimelineErrorCode::TimeOverflow) return 51;
+    OPENHDK_FAIL_IF(51, overflowResult.succeeded() || !overflowResult.error()
+        || overflowResult.error()->code() != SmfTimelineErrorCode::TimeOverflow);
 
     OpenHDK::PlaybackSession invalidSession;
     const auto invalidPrepare = invalidSession.prepare(*crossTrackResult.timeline(), 0U);
-    if (invalidPrepare.succeeded() || !invalidPrepare.error()
+    OPENHDK_FAIL_IF(54, invalidPrepare.succeeded() || !invalidPrepare.error()
         || invalidPrepare.error()->code() != OpenHDK::PlaybackSessionErrorCode::InvalidSampleRate
-        || invalidSession.state() != OpenHDK::PlaybackSessionState::Failed) return 54;
-    if (!invalidSession.stop().succeeded() || invalidSession.state() != OpenHDK::PlaybackSessionState::Idle) return 55;
+        || invalidSession.state() != OpenHDK::PlaybackSessionState::Failed);
+    OPENHDK_FAIL_IF(55, !invalidSession.stop().succeeded() || invalidSession.state() != OpenHDK::PlaybackSessionState::Idle);
 
     OpenHDK::PlaybackSession session;
     const auto idlePlay = session.play();
-    if (idlePlay.succeeded() || !idlePlay.error()
+    OPENHDK_FAIL_IF(56, idlePlay.succeeded() || !idlePlay.error()
         || idlePlay.error()->code() != OpenHDK::PlaybackSessionErrorCode::IllegalTransition
-        || session.state() != OpenHDK::PlaybackSessionState::Idle) return 56;
-    if (!session.prepare(*crossTrackResult.timeline(), 1000000U).succeeded()
-        || session.state() != OpenHDK::PlaybackSessionState::Ready) return 57;
-    if (session.pause().succeeded()) return 58;
-    if (!session.play().succeeded() || session.state() != OpenHDK::PlaybackSessionState::Playing) return 59;
+        || session.state() != OpenHDK::PlaybackSessionState::Idle);
+    OPENHDK_FAIL_IF(57, !session.prepare(*crossTrackResult.timeline(), 1000000U).succeeded()
+        || session.state() != OpenHDK::PlaybackSessionState::Ready);
+    OPENHDK_FAIL_IF(58, session.pause().succeeded());
+    OPENHDK_FAIL_IF(59, !session.play().succeeded() || session.state() != OpenHDK::PlaybackSessionState::Playing);
 
     const auto zeroBlock = session.render(0U);
-    if (!zeroBlock.succeeded() || zeroBlock.blockStartMicroseconds() != 0U
+    OPENHDK_FAIL_IF(60, !zeroBlock.succeeded() || zeroBlock.blockStartMicroseconds() != 0U
         || zeroBlock.blockEndMicroseconds() != 0U || zeroBlock.events().size() != 2U
         || zeroBlock.events()[0].trackIndex() != 0U || zeroBlock.events()[1].trackIndex() != 1U
-        || session.mediaTimeMicroseconds() != 0U) return 60;
+        || session.mediaTimeMicroseconds() != 0U);
     FakeMidiCommandSink sameTickSink;
     OpenHDK::SmfMidiEventDispatcher::dispatch(zeroBlock.events(), sameTickSink);
-    if (sameTickSink.count() != 2U || sameTickSink.command(0).kind != FakeMidiCommandKind::NoteOn
+    OPENHDK_FAIL_IF(82, sameTickSink.count() != 2U || sameTickSink.command(0).kind != FakeMidiCommandKind::NoteOn
         || sameTickSink.command(0).channel != 0U
         || sameTickSink.command(1).kind != FakeMidiCommandKind::ProgramChange
-        || sameTickSink.command(1).channel != 0U || sameTickSink.command(1).first != 5U) return 82;
+        || sameTickSink.command(1).channel != 0U || sameTickSink.command(1).first != 5U);
     const auto prematureComplete = session.completeReleaseTail();
-    if (prematureComplete.succeeded() || !prematureComplete.error()
+    OPENHDK_FAIL_IF(61, prematureComplete.succeeded() || !prematureComplete.error()
         || prematureComplete.error()->code()
-            != OpenHDK::PlaybackSessionErrorCode::CompletionBeforeEndOfTimeline) return 61;
+            != OpenHDK::PlaybackSessionErrorCode::CompletionBeforeEndOfTimeline);
 
-    if (!session.pause().succeeded() || session.state() != OpenHDK::PlaybackSessionState::Paused) return 62;
+    OPENHDK_FAIL_IF(62, !session.pause().succeeded() || session.state() != OpenHDK::PlaybackSessionState::Paused);
     const auto pausedBlock = session.render(100U);
-    if (!pausedBlock.succeeded() || !pausedBlock.events().empty()
+    OPENHDK_FAIL_IF(63, !pausedBlock.succeeded() || !pausedBlock.events().empty()
         || pausedBlock.blockStartMicroseconds() != 0U || pausedBlock.blockEndMicroseconds() != 0U
-        || session.mediaTimeMicroseconds() != 0U) return 63;
-    if (!session.play().succeeded()) return 64;
+        || session.mediaTimeMicroseconds() != 0U);
+    OPENHDK_FAIL_IF(64, !session.play().succeeded());
     const auto boundaryBlock = session.render(250000U);
-    if (!boundaryBlock.succeeded() || boundaryBlock.blockStartMicroseconds() != 0U
+    OPENHDK_FAIL_IF(65, !boundaryBlock.succeeded() || boundaryBlock.blockStartMicroseconds() != 0U
         || boundaryBlock.blockEndMicroseconds() != 250000U || boundaryBlock.events().size() != 1U
-        || boundaryBlock.events()[0].timeMicroseconds() != 250000U) return 65;
+        || boundaryBlock.events()[0].timeMicroseconds() != 250000U);
     const auto finalBlock = session.render(250000U);
-    if (!finalBlock.succeeded() || finalBlock.events().size() != 3U
+    OPENHDK_FAIL_IF(66, !finalBlock.succeeded() || finalBlock.events().size() != 3U
         || finalBlock.blockStartMicroseconds() != 250000U || finalBlock.blockEndMicroseconds() != 500000U
-        || !session.endOfTimelineReached() || session.state() != OpenHDK::PlaybackSessionState::Playing) return 66;
-    if (!session.completeReleaseTail().succeeded()
-        || session.state() != OpenHDK::PlaybackSessionState::Finished) return 67;
-    if (!session.stop().succeeded() || session.state() != OpenHDK::PlaybackSessionState::Idle
-        || session.mediaTimeMicroseconds() != 0U) return 68;
-    if (session.stop().succeeded()) return 69;
+        || !session.endOfTimelineReached() || session.state() != OpenHDK::PlaybackSessionState::Playing);
+    OPENHDK_FAIL_IF(67, !session.completeReleaseTail().succeeded()
+        || session.state() != OpenHDK::PlaybackSessionState::Finished);
+    OPENHDK_FAIL_IF(68, !session.stop().succeeded() || session.state() != OpenHDK::PlaybackSessionState::Idle
+        || session.mediaTimeMicroseconds() != 0U);
+    OPENHDK_FAIL_IF(69, session.stop().succeeded());
 
     OpenHDK::PlaybackSession splitOneBlock;
     OpenHDK::PlaybackSession splitTwoBlocks;
-    if (!splitOneBlock.prepare(*crossTrackResult.timeline(), 3U).succeeded()
+    OPENHDK_FAIL_IF(70, !splitOneBlock.prepare(*crossTrackResult.timeline(), 3U).succeeded()
         || !splitTwoBlocks.prepare(*crossTrackResult.timeline(), 3U).succeeded()
-        || !splitOneBlock.play().succeeded() || !splitTwoBlocks.play().succeeded()) return 70;
-    if (!splitOneBlock.render(2U).succeeded() || !splitTwoBlocks.render(1U).succeeded()
+        || !splitOneBlock.play().succeeded() || !splitTwoBlocks.play().succeeded());
+    OPENHDK_FAIL_IF(71, !splitOneBlock.render(2U).succeeded() || !splitTwoBlocks.render(1U).succeeded()
         || !splitTwoBlocks.render(1U).succeeded()
         || splitOneBlock.mediaTimeMicroseconds() != 666666U
-        || splitTwoBlocks.mediaTimeMicroseconds() != 666666U) return 71;
+        || splitTwoBlocks.mediaTimeMicroseconds() != 666666U);
 
     OpenHDK::PlaybackSession overflowSession;
-    if (!overflowSession.prepare(*crossTrackResult.timeline(), 1U).succeeded()
-        || !overflowSession.play().succeeded()) return 72;
+    OPENHDK_FAIL_IF(72, !overflowSession.prepare(*crossTrackResult.timeline(), 1U).succeeded()
+        || !overflowSession.play().succeeded());
     const auto clockOverflow = overflowSession.render(std::numeric_limits<std::uint64_t>::max());
-    if (clockOverflow.succeeded() || !clockOverflow.error()
+    OPENHDK_FAIL_IF(73, clockOverflow.succeeded() || !clockOverflow.error()
         || clockOverflow.error()->code() != OpenHDK::PlaybackSessionErrorCode::ClockOverflow
-        || overflowSession.state() != OpenHDK::PlaybackSessionState::Failed) return 73;
+        || overflowSession.state() != OpenHDK::PlaybackSessionState::Failed);
 
     constexpr std::array<std::uint8_t, 45> dispatchChannelEvents{
         'M','T','h','d', 0,0,0,6, 0,0, 0,1, 0,96,
@@ -482,16 +483,16 @@ int main() {
         0, 0xe3, 0, 64,
         0, 0xff, 0x2f, 0};
     const auto dispatchChannelFile = OpenHDK::SmfParser::parse(dispatchChannelEvents);
-    if (!dispatchChannelFile.file()) return 74;
+    OPENHDK_FAIL_IF(74, !dispatchChannelFile.file());
     const auto dispatchChannelTimeline = OpenHDK::SmfTimelineCompiler::compile(*dispatchChannelFile.file());
-    if (!dispatchChannelTimeline.timeline()) return 75;
+    OPENHDK_FAIL_IF(75, !dispatchChannelTimeline.timeline());
     OpenHDK::PlaybackSession dispatchChannelSession;
-    if (!dispatchChannelSession.prepare(*dispatchChannelTimeline.timeline(), 1000000U).succeeded()
-        || !dispatchChannelSession.play().succeeded()) return 76;
+    OPENHDK_FAIL_IF(76, !dispatchChannelSession.prepare(*dispatchChannelTimeline.timeline(), 1000000U).succeeded()
+        || !dispatchChannelSession.play().succeeded());
     const auto dispatchChannelBlock = dispatchChannelSession.render(0U);
     FakeMidiCommandSink channelSink;
     OpenHDK::SmfMidiEventDispatcher::dispatch(dispatchChannelBlock.events(), channelSink);
-    if (!dispatchChannelBlock.succeeded() || channelSink.count() != 5U
+    OPENHDK_FAIL_IF(77, !dispatchChannelBlock.succeeded() || channelSink.count() != 5U
         || channelSink.command(0).kind != FakeMidiCommandKind::NoteOn
         || channelSink.command(0).channel != 0U || channelSink.command(0).first != 60U
         || channelSink.command(0).second != 100U
@@ -503,25 +504,25 @@ int main() {
         || channelSink.command(3).kind != FakeMidiCommandKind::ProgramChange
         || channelSink.command(3).channel != 2U || channelSink.command(3).first != 5U
         || channelSink.command(4).kind != FakeMidiCommandKind::PitchBend
-        || channelSink.command(4).channel != 3U || channelSink.command(4).second != 8192U) return 77;
+        || channelSink.command(4).channel != 3U || channelSink.command(4).second != 8192U);
 
     constexpr std::array<std::uint8_t, 30> noteOnZeroVelocity{
         'M','T','h','d', 0,0,0,6, 0,0, 0,1, 0,96,
         'M','T','r','k', 0,0,0,8,
         0, 0x94, 61, 0, 0, 0xff, 0x2f, 0};
     const auto noteOnZeroFile = OpenHDK::SmfParser::parse(noteOnZeroVelocity);
-    if (!noteOnZeroFile.file()) return 78;
+    OPENHDK_FAIL_IF(78, !noteOnZeroFile.file());
     const auto noteOnZeroTimeline = OpenHDK::SmfTimelineCompiler::compile(*noteOnZeroFile.file());
-    if (!noteOnZeroTimeline.timeline()) return 79;
+    OPENHDK_FAIL_IF(79, !noteOnZeroTimeline.timeline());
     OpenHDK::PlaybackSession noteOnZeroSession;
-    if (!noteOnZeroSession.prepare(*noteOnZeroTimeline.timeline(), 1000000U).succeeded()
-        || !noteOnZeroSession.play().succeeded()) return 80;
+    OPENHDK_FAIL_IF(80, !noteOnZeroSession.prepare(*noteOnZeroTimeline.timeline(), 1000000U).succeeded()
+        || !noteOnZeroSession.play().succeeded());
     FakeMidiCommandSink zeroVelocitySink;
     OpenHDK::SmfMidiEventDispatcher::dispatch(noteOnZeroSession.render(0U).events(), zeroVelocitySink);
-    if (zeroVelocitySink.count() != 1U
+    OPENHDK_FAIL_IF(81, zeroVelocitySink.count() != 1U
         || zeroVelocitySink.command(0).kind != FakeMidiCommandKind::NoteOff
         || zeroVelocitySink.command(0).channel != 4U || zeroVelocitySink.command(0).first != 61U
-        || zeroVelocitySink.command(0).second != 0U) return 81;
+        || zeroVelocitySink.command(0).second != 0U);
 
     constexpr std::array<std::uint8_t, 47> ignoredDispatchEvents{
         'M','T','h','d', 0,0,0,6, 0,0, 0,1, 0,96,
@@ -532,16 +533,16 @@ int main() {
         0, 0x90, 60, 1,
         0, 0xff, 0x2f, 0};
     const auto ignoredDispatchFile = OpenHDK::SmfParser::parse(ignoredDispatchEvents);
-    if (!ignoredDispatchFile.file()) return 83;
+    OPENHDK_FAIL_IF(83, !ignoredDispatchFile.file());
     const auto ignoredDispatchTimeline = OpenHDK::SmfTimelineCompiler::compile(*ignoredDispatchFile.file());
-    if (!ignoredDispatchTimeline.timeline()) return 84;
+    OPENHDK_FAIL_IF(84, !ignoredDispatchTimeline.timeline());
     OpenHDK::PlaybackSession ignoredDispatchSession;
-    if (!ignoredDispatchSession.prepare(*ignoredDispatchTimeline.timeline(), 1000000U).succeeded()
-        || !ignoredDispatchSession.play().succeeded()) return 85;
+    OPENHDK_FAIL_IF(85, !ignoredDispatchSession.prepare(*ignoredDispatchTimeline.timeline(), 1000000U).succeeded()
+        || !ignoredDispatchSession.play().succeeded());
     FakeMidiCommandSink ignoredSink;
     OpenHDK::SmfMidiEventDispatcher::dispatch(ignoredDispatchSession.render(0U).events(), ignoredSink);
-    if (ignoredSink.count() != 1U || ignoredSink.command(0).kind != FakeMidiCommandKind::NoteOn
-        || ignoredSink.command(0).first != 60U || ignoredSink.command(0).second != 1U) return 86;
+    OPENHDK_FAIL_IF(86, ignoredSink.count() != 1U || ignoredSink.command(0).kind != FakeMidiCommandKind::NoteOn
+        || ignoredSink.command(0).first != 60U || ignoredSink.command(0).second != 1U);
 
     constexpr std::array<std::uint8_t, 41> pressureCompatibilityEvents{
         'M','T','h','d', 0,0,0,6, 0,0, 0,1, 0,96,
@@ -552,29 +553,29 @@ int main() {
         0, 0xb4, 7, 100,
         0, 0xff, 0x2f, 0};
     const auto pressureCompatibilityFile = OpenHDK::SmfParser::parse(pressureCompatibilityEvents);
-    if (!pressureCompatibilityFile.file()) return 89;
+    OPENHDK_FAIL_IF(89, !pressureCompatibilityFile.file());
     const auto pressureCompatibilityTimeline = OpenHDK::SmfTimelineCompiler::compile(
         *pressureCompatibilityFile.file());
-    if (!pressureCompatibilityTimeline.timeline()
+    OPENHDK_FAIL_IF(90, !pressureCompatibilityTimeline.timeline()
         || pressureCompatibilityTimeline.timeline()->events().size() != 5U
         || pressureCompatibilityTimeline.timeline()->events()[0].event().kind()
             != OpenHDK::SmfMidiEventKind::PolyphonicKeyPressure
         || pressureCompatibilityTimeline.timeline()->events()[1].event().kind()
-            != OpenHDK::SmfMidiEventKind::ChannelPressure) return 90;
+            != OpenHDK::SmfMidiEventKind::ChannelPressure);
     OpenHDK::PlaybackSession pressureCompatibilitySession;
-    if (!pressureCompatibilitySession.prepare(*pressureCompatibilityTimeline.timeline(), 1000000U).succeeded()
-        || !pressureCompatibilitySession.play().succeeded()) return 91;
+    OPENHDK_FAIL_IF(91, !pressureCompatibilitySession.prepare(*pressureCompatibilityTimeline.timeline(), 1000000U).succeeded()
+        || !pressureCompatibilitySession.play().succeeded());
     FakeMidiCommandSink pressureCompatibilitySink;
     OpenHDK::SmfMidiEventDispatcher::dispatch(
         pressureCompatibilitySession.render(0U).events(), pressureCompatibilitySink);
-    if (pressureCompatibilitySink.count() != 2U
+    OPENHDK_FAIL_IF(92, pressureCompatibilitySink.count() != 2U
         || pressureCompatibilitySink.command(0).kind != FakeMidiCommandKind::NoteOn
         || pressureCompatibilitySink.command(0).channel != 0U
         || pressureCompatibilitySink.command(0).first != 61U
         || pressureCompatibilitySink.command(1).kind != FakeMidiCommandKind::Controller
         || pressureCompatibilitySink.command(1).channel != 4U
         || pressureCompatibilitySink.command(1).first != 7U
-        || pressureCompatibilitySink.command(1).second != 100U) return 92;
+        || pressureCompatibilitySink.command(1).second != 100U);
 
     constexpr std::array<std::uint8_t, 67> diagnosticEvents{
         'M','T','h','d', 0,0,0,6, 0,1, 0,2, 0,96,
@@ -591,12 +592,12 @@ int main() {
         0, 0x99, 36, 127,
         0, 0xff, 0x2f, 0};
     const auto diagnosticFile = OpenHDK::SmfParser::parse(diagnosticEvents);
-    if (!diagnosticFile.file()) return 96;
+    OPENHDK_FAIL_IF(96, !diagnosticFile.file());
     const auto diagnosticTimeline = OpenHDK::SmfTimelineCompiler::compile(*diagnosticFile.file());
-    if (!diagnosticTimeline.timeline()) return 97;
+    OPENHDK_FAIL_IF(97, !diagnosticTimeline.timeline());
     const auto diagnostics = OpenHDK::MidiChannelDiagnostics::aggregate(
         *diagnosticTimeline.timeline());
-    if (diagnostics[0].noteOnCount != 1U
+    OPENHDK_FAIL_IF(98, diagnostics[0].noteOnCount != 1U
         || !diagnostics[0].observedPrograms[2]
         || !diagnostics[0].observedPrograms[40]
         || diagnostics[0].observedPrograms[3]
@@ -610,7 +611,7 @@ int main() {
         || diagnostics[9].noteOnCount != 1U
         || diagnostics[9].cc7.final.has_value()
         || diagnostics[15].noteOnCount != 0U
-        || diagnostics[15].cc7.final.has_value()) return 98;
+        || diagnostics[15].cc7.final.has_value());
 
     constexpr std::array<std::uint8_t, 62> controllerHistoryEvents{
         'M','T','h','d', 0,0,0,6, 0,0, 0,1, 0,96,
@@ -626,14 +627,14 @@ int main() {
         0, 0xb0, 121, 0,
         0, 0xff, 0x2f, 0};
     const auto controllerHistoryFile = OpenHDK::SmfParser::parse(controllerHistoryEvents);
-    if (!controllerHistoryFile.file()) return 99;
+    OPENHDK_FAIL_IF(99, !controllerHistoryFile.file());
     const auto controllerHistoryTimeline = OpenHDK::SmfTimelineCompiler::compile(
         *controllerHistoryFile.file());
-    if (!controllerHistoryTimeline.timeline()) return 100;
+    OPENHDK_FAIL_IF(100, !controllerHistoryTimeline.timeline());
     const auto controllerHistory = OpenHDK::MidiChannelDiagnostics::aggregate(
         *controllerHistoryTimeline.timeline());
     const auto& history = controllerHistory[0];
-    if (history.noteOnCount != 1U
+    OPENHDK_FAIL_IF(101, history.noteOnCount != 1U
         || !history.cc7.first || history.cc7.first->value != 100U
         || history.cc7.first->tick != 0U || history.cc7.first->timeMicroseconds != 0U
         || !history.cc7.beforeFirstNote || history.cc7.beforeFirstNote->value != 100U
@@ -658,7 +659,7 @@ int main() {
         || !history.cc43.final || history.cc43.final->value != 2U
         || history.cc43.changeCount != 0U || history.resetAllControllersCount != 1U
         || !history.finalCc121Reset || history.finalCc121Reset->tick != 192U
-        || history.finalCc121Reset->timeMicroseconds != 1000000U) return 101;
+        || history.finalCc121Reset->timeMicroseconds != 1000000U);
 
     std::cout << "SMF parser fixtures passed\n";
     return 0;
