@@ -13,6 +13,13 @@ application provided it.
 The key words **MUST**, **MUST NOT**, **SHOULD**, **SHOULD NOT**, and **MAY**
 are normative.
 
+This specification is the normative authority for the implemented behavior in
+its stated scope. `ARCHITECTURE.md`, `PLAYBACK-SESSION-CONTRACT.md`, and
+`MIDI-CHANNEL-CONTROLLERS.md` provide design context and detailed explanations;
+if their descriptions conflict with this specification, this specification
+takes precedence and the conflicting documents MUST be corrected together.
+`ROADMAP.md` describes planned work and does not extend the implemented scope.
+
 ## 1. Product identity and scope
 
 OpenHDK is an independent GPL-3.0-or-later modernization project for Windows
@@ -159,7 +166,9 @@ The application provides these modes:
 | `--midi <file.mid> --soundfont <file.sf2>` | Parse, compile, initialize, and play the SMF timeline. |
 
 Playback accepts optional `--device <index>`, `--volume <0-100>`, repeated
-`--channel-volume <1-16>:<0-100>`, `--mute`, and `--no-device` arguments.
+`--channel-volume <1-16>:<0-100>`, `--mute`, `--no-device`, and
+`--interactive-mixer` arguments. `--interactive-mixer` enables the runtime
+mixer console described in section 6 during playback.
 `--device` and `--no-device` are mutually exclusive. Unknown, incomplete, or
 invalid CLI input MUST report usage and return a nonzero usage error. A
 backend, SMF, SoundFont, or audio-device failure MUST report a safe diagnostic
