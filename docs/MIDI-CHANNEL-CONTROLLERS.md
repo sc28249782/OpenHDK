@@ -67,6 +67,11 @@ program/bank, and effects.  Do not make a logarithmic formula part of the
 OpenHDK compatibility contract without a separately verified FluidSynth
 requirement.
 
+When a runtime mute or solo transition makes a channel's effective output gain
+zero, the render path sends CC120 (All Sound Off) to stop voices already
+sounding on that channel. Unmuting or removing solo does not recreate those
+voices; it affects subsequent note-on events.
+
 ## Diagnostics output
 
 `--midi-diagnostics` reports note-on count and observed programs, then reports

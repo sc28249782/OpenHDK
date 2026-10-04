@@ -233,20 +233,30 @@ bool FluidSynthBackend::playMidiFile(const std::filesystem::path& midi, AudioBac
 }
 bool FluidSynthBackend::playCompiledTimeline(const SmfTimeline& timeline, AudioBackendStatus& status) {
   if (!impl_->initialized || impl_->synth == nullptr) { fail(status, AudioBackendError::InvalidConfiguration, "Initialize the audio backend before compiled timeline playback."); return false; }
-  if (impl_->player != nullptr) { fail(status, AudioBackendError::MidiPlaybackFailed, "FluidSynth file-player playback is active or has not been released."); return false; }
+  if (impl_->player != nullptr && fluid_player_get_status(impl_->player) == FLUID_PLAYER_PLAYING) {
+    fail(status, AudioBackendError::MidiPlaybackFailed, "FluidSynth file-player playback is active."); return false;
+  }
+  bool deviceStopped{};
   if (impl_->deviceInitialized && ma_device_stop(&impl_->device) != MA_SUCCESS) {
     fail(status, AudioBackendError::AudioDeviceUnavailable, "Audio output device could not stop for timeline preparation."); return false;
   }
+  deviceStopped = impl_->deviceInitialized;
+  const auto restoreDevice = [&]() noexcept {
+    if (deviceStopped) static_cast<void>(ma_device_start(&impl_->device));
+  };
+  if (impl_->player != nullptr) { delete_fluid_player(impl_->player); impl_->player = nullptr; }
   impl_->discardSession();
   impl_->midiSink->resetChannelVolumes();
   const auto preparation = impl_->session.prepare(timeline, impl_->sampleRate);
   if (!preparation.succeeded() || !impl_->session.play().succeeded()) {
     impl_->discardSession();
+    restoreDevice();
     fail(status, AudioBackendError::InvalidConfiguration, "Compiled timeline could not be prepared for playback."); return false;
   }
   impl_->sessionActive.store(true, std::memory_order_release);
   if (impl_->deviceInitialized && ma_device_start(&impl_->device) != MA_SUCCESS) {
     impl_->discardSession();
+    restoreDevice();
     fail(status, AudioBackendError::AudioDeviceUnavailable, "Audio output device could not resume after timeline preparation."); return false;
   }
   ok(status); return true;

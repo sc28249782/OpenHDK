@@ -108,8 +108,17 @@ int main() {
   if (backend.setRuntimeChannelMuted(0U, true, status)
       || status.error != OpenHDK::AudioBackendError::MidiPlaybackFailed) return 25;
   std::this_thread::sleep_for(std::chrono::milliseconds(25));
-  std::vector<float> pcm(4096U);
-  if (!backend.renderStereo(pcm, status)) return 5;
-  const bool heard = std::any_of(pcm.begin(), pcm.end(), [](float x) { return x > 0.0001F || x < -0.0001F; });
-  backend.shutdown(); std::filesystem::remove(midi); return heard ? 0 : 6;
+  std::vector<float> legacyPcm(4096U);
+  if (!backend.renderStereo(legacyPcm, status)) return 5;
+  const bool heardLegacy = std::any_of(legacyPcm.begin(), legacyPcm.end(), [](float x) { return x > 0.0001F || x < -0.0001F; });
+  for (std::size_t block = 0U; block < 1024U && backend.isPlaying(); ++block) {
+    if (!backend.renderStereo(legacyPcm, status)) return 31;
+  }
+  if (!heardLegacy || backend.isPlaying()) return 32;
+  if (!backend.playCompiledTimeline(*compiledTimeline.timeline(), status) || !backend.isPlaying()) return 33;
+  for (std::size_t block = 0U; block < 1024U && backend.isPlaying(); ++block) {
+    if (!backend.renderStereo(compiledPcm, status)) return 34;
+  }
+  const bool completedCompiledAfterLegacy = !backend.isPlaying();
+  backend.shutdown(); std::filesystem::remove(midi); return completedCompiledAfterLegacy ? 0 : 35;
 }
