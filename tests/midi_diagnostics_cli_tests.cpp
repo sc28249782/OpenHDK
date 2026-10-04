@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 OpenHDK contributors
+#include "TestCheck.hpp"
 #include "app/MidiDiagnosticsCli.hpp"
 
 #include <array>
@@ -31,14 +32,14 @@ int main() {
         std::ofstream output(path, std::ios::binary);
         output.write(reinterpret_cast<const char*>(fixture.data()),
                      static_cast<std::streamsize>(fixture.size()));
-        if (!output) return 1;
+        OPENHDK_FAIL_IF(1, !output);
     }
 
     std::ostringstream standardOutput;
     std::ostringstream standardError;
     const auto exitCode = OpenHDK::runMidiDiagnostics(path, standardOutput, standardError);
     std::filesystem::remove(path, error);
-    if (exitCode != 0 || !standardError.str().empty()) return 2;
+    OPENHDK_FAIL_IF(2, exitCode != 0 || !standardError.str().empty());
 
     const auto diagnostics = standardOutput.str();
     const std::string expectedChannelOne =
@@ -57,7 +58,9 @@ int main() {
         || diagnostics.find(expectedChannelTen) == std::string::npos
         || diagnostics.find("final-cc7") != std::string::npos) {
         std::cerr << "Unexpected MIDI diagnostics output:\n" << standardOutput.str();
-        return 3;
+        return OpenHDK::Test::reportFailure(
+            "diagnostics output differs from the expected format or channel summary",
+            __FILE__, __LINE__, 3);
     }
     return 0;
 }
