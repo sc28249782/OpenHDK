@@ -67,6 +67,8 @@ public:
                                             | (static_cast<std::uint16_t>(data[1]) << 7U));
                 break;
             }
+            case SmfMidiEventKind::PolyphonicKeyPressure:
+            case SmfMidiEventKind::ChannelPressure:
             case SmfMidiEventKind::Tempo:
             case SmfMidiEventKind::EndOfTrack:
             case SmfMidiEventKind::Meta:

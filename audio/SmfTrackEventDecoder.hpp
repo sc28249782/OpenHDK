@@ -18,8 +18,10 @@ namespace OpenHDK {
 enum class SmfMidiEventKind {
     NoteOff,
     NoteOn,
+    PolyphonicKeyPressure,
     Controller,
     ProgramChange,
+    ChannelPressure,
     PitchBend,
     Tempo,
     EndOfTrack,
@@ -35,6 +37,7 @@ enum class SmfTrackDecodeErrorCode {
     UnsupportedChannelEvent,
     InvalidChannelData,
     InvalidMetaLength,
+    InvalidTempoValue,
     InvalidSystemEvent,
     MissingEndOfTrack,
     TrailingDataAfterEndOfTrack,
@@ -59,6 +62,7 @@ struct SmfTrackDecodeError {
         case SmfTrackDecodeErrorCode::UnsupportedChannelEvent: return "unsupported channel event";
         case SmfTrackDecodeErrorCode::InvalidChannelData: return "channel event data byte has status bit set";
         case SmfTrackDecodeErrorCode::InvalidMetaLength: return "meta event has an invalid data length";
+        case SmfTrackDecodeErrorCode::InvalidTempoValue: return "tempo value must be non-zero";
         case SmfTrackDecodeErrorCode::InvalidSystemEvent: return "unsupported system event";
         case SmfTrackDecodeErrorCode::MissingEndOfTrack: return "track is missing End-of-Track";
         case SmfTrackDecodeErrorCode::TrailingDataAfterEndOfTrack:
@@ -256,9 +260,13 @@ private:
             || (*metaType == 0x2fU && length.value != 0U)) {
             return {SmfTrackDecodeError{SmfTrackDecodeErrorCode::InvalidMetaLength, lengthOffset}, false};
         }
+        const auto dataOffset = reader.offset();
         const auto data = reader.readBytes(length.value);
         if (!data) {
             return {SmfTrackDecodeError{SmfTrackDecodeErrorCode::TruncatedEvent, payload.size()}, false};
+        }
+        if (*metaType == 0x51U && (*data)[0] == 0U && (*data)[1] == 0U && (*data)[2] == 0U) {
+            return {SmfTrackDecodeError{SmfTrackDecodeErrorCode::InvalidTempoValue, dataOffset}, false};
         }
         const auto kind = *metaType == 0x51U ? SmfMidiEventKind::Tempo
                         : *metaType == 0x2fU ? SmfMidiEventKind::EndOfTrack
@@ -289,15 +297,18 @@ private:
         switch (status & 0xf0U) {
         case 0x80U: return SmfMidiEventKind::NoteOff;
         case 0x90U: return SmfMidiEventKind::NoteOn;
+        case 0xa0U: return SmfMidiEventKind::PolyphonicKeyPressure;
         case 0xb0U: return SmfMidiEventKind::Controller;
         case 0xc0U: return SmfMidiEventKind::ProgramChange;
+        case 0xd0U: return SmfMidiEventKind::ChannelPressure;
         case 0xe0U: return SmfMidiEventKind::PitchBend;
         default: return std::nullopt;
         }
     }
 
     [[nodiscard]] static std::size_t channelDataLength(std::uint8_t status) {
-        return (status & 0xf0U) == 0xc0U ? 1U : 2U;
+        const auto messageType = status & 0xf0U;
+        return messageType == 0xc0U || messageType == 0xd0U ? 1U : 2U;
     }
 
     [[nodiscard]] static SmfTrackDecodeResult failure(SmfTrackDecodeErrorCode code,

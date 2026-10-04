@@ -9,7 +9,8 @@ which remains the compatibility/recovery release.
 - [x] Define backend boundary and dependency policy.
 - [x] Add a FluidSynth + miniaudio proof of concept for a known MIDI/SF2 fixture.
 - [x] Add non-invasive audio-device enumeration and endpoint diagnostics.
-- [ ] Manually validate Windows device output, startup reliability, and output latency.
+- [x] Manually validate Windows device output with an external MIDI/SoundFont
+  pair; no private asset was added to the repository.
 - Do not port the HandyKaraoke UI or user song folders yet.
 
 Exit gate: reproducible Windows build; MIDI fixture produces PCM/audio; no
@@ -18,13 +19,16 @@ BASS artefact enters the repository.
 Implementation note: feat/fluidsynth-miniaudio-poc adds the pinned dependency
 path, FluidSynthBackend, miniaudio device callback, and a headless CI test.
 feat/audio-device-diagnostics adds a non-invasive playback-device listing
-command. The remaining 0.1 gate is a manual Windows audio-device check.
+command. The manual Windows audio-device check has passed with external,
+non-distributable validation assets.
 
 ## 0.2.0 — deterministic SMF playback foundation
 
 - [x] Select an output endpoint by the index shown by --list-devices.
 - [x] Reject unavailable endpoint indices and --device with --no-device.
 - [x] Set initial FluidSynth output gain with --volume or mute it with --mute.
+- [x] Apply launch-time per-MIDI-channel gain trims while preserving SMF CC7
+  automation and the GM default channel volume.
 - [x] Parse SMF formats 0 and 1 deterministically from bounded byte input,
   including MThd/MTrk validation and malformed-input coverage.
 - [x] Decode supported SMF events with bounded malformed-input handling.
@@ -32,10 +36,14 @@ command. The remaining 0.1 gate is a manual Windows audio-device check.
 - [x] Add a deterministic PlaybackSession render boundary.
 - [x] Dispatch rendered SMF channel events to an
   abstract MIDI command sink, preserving timeline order without timing or I/O.
+- [x] Add read-only per-channel SMF diagnostics for note-on counts, observed
+  programs, CC7/CC11 history, optional CC39/CC43 14-bit pairs, and deterministic
+  event positions, including an OpenHDK effective-CC7 view after CC121, without
+  requiring a SoundFont or audio device.
 
-Next unfinished integration work: bind the dispatcher to FluidSynthBackend and
-the miniaudio callback, define SF2 fallback behavior, and perform manual
-Windows audio validation. This does not yet provide complete user-facing playback.
+Next unfinished work: add velocity curves and named channel-mute/solo presets,
+then add a master limiter. This does not yet provide complete user-facing
+playback.
 
 Exit gate: fixtures behave correctly and no crash occurs when a SoundFont or
 audio device is unavailable.

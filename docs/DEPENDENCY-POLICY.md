@@ -11,13 +11,18 @@ OpenHDK deliberately excludes BASS, BASS FX, BASSMIDI, BASSmix, BASS_VST,
 and their DLLs, import libraries, headers, SDK archives, redistribution scripts,
 license text, and API wrappers.
 
-## Candidates under evaluation
+## Approved proof-of-concept dependencies
 
 | Component | Candidate | Intended role | Decision |
 |---|---|---|---|
-| MIDI/SF2 synth | FluidSynth | MIDI events to SoundFont PCM | Evaluate in 0.1 |
-| Audio output/mixing | miniaudio | Windows device output and PCM routing | Evaluate in 0.1 |
-| MIDI I/O | RtMidi or libremidi | Device input/output | Compare in 0.1 |
+| MIDI/SF2 synth | FluidSynth | MIDI events to SoundFont PCM | Approved for 0.1 POC |
+| Audio output/mixing | miniaudio | Windows device output and PCM routing | Approved for 0.1 POC |
+
+## Deferred candidates
+
+| Component | Candidate | Intended role | Decision |
+|---|---|---|---|
+| MIDI I/O | RtMidi or libremidi | Physical device input/output | Defer with MIDI hardware work |
 | Tempo/pitch | SoundTouch or Rubber Band | Later audio processing | Defer |
 | Plugin host | JUCE or dedicated VST3 host | Future optional feature | Defer |
 
@@ -29,7 +34,7 @@ linking model, notice requirements, security/update plan, and test coverage.
 No binary release may be published until every bundled dependency has a reviewed
 redistribution basis and required notices.
 
-## Approved 0.1 proof-of-concept dependencies
+## Exact approved 0.1 pins
 
 | Component | Exact pin | SPDX/license | Acquisition and redistribution |
 |---|---|---|---|
@@ -39,3 +44,9 @@ redistribution basis and required notices.
 
 The vcpkg baseline pins FluidSynth and its transitive packages. Updates require
 a reviewable change to the pin, notices, and tests in the same pull request.
+
+## SoundFont fallback policy
+
+The proof of concept has no implicit or bundled runtime SoundFont fallback. A
+configured SoundFont that is missing or cannot be loaded continues to produce
+the corresponding structured recoverable backend error.

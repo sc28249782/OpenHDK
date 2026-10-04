@@ -1,5 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 OpenHDK contributors
+#include "audio/AudioBackend.hpp"
+#include "audio/MidiChannelDiagnostics.hpp"
+#include "audio/MidiRuntimeMixer.hpp"
 #include "audio/SmfParser.hpp"
 #include "audio/SmfTrackEventDecoder.hpp"
 #include "audio/SmfTimelineCompiler.hpp"
@@ -102,6 +105,39 @@ int main() {
     static_assert(!std::is_default_constructible_v<OpenHDK::SmfTrackDecodeResult>);
     static_assert(!std::is_default_constructible_v<OpenHDK::SmfTimeline>);
     static_assert(!std::is_default_constructible_v<OpenHDK::SmfTimelineCompileResult>);
+    if (OpenHDK::isNormalizedVolume(std::numeric_limits<float>::quiet_NaN())
+        || OpenHDK::isNormalizedVolume(std::numeric_limits<float>::infinity())
+        || OpenHDK::isNormalizedVolume(-std::numeric_limits<float>::infinity())
+        || !OpenHDK::isNormalizedVolume(0.0F) || !OpenHDK::isNormalizedVolume(1.0F)
+        || OpenHDK::isNormalizedVolume(-0.01F) || OpenHDK::isNormalizedVolume(1.01F)) return 87;
+    const auto defaultChannelGains = OpenHDK::defaultMidiChannelGains();
+    if (!OpenHDK::areNormalizedMidiChannelGains(defaultChannelGains)
+        || OpenHDK::applyMidiChannelGain(100U, 1.0F) != 100U
+        || OpenHDK::applyMidiChannelGain(100U, 0.5F) != 50U
+        || OpenHDK::applyMidiChannelGain(127U, 0.5F) != 64U
+        || OpenHDK::applyMidiChannelGain(127U, 0.0F) != 0U) return 94;
+    auto invalidChannelGains = defaultChannelGains;
+    invalidChannelGains[9] = std::numeric_limits<float>::quiet_NaN();
+    if (OpenHDK::areNormalizedMidiChannelGains(invalidChannelGains)) return 95;
+    OpenHDK::MidiRuntimeMixer runtimeMixer;
+    const auto defaultMixer = runtimeMixer.snapshot();
+    if (defaultMixer.revision != 0U || defaultMixer.outputGain(0U) != 1.0F
+        || defaultMixer.outputGain(OpenHDK::kMidiChannelCount) != 0.0F
+        || !runtimeMixer.isDefault()) return 102;
+    if (!runtimeMixer.setGain(9U, 0.5F) || !runtimeMixer.setMuted(1U, true)
+        || !runtimeMixer.setSoloed(9U, true) || runtimeMixer.setGain(16U, 0.5F)
+        || runtimeMixer.setGain(0U, std::numeric_limits<float>::infinity())
+        || runtimeMixer.setMuted(16U, true) || runtimeMixer.setSoloed(16U, true)) return 103;
+    const auto soloedMixer = runtimeMixer.snapshot();
+    if (soloedMixer.revision != 3U || soloedMixer.outputGain(1U) != 0.0F
+        || soloedMixer.outputGain(8U) != 0.0F || soloedMixer.outputGain(9U) != 0.5F
+        || OpenHDK::applyMidiChannelGain(110U, soloedMixer.outputGain(9U)) != 55U
+        || runtimeMixer.isDefault()) return 104;
+    if (!runtimeMixer.setSoloed(9U, false) || !runtimeMixer.setMuted(1U, false)
+        || !runtimeMixer.setGain(9U, 1.0F) || !runtimeMixer.isDefault()) return 105;
+    if (!runtimeMixer.setGain(9U, 0.5F)) return 106;
+    runtimeMixer.reset();
+    if (!runtimeMixer.isDefault()) return 107;
 
     constexpr std::array<std::uint8_t, 26> format0{
         'M','T','h','d', 0,0,0,6, 0,0, 0,1, 0,96,
@@ -244,6 +280,9 @@ int main() {
 
     constexpr std::array<std::uint8_t, 6> invalidTempoLength{0, 0xff, 0x51, 2, 0, 0};
     if (!expectsTrackError(invalidTempoLength, SmfTrackDecodeErrorCode::InvalidMetaLength, 3U)) return 30;
+
+    constexpr std::array<std::uint8_t, 7> invalidZeroTempo{0, 0xff, 0x51, 3, 0, 0, 0};
+    if (!expectsTrackError(invalidZeroTempo, SmfTrackDecodeErrorCode::InvalidTempoValue, 4U)) return 88;
 
     constexpr std::array<std::uint8_t, 5> truncatedMetaPayload{0, 0xff, 1, 2, 'x'};
     if (!expectsTrackError(truncatedMetaPayload, SmfTrackDecodeErrorCode::TruncatedEvent, 5U)) return 31;
@@ -503,6 +542,123 @@ int main() {
     OpenHDK::SmfMidiEventDispatcher::dispatch(ignoredDispatchSession.render(0U).events(), ignoredSink);
     if (ignoredSink.count() != 1U || ignoredSink.command(0).kind != FakeMidiCommandKind::NoteOn
         || ignoredSink.command(0).first != 60U || ignoredSink.command(0).second != 1U) return 86;
+
+    constexpr std::array<std::uint8_t, 41> pressureCompatibilityEvents{
+        'M','T','h','d', 0,0,0,6, 0,0, 0,1, 0,96,
+        'M','T','r','k', 0,0,0,19,
+        0, 0xa2, 60, 50,
+        0, 0xd3, 40,
+        0, 0x90, 61, 64,
+        0, 0xb4, 7, 100,
+        0, 0xff, 0x2f, 0};
+    const auto pressureCompatibilityFile = OpenHDK::SmfParser::parse(pressureCompatibilityEvents);
+    if (!pressureCompatibilityFile.file()) return 89;
+    const auto pressureCompatibilityTimeline = OpenHDK::SmfTimelineCompiler::compile(
+        *pressureCompatibilityFile.file());
+    if (!pressureCompatibilityTimeline.timeline()
+        || pressureCompatibilityTimeline.timeline()->events().size() != 5U
+        || pressureCompatibilityTimeline.timeline()->events()[0].event().kind()
+            != OpenHDK::SmfMidiEventKind::PolyphonicKeyPressure
+        || pressureCompatibilityTimeline.timeline()->events()[1].event().kind()
+            != OpenHDK::SmfMidiEventKind::ChannelPressure) return 90;
+    OpenHDK::PlaybackSession pressureCompatibilitySession;
+    if (!pressureCompatibilitySession.prepare(*pressureCompatibilityTimeline.timeline(), 1000000U).succeeded()
+        || !pressureCompatibilitySession.play().succeeded()) return 91;
+    FakeMidiCommandSink pressureCompatibilitySink;
+    OpenHDK::SmfMidiEventDispatcher::dispatch(
+        pressureCompatibilitySession.render(0U).events(), pressureCompatibilitySink);
+    if (pressureCompatibilitySink.count() != 2U
+        || pressureCompatibilitySink.command(0).kind != FakeMidiCommandKind::NoteOn
+        || pressureCompatibilitySink.command(0).channel != 0U
+        || pressureCompatibilitySink.command(0).first != 61U
+        || pressureCompatibilitySink.command(1).kind != FakeMidiCommandKind::Controller
+        || pressureCompatibilitySink.command(1).channel != 4U
+        || pressureCompatibilitySink.command(1).first != 7U
+        || pressureCompatibilitySink.command(1).second != 100U) return 92;
+
+    constexpr std::array<std::uint8_t, 67> diagnosticEvents{
+        'M','T','h','d', 0,0,0,6, 0,1, 0,2, 0,96,
+        'M','T','r','k', 0,0,0,22,
+        0, 0xc0, 40,
+        0, 0x90, 60, 100,
+        0, 0x90, 61, 0,
+        0, 0xb0, 7, 80,
+        0, 0xc0, 2,
+        0, 0xff, 0x2f, 0,
+        'M','T','r','k', 0,0,0,15,
+        0, 0xc0, 40,
+        0, 0xb0, 7, 64,
+        0, 0x99, 36, 127,
+        0, 0xff, 0x2f, 0};
+    const auto diagnosticFile = OpenHDK::SmfParser::parse(diagnosticEvents);
+    if (!diagnosticFile.file()) return 96;
+    const auto diagnosticTimeline = OpenHDK::SmfTimelineCompiler::compile(*diagnosticFile.file());
+    if (!diagnosticTimeline.timeline()) return 97;
+    const auto diagnostics = OpenHDK::MidiChannelDiagnostics::aggregate(
+        *diagnosticTimeline.timeline());
+    if (diagnostics[0].noteOnCount != 1U
+        || !diagnostics[0].observedPrograms[2]
+        || !diagnostics[0].observedPrograms[40]
+        || diagnostics[0].observedPrograms[3]
+        || !diagnostics[0].cc7.first || diagnostics[0].cc7.first->value != 80U
+        || !diagnostics[0].cc7.final || diagnostics[0].cc7.final->value != 64U
+        || diagnostics[0].cc7.beforeFirstNote.has_value()
+        || diagnostics[0].cc7.minimum != 64U || diagnostics[0].cc7.maximum != 80U
+        || diagnostics[0].cc7.changeCount != 1U
+        || !diagnostics[0].effectiveCc7.final
+        || diagnostics[0].effectiveCc7.final->value != 64U
+        || diagnostics[9].noteOnCount != 1U
+        || diagnostics[9].cc7.final.has_value()
+        || diagnostics[15].noteOnCount != 0U
+        || diagnostics[15].cc7.final.has_value()) return 98;
+
+    constexpr std::array<std::uint8_t, 62> controllerHistoryEvents{
+        'M','T','h','d', 0,0,0,6, 0,0, 0,1, 0,96,
+        'M','T','r','k', 0,0,0,40,
+        0, 0xb0, 7, 100,
+        0, 0xb0, 39, 3,
+        0, 0xb0, 11, 127,
+        0, 0xb0, 43, 2,
+        96, 0x90, 60, 100,
+        96, 0xb0, 7, 0,
+        0, 0xb0, 11, 64,
+        0, 0xb0, 39, 4,
+        0, 0xb0, 121, 0,
+        0, 0xff, 0x2f, 0};
+    const auto controllerHistoryFile = OpenHDK::SmfParser::parse(controllerHistoryEvents);
+    if (!controllerHistoryFile.file()) return 99;
+    const auto controllerHistoryTimeline = OpenHDK::SmfTimelineCompiler::compile(
+        *controllerHistoryFile.file());
+    if (!controllerHistoryTimeline.timeline()) return 100;
+    const auto controllerHistory = OpenHDK::MidiChannelDiagnostics::aggregate(
+        *controllerHistoryTimeline.timeline());
+    const auto& history = controllerHistory[0];
+    if (history.noteOnCount != 1U
+        || !history.cc7.first || history.cc7.first->value != 100U
+        || history.cc7.first->tick != 0U || history.cc7.first->timeMicroseconds != 0U
+        || !history.cc7.beforeFirstNote || history.cc7.beforeFirstNote->value != 100U
+        || !history.cc7.final || history.cc7.final->value != 0U
+        || history.cc7.final->tick != 192U || history.cc7.final->timeMicroseconds != 1000000U
+        || history.cc7.minimum != 0U || history.cc7.maximum != 100U
+        || history.cc7.changeCount != 1U || history.finalCc7FourteenBit != 4U
+        || !history.effectiveCc7.first || history.effectiveCc7.first->value != 100U
+        || !history.effectiveCc7.beforeFirstNote
+        || history.effectiveCc7.beforeFirstNote->value != 100U
+        || !history.effectiveCc7.final || history.effectiveCc7.final->value != 100U
+        || history.effectiveCc7.final->tick != 192U
+        || history.effectiveCc7.final->timeMicroseconds != 1000000U
+        || history.effectiveCc7.minimum != 0U || history.effectiveCc7.maximum != 100U
+        || history.effectiveCc7.changeCount != 2U
+        || !history.cc39.final || history.cc39.final->value != 4U
+        || history.cc39.changeCount != 1U
+        || !history.cc11.beforeFirstNote || history.cc11.beforeFirstNote->value != 127U
+        || !history.cc11.final || history.cc11.final->value != 64U
+        || history.cc11.minimum != 64U || history.cc11.maximum != 127U
+        || history.cc11.changeCount != 1U || history.finalCc11FourteenBit != 8194U
+        || !history.cc43.final || history.cc43.final->value != 2U
+        || history.cc43.changeCount != 0U || history.resetAllControllersCount != 1U
+        || !history.finalCc121Reset || history.finalCc121Reset->tick != 192U
+        || history.finalCc121Reset->timeMicroseconds != 1000000U) return 101;
 
     std::cout << "SMF parser fixtures passed\n";
     return 0;

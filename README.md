@@ -12,6 +12,26 @@ event decoding, timeline compilation, and PlaybackSession timing and
 event-dispatch groundwork are in place. The application does not yet provide
 complete user-facing playback.
 
+Inspect a supported SMF format 0 or 1 file without a SoundFont or audio device:
+
+```powershell
+.\build\OpenHDK.exe --midi-diagnostics C:\Music\demo.mid
+```
+
+The deterministic report always lists user-facing MIDI channels 1–16 with
+nonzero-velocity note-on counts, distinct observed program numbers (shown as
+1–128), and controller-state history for CC7/CC11. It reports optional
+CC39/CC43 14-bit pairs, CC121 resets, and OpenHDK's effective CC7 state after
+a reset. Missing controller data is printed as `unavailable`. Diagnostics is a
+standalone, read-only mode and cannot be combined with playback or device
+options.
+
+For a Windows device-output playback session, add `--interactive-mixer` and
+enter `gain <1-16> <0-100>`, `mute <1-16>`, `unmute <1-16>`, `solo <1-16>`,
+`unsolo <1-16>`, `reset`, `help`, or `quit` in the console. It controls the
+runtime mixer at render-block boundaries; it does not alter the MIDI file or
+SoundFont.
+
 ## Principles
 
 - No BASS, BASS FX, BASSMIDI, BASSmix, BASS_VST binaries, headers, libraries or build scripts are included.
@@ -20,12 +40,12 @@ complete user-facing playback.
 - Treat VST/VST3 hosting as a separate future workstream.
 - Preserve required GPL attribution for any HandyKaraoke source code that is later ported.
 
-## Intended first stack
+## Current proof of concept and deferred candidates
 
-- Qt Widgets — existing desktop UI direction
-- RtMidi or libremidi — MIDI input/output
-- FluidSynth — SoundFont 2 synthesis
-- miniaudio — device output and mixing
+- FluidSynth — current SoundFont 2 synthesis proof of concept
+- miniaudio — current device-output and mixing proof of concept
+- Qt Widgets — deferred UI migration
+- RtMidi or libremidi — deferred physical MIDI hardware I/O
 - SoundTouch or Rubber Band — later tempo/pitch processing
 
 See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), [docs/ROADMAP.md](docs/ROADMAP.md), [docs/DEPENDENCY-POLICY.md](docs/DEPENDENCY-POLICY.md), [docs/WRITING-STYLE.md](docs/WRITING-STYLE.md), and [docs/GLOSSARY.md](docs/GLOSSARY.md).
@@ -50,6 +70,11 @@ ctest --test-dir build-parser --output-on-failure
 
 The POC command uses vcpkg's checked-in `vcpkg-configuration.json`, including
 its pinned registry baseline, to resolve FluidSynth reproducibly.
+
+## Specification
+
+The normative contract for this implemented playback baseline is
+[docs/SPECIFICATION.md](docs/SPECIFICATION.md).
 
 ## License
 

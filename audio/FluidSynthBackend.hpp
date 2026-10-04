@@ -13,9 +13,14 @@ public:
   [[nodiscard]] AudioBackendInfo info() const noexcept override;
   bool initialize(const AudioBackendConfig&, AudioBackendStatus&) override;
   bool playMidiFile(const std::filesystem::path&, AudioBackendStatus&) override;
+  bool playCompiledTimeline(const SmfTimeline&, AudioBackendStatus&) override;
   bool renderStereo(std::span<float>, AudioBackendStatus&) override;
   bool setVolume(float volume, AudioBackendStatus&) override;
   bool setMuted(bool muted, AudioBackendStatus&) override;
+  bool setRuntimeChannelGain(std::size_t channel, float gain, AudioBackendStatus&) override;
+  bool setRuntimeChannelMuted(std::size_t channel, bool muted, AudioBackendStatus&) override;
+  bool setRuntimeChannelSoloed(std::size_t channel, bool soloed, AudioBackendStatus&) override;
+  bool resetRuntimeMixer(AudioBackendStatus&) override;
   [[nodiscard]] float volume() const noexcept override;
   [[nodiscard]] bool isMuted() const noexcept override;
   [[nodiscard]] bool isPlaying() const noexcept override;
