@@ -1,8 +1,8 @@
 # OpenHDK System Specification
 
 **Specification ID:** OHK-SPEC
-**Status:** Normative draft
-**Baseline:** `feat/fluidsynth-session-bridge` through `813a111`
+**Status:** Normative baseline
+**Baseline:** OpenHDK `0.1.0`
 **Scope:** implemented deterministic SMF and FluidSynth/miniaudio playback foundation
 
 This document specifies the behavior that OpenHDK currently guarantees. It is

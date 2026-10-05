@@ -1,7 +1,8 @@
 # OpenHDK roadmap
 
-OpenHDK begins at 0.1.0-dev. It is independent from HandyKaraoke 3.0.0-alpha.1,
-which remains the compatibility/recovery release.
+OpenHDK versioning begins with the `0.1.0` source-release baseline. It is
+independent from HandyKaraoke 3.0.0-alpha.1, which remains the
+compatibility/recovery release.
 
 ## 0.1.0 — bootstrap and audio proof of concept
 
