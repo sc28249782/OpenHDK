@@ -6,11 +6,11 @@ OpenHDK is a separate development line from [HandyKaraoke](https://github.com/sc
 
 ## Status
 
-`0.1.0-dev` — proof-of-concept groundwork. Optional, pinned FluidSynth and
-miniaudio dependencies support the audio POC, while deterministic SMF parsing,
-event decoding, timeline compilation, and PlaybackSession timing and
-event-dispatch groundwork are in place. The application does not yet provide
-complete user-facing playback.
+`0.1.0` — initial source-release baseline. Optional, pinned FluidSynth and
+miniaudio dependencies support the audio POC. Deterministic SMF parsing, event
+decoding, timeline compilation, PlaybackSession timing, event dispatch, MIDI
+diagnostics, and runtime channel mixing are in place. The application does not
+yet provide complete user-facing playback.
 
 Inspect a supported SMF format 0 or 1 file without a SoundFont or audio device:
 
@@ -83,6 +83,10 @@ its pinned registry baseline, to resolve FluidSynth reproducibly.
 
 The normative contract for this implemented playback baseline is
 [docs/SPECIFICATION.md](docs/SPECIFICATION.md).
+
+See [CHANGELOG.md](CHANGELOG.md) for the release scope and
+[docs/RELEASE-CHECKLIST.md](docs/RELEASE-CHECKLIST.md) for the signed-tag and
+source-release procedure.
 
 ## License
 
