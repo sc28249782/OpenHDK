@@ -44,17 +44,6 @@ public:
     [[nodiscard]] std::size_t offset() const { return offset_; }
     [[nodiscard]] std::size_t remaining() const { return bytes_.size() - offset_; }
 
-    [[nodiscard]] std::optional<std::uint32_t> readVariableLength() {
-        std::uint32_t value = 0;
-        for (int count = 0; count < 4; ++count) {
-            const auto byte = readByte();
-            if (!byte) return std::nullopt;
-            value = (value << 7U) | (*byte & 0x7fU);
-            if ((*byte & 0x80U) == 0U) return value;
-        }
-        return std::nullopt;
-    }
-
 private:
     std::span<const std::uint8_t> bytes_;
     std::size_t offset_{0};
