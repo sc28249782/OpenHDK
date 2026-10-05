@@ -42,31 +42,30 @@ struct FakeMidiCommand {
 class FakeMidiCommandSink final : public OpenHDK::MidiCommandSink {
 public:
     void noteOn(std::uint8_t channel, std::uint8_t note, std::uint8_t velocity) override {
-        commands_[count_++] = {FakeMidiCommandKind::NoteOn, channel, note, velocity};
+        commands_.push_back({FakeMidiCommandKind::NoteOn, channel, note, velocity});
     }
 
     void noteOff(std::uint8_t channel, std::uint8_t note, std::uint8_t velocity) override {
-        commands_[count_++] = {FakeMidiCommandKind::NoteOff, channel, note, velocity};
+        commands_.push_back({FakeMidiCommandKind::NoteOff, channel, note, velocity});
     }
 
     void controller(std::uint8_t channel, std::uint8_t controller, std::uint8_t value) override {
-        commands_[count_++] = {FakeMidiCommandKind::Controller, channel, controller, value};
+        commands_.push_back({FakeMidiCommandKind::Controller, channel, controller, value});
     }
 
     void programChange(std::uint8_t channel, std::uint8_t program) override {
-        commands_[count_++] = {FakeMidiCommandKind::ProgramChange, channel, program, 0U};
+        commands_.push_back({FakeMidiCommandKind::ProgramChange, channel, program, 0U});
     }
 
     void pitchBend(std::uint8_t channel, std::uint16_t value) override {
-        commands_[count_++] = {FakeMidiCommandKind::PitchBend, channel, 0U, value};
+        commands_.push_back({FakeMidiCommandKind::PitchBend, channel, 0U, value});
     }
 
-    [[nodiscard]] std::size_t count() const { return count_; }
+    [[nodiscard]] std::size_t count() const { return commands_.size(); }
     [[nodiscard]] const FakeMidiCommand& command(std::size_t index) const { return commands_[index]; }
 
 private:
-    std::array<FakeMidiCommand, 8> commands_{};
-    std::size_t count_{};
+    std::vector<FakeMidiCommand> commands_;
 };
 
 template <std::size_t Size>
@@ -95,6 +94,18 @@ bool expectsTrackError(const std::array<std::uint8_t, Size>& fixture,
     const auto* error = result.error();
     return !result.succeeded() && !result.events() && error && error->code == expected
         && error->offset == expectedOffset && !error->message().empty();
+}
+
+template <std::size_t Size>
+bool expectsFirstEventTick(const std::array<std::uint8_t, Size>& fixture,
+                           std::uint64_t expectedTick) {
+    const auto result = OpenHDK::SmfTrackEventDecoder::decode(fixture);
+    if (!result.succeeded() || !result.events() || result.error()) return false;
+    const auto events = result.events()->events();
+    return events.size() == 2U && events[0].kind() == OpenHDK::SmfMidiEventKind::NoteOn
+        && events[0].tick() == expectedTick
+        && events[1].kind() == OpenHDK::SmfMidiEventKind::EndOfTrack
+        && events[1].tick() == expectedTick;
 }
 
 } // namespace
@@ -270,8 +281,26 @@ int main() {
         || runningStatusResult.events()->events()[1].data()[0] != 61U
         || runningStatusResult.events()->events()[2].kind() != OpenHDK::SmfMidiEventKind::EndOfTrack);
 
-    constexpr std::array<std::uint8_t, 4> malformedVlq{0x81, 0x80, 0x80, 0x80};
-    OPENHDK_FAIL_IF(27, !expectsTrackError(malformedVlq, SmfTrackDecodeErrorCode::MalformedVlq, 3U));
+    constexpr std::array<std::uint8_t, 8> oneByteVlq{
+        0x7f, 0x90, 60, 64, 0, 0xff, 0x2f, 0};
+    constexpr std::array<std::uint8_t, 9> twoByteVlq{
+        0x81, 0, 0x90, 60, 64, 0, 0xff, 0x2f, 0};
+    constexpr std::array<std::uint8_t, 10> threeByteVlq{
+        0x81, 0x80, 0, 0x90, 60, 64, 0, 0xff, 0x2f, 0};
+    constexpr std::array<std::uint8_t, 11> fourByteMaximumVlq{
+        0xff, 0xff, 0xff, 0x7f, 0x90, 60, 64, 0, 0xff, 0x2f, 0};
+    OPENHDK_FAIL_IF(108, !expectsFirstEventTick(oneByteVlq, 127U));
+    OPENHDK_FAIL_IF(109, !expectsFirstEventTick(twoByteVlq, 128U));
+    OPENHDK_FAIL_IF(110, !expectsFirstEventTick(threeByteVlq, 16384U));
+    OPENHDK_FAIL_IF(111, !expectsFirstEventTick(fourByteMaximumVlq, 0x0fffffffU));
+
+    constexpr std::array<std::uint8_t, 1> truncatedVlq{0x81};
+    OPENHDK_FAIL_IF(112, !expectsTrackError(
+        truncatedVlq, SmfTrackDecodeErrorCode::TruncatedEvent, 1U));
+
+    constexpr std::array<std::uint8_t, 5> overlongVlq{0x81, 0x80, 0x80, 0x80, 0};
+    OPENHDK_FAIL_IF(27, !expectsTrackError(
+        overlongVlq, SmfTrackDecodeErrorCode::MalformedVlq, 3U));
 
     constexpr std::array<std::uint8_t, 2> missingRunningStatus{0, 60};
     OPENHDK_FAIL_IF(28, !expectsTrackError(missingRunningStatus, SmfTrackDecodeErrorCode::MissingRunningStatus, 1U));
