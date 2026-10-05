@@ -1,0 +1,36 @@
+name: Linux core
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: linux-core-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      ASAN_OPTIONS: detect_leaks=1
+      UBSAN_OPTIONS: print_stacktrace=1:halt_on_error=1
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure hardware-free core
+        run: >-
+          cmake -S . -B build-linux-core -G Ninja
+          -DOPENHDK_BUILD_AUDIO_POC=OFF
+          -DOPENHDK_BUILD_TESTS=ON
+          -DOPENHDK_FETCH_TEST_FIXTURES=OFF
+          -DCMAKE_BUILD_TYPE=Debug
+          -DCMAKE_CXX_FLAGS="-Wall -Wextra -Werror -pedantic -fno-omit-frame-pointer -fsanitize=address,undefined"
+          -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address,undefined"
+      - name: Build
+        run: cmake --build build-linux-core --parallel
+      - name: Test
+        run: ctest --test-dir build-linux-core --output-on-failure
