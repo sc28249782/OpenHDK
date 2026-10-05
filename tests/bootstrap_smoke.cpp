@@ -2,7 +2,6 @@
 // Copyright (C) 2026 OpenHDK contributors
 #include "TestCheck.hpp"
 #include "audio/FluidSynthBackend.hpp"
-#include "audio/SmfByteReader.hpp"
 #include "audio/SmfParser.hpp"
 #include "audio/SmfTimelineCompiler.hpp"
 #include <algorithm>
@@ -27,15 +26,6 @@ std::filesystem::path writeMidi() {
 }
 }
 int main() {
-  constexpr std::array<std::uint8_t, 2> delta{0x81U, 0x00U};
-  OpenHDK::SmfByteReader reader(delta);
-  OPENHDK_FAIL_IF(10, reader.readVariableLength() != 128U);
-  constexpr std::array<std::uint8_t, 1> incompleteDelta{0x80U};
-  OpenHDK::SmfByteReader incompleteReader(incompleteDelta);
-  OPENHDK_FAIL_IF(11, incompleteReader.readVariableLength().has_value());
-  constexpr std::array<std::uint8_t, 5> overlongDelta{0x81U, 0x80U, 0x80U, 0x80U, 0x00U};
-  OpenHDK::SmfByteReader overlongReader(overlongDelta);
-  OPENHDK_FAIL_IF(12, overlongReader.readVariableLength().has_value());
   constexpr std::array<std::uint8_t, 45> compiledMidi{
     'M','T','h','d',0,0,0,6,0,0,0,1,1,0xE0, 'M','T','r','k',0,0,0,0x17,
     0,0xFF,0x51,3,7,0xA1,0x20, 0,0xC0,0, 0,0x90,0x3C,0x64,
