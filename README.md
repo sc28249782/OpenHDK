@@ -68,6 +68,14 @@ cmake --build build-parser --parallel
 ctest --test-dir build-parser --output-on-failure
 ```
 
+The lightweight Linux core CI job uses this hardware-free configuration with
+strict compiler warnings and AddressSanitizer/UndefinedBehaviorSanitizer. It
+runs the SMF parser fixtures, MIDI diagnostics CLI tests, and runtime mixer
+console command tests. It does not install FluidSynth or vcpkg, fetch miniaudio
+or SoundFonts, access audio hardware, build the complete audio application, or
+claim Linux support for the Windows interactive console. The Windows CI job
+continues to validate the complete audio and device-output build.
+
 The POC command uses vcpkg's checked-in `vcpkg-configuration.json`, including
 its pinned registry baseline, to resolve FluidSynth reproducibly.
 
