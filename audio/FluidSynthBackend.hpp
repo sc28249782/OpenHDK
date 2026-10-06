@@ -21,6 +21,10 @@ public:
   bool setRuntimeChannelMuted(std::size_t channel, bool muted, AudioBackendStatus&) override;
   bool setRuntimeChannelSoloed(std::size_t channel, bool soloed, AudioBackendStatus&) override;
   bool resetRuntimeMixer(AudioBackendStatus&) override;
+  bool saveRuntimeMixerPreset(std::string_view name, AudioBackendStatus&) override;
+  bool recallRuntimeMixerPreset(std::string_view name, AudioBackendStatus&) override;
+  bool deleteRuntimeMixerPreset(std::string_view name, AudioBackendStatus&) override;
+  bool listRuntimeMixerPresets(std::vector<std::string>& names, AudioBackendStatus&) override;
   [[nodiscard]] float volume() const noexcept override;
   [[nodiscard]] bool isMuted() const noexcept override;
   [[nodiscard]] bool isPlaying() const noexcept override;

@@ -12,6 +12,7 @@
 #include <span>
 #include <string>
 #include <string_view>
+#include <vector>
 namespace OpenHDK {
 class SmfTimeline;
 enum class AudioCapability : std::uint32_t { None = 0, MidiSynthesis = 1U << 0U, DeviceOutput = 1U << 1U, Mixing = 1U << 2U, TempoPitch = 1U << 3U, PluginHosting = 1U << 4U };
@@ -37,6 +38,10 @@ public:
   virtual bool setRuntimeChannelMuted(std::size_t channel, bool muted, AudioBackendStatus&) = 0;
   virtual bool setRuntimeChannelSoloed(std::size_t channel, bool soloed, AudioBackendStatus&) = 0;
   virtual bool resetRuntimeMixer(AudioBackendStatus&) = 0;
+  virtual bool saveRuntimeMixerPreset(std::string_view name, AudioBackendStatus&) = 0;
+  virtual bool recallRuntimeMixerPreset(std::string_view name, AudioBackendStatus&) = 0;
+  virtual bool deleteRuntimeMixerPreset(std::string_view name, AudioBackendStatus&) = 0;
+  virtual bool listRuntimeMixerPresets(std::vector<std::string>& names, AudioBackendStatus&) = 0;
   [[nodiscard]] virtual float volume() const noexcept = 0;
   [[nodiscard]] virtual bool isMuted() const noexcept = 0;
   [[nodiscard]] virtual bool isPlaying() const noexcept = 0;

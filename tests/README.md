@@ -11,7 +11,10 @@ from compiled and legacy playback and a dense maximum-velocity chord.
 all-channel flags, revision counts, gain preservation, and existing channel
 setters. A control writer and render reader also check that mute/solo masks
 remain one complete pair during repeated recall. This is a core-only test;
-backend integration will test source CC7 preservation and CC120 behavior.
+the console test now covers command argument validation, overwrite, recall,
+sorted list, deletion, error reporting, gain preservation, and one revision
+per recall. The headless audio smoke test exercises preset mute/recall around
+CC7 automation and a later note-on, lifecycle persistence, and legacy rejection.
 
 `midi-velocity-curves` checks the pure velocity helper without audio hardware.
 It covers fixed vectors, all positive MIDI velocities with an independent

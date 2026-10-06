@@ -26,7 +26,8 @@ inline RuntimeMixerConsoleResult runRuntimeMixerConsoleCommand(
     if (operation == "quit" || operation == "exit") return RuntimeMixerConsoleResult::Quit;
     if (operation == "help") {
         output << "Mixer commands: gain <1-16> <0-100>, mute <1-16>, unmute <1-16>, "
-                  "solo <1-16>, unsolo <1-16>, reset, help, quit\n";
+                  "solo <1-16>, unsolo <1-16>, preset-save <name>, preset-recall <name>, "
+                  "preset-delete <name>, preset-list, reset, help, quit\n";
         return RuntimeMixerConsoleResult::Continue;
     }
     if (operation == "reset") {
@@ -37,6 +38,36 @@ inline RuntimeMixerConsoleResult runRuntimeMixerConsoleCommand(
         }
         if (!backend.resetRuntimeMixer(status)) error << "Mixer reset failed: " << status.message << '\n';
         else output << "Mixer reset.\n";
+        return RuntimeMixerConsoleResult::Continue;
+    }
+
+    if (operation == "preset-list") {
+        input >> extra;
+        if (!extra.empty()) {
+            error << "preset-list does not take arguments.\n";
+            return RuntimeMixerConsoleResult::Continue;
+        }
+        std::vector<std::string> names;
+        if (!backend.listRuntimeMixerPresets(names, status)) {
+            error << "Preset list failed: " << status.message << '\n';
+        } else {
+            output << "Mixer presets (" << names.size() << "):\n";
+            for (const auto& name : names) output << name << '\n';
+        }
+        return RuntimeMixerConsoleResult::Continue;
+    }
+    if (operation == "preset-save" || operation == "preset-recall" || operation == "preset-delete") {
+        std::string name;
+        input >> name >> extra;
+        if (name.empty() || !extra.empty()) {
+            error << operation << " takes one preset name.\n";
+            return RuntimeMixerConsoleResult::Continue;
+        }
+        const bool succeeded = operation == "preset-save" ? backend.saveRuntimeMixerPreset(name, status)
+            : operation == "preset-recall" ? backend.recallRuntimeMixerPreset(name, status)
+                                          : backend.deleteRuntimeMixerPreset(name, status);
+        if (!succeeded) error << "Preset command failed: " << status.message << '\n';
+        else output << "Preset command applied.\n";
         return RuntimeMixerConsoleResult::Continue;
     }
 

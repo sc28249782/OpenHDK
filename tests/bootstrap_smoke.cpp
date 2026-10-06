@@ -41,6 +41,12 @@ int main() {
   const auto compiledTimeline = OpenHDK::SmfTimelineCompiler::compile(*parsedMidi.file());
   OPENHDK_FAIL_IF(17, !compiledTimeline.timeline());
   OpenHDK::FluidSynthBackend backend; OpenHDK::AudioBackendStatus status;
+  std::vector<std::string> presetNames{"unchanged"};
+  OPENHDK_FAIL_IF(48, backend.saveRuntimeMixerPreset("Default", status)
+                      || backend.recallRuntimeMixerPreset("Default", status)
+                      || backend.deleteRuntimeMixerPreset("Default", status)
+                      || backend.listRuntimeMixerPresets(presetNames, status)
+                      || presetNames != std::vector<std::string>{"unchanged"});
   OPENHDK_FAIL_IF(42, backend.initialize({.soundFontPath = "does-not-exist.sf2", .enableDeviceOutput = false,
                           .velocityCurve = static_cast<OpenHDK::MidiVelocityCurve>(999)}, status)
       || status.error != OpenHDK::AudioBackendError::InvalidConfiguration);
@@ -107,9 +113,12 @@ int main() {
   }
   OPENHDK_FAIL_IF(21, backend.isPlaying() || !compiledHeard);
   OPENHDK_FAIL_IF(26, !backend.resetRuntimeMixer(status));
+  OPENHDK_FAIL_IF(49, !backend.saveRuntimeMixerPreset("Default", status));
   OPENHDK_FAIL_IF(4, !backend.playMidiFile(midi, status));
   OPENHDK_FAIL_IF(25, backend.setRuntimeChannelMuted(0U, true, status)
       || status.error != OpenHDK::AudioBackendError::MidiPlaybackFailed);
+  OPENHDK_FAIL_IF(50, backend.recallRuntimeMixerPreset("Default", status)
+                      || status.error != OpenHDK::AudioBackendError::MidiPlaybackFailed);
   std::this_thread::sleep_for(std::chrono::milliseconds(25));
   std::vector<float> legacyPcm(4096U);
   OPENHDK_FAIL_IF(5, !backend.renderStereo(legacyPcm, status));
@@ -169,6 +178,60 @@ int main() {
     }
     OPENHDK_FAIL_IF(47, backend.isPlaying() || !curveHeard);
   }
+  // CC7 changes while a saved mute preset is active, before a later note-on.
+  // Recall must not clear source automation or prevent subsequent notes.
+  const std::vector<std::uint8_t> presetTrack{
+    0U,0xc0U,0U, 0U,0xb0U,7U,40U, 0U,0x90U,60U,100U,
+    96U,0xb0U,7U,80U, 96U,0x90U,62U,100U,
+    0x82U,0x20U,0xb0U,120U,0U, 0U,0xffU,0x2fU,0U};
+  std::vector<std::uint8_t> presetMidi{
+    'M','T','h','d',0,0,0,6,0,0,0,1,1,0xe0,'M','T','r','k'};
+  for (const unsigned shift : {24U, 16U, 8U, 0U}) {
+    presetMidi.push_back(static_cast<std::uint8_t>(presetTrack.size() >> shift));
+  }
+  presetMidi.insert(presetMidi.end(), presetTrack.begin(), presetTrack.end());
+  const auto presetParsed = OpenHDK::SmfParser::parse(presetMidi);
+  OPENHDK_FAIL_IF(51, !presetParsed.file());
+  const auto presetTimeline = OpenHDK::SmfTimelineCompiler::compile(*presetParsed.file());
+  OPENHDK_FAIL_IF(52, !presetTimeline.timeline());
+  OPENHDK_FAIL_IF(53, !backend.initialize({.soundFontPath = OPENHDK_TEST_SOUNDFONT_PATH,
+                              .enableDeviceOutput = false}, status)
+                      || !backend.setRuntimeChannelGain(0U, 0.5F, status)
+                      || !backend.saveRuntimeMixerPreset("Audible", status)
+                      || !backend.setRuntimeChannelMuted(0U, true, status)
+                      || !backend.saveRuntimeMixerPreset("Quiet", status)
+                      || !backend.resetRuntimeMixer(status)
+                      || !backend.setRuntimeChannelGain(0U, 0.5F, status)
+                      || !backend.recallRuntimeMixerPreset("Quiet", status)
+                      || !backend.playCompiledTimeline(*presetTimeline.timeline(), status));
+  for (unsigned block = 0U; block < 40U; ++block) {
+    OPENHDK_FAIL_IF(54, !backend.renderStereo(compiledPcm, status)
+                        || std::any_of(compiledPcm.begin(), compiledPcm.end(), [](float sample) {
+                          return !std::isfinite(sample) || std::abs(sample) > 1.0e-6F;
+                        }));
+  }
+  OPENHDK_FAIL_IF(55, !backend.recallRuntimeMixerPreset("Audible", status));
+  bool presetHeard{};
+  for (std::size_t block = 0U; block < 1024U && backend.isPlaying(); ++block) {
+    OPENHDK_FAIL_IF(56, !backend.renderStereo(compiledPcm, status) || !isLimitedPcm(compiledPcm));
+    presetHeard = presetHeard || std::any_of(compiledPcm.begin(), compiledPcm.end(), [](float sample) {
+      return std::abs(sample) > 0.0001F;
+    });
+  }
+  OPENHDK_FAIL_IF(57, backend.isPlaying() || !presetHeard
+                      || backend.saveRuntimeMixerPreset("1bad", status)
+                      || backend.recallRuntimeMixerPreset("Missing", status)
+                      || backend.deleteRuntimeMixerPreset("Missing", status));
+  OPENHDK_FAIL_IF(58, !backend.listRuntimeMixerPresets(presetNames, status)
+                      || presetNames != std::vector<std::string>{"Audible", "Default", "Quiet"});
+  OPENHDK_FAIL_IF(59, !backend.deleteRuntimeMixerPreset("Quiet", status)
+                      || backend.recallRuntimeMixerPreset("Quiet", status));
+  backend.shutdown();
+  OPENHDK_FAIL_IF(60, backend.recallRuntimeMixerPreset("Audible", status)
+                      || !backend.initialize({.soundFontPath = OPENHDK_TEST_SOUNDFONT_PATH,
+                                .enableDeviceOutput = false}, status)
+                      || !backend.listRuntimeMixerPresets(presetNames, status)
+                      || presetNames != std::vector<std::string>{"Audible", "Default"});
   backend.shutdown(); std::filesystem::remove(midi);
   OPENHDK_FAIL_IF(35, !completedCompiledAfterLegacy);
   return 0;

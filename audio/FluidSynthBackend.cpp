@@ -4,6 +4,7 @@
 #include "audio/PlaybackSession.hpp"
 #include "audio/SmfMidiEventDispatcher.hpp"
 #include "audio/StereoPeakLimiter.hpp"
+#include "audio/MidiMixerPresets.hpp"
 #include <algorithm>
 #include <atomic>
 #include <filesystem>
@@ -17,6 +18,13 @@ constexpr std::uint64_t kMicrosecondsPerSecond = 1000000U;
 static_assert(std::atomic<bool>::is_always_lock_free);
 void ok(AudioBackendStatus& s) { s = {}; }
 void fail(AudioBackendStatus& s, AudioBackendError e, std::string text) { s.error = e; s.message = std::move(text); }
+bool presetResult(MidiMixerPresetResult result, AudioBackendStatus& status) {
+  if (result == MidiMixerPresetResult::Success) { ok(status); return true; }
+  fail(status, AudioBackendError::InvalidConfiguration,
+       result == MidiMixerPresetResult::InvalidName ? "Invalid mixer preset name."
+                                                    : "Mixer preset was not found.");
+  return false;
+}
 class FluidSynthMidiCommandSink final : public MidiCommandSink {
 public:
   FluidSynthMidiCommandSink(fluid_synth_t* synth, MidiChannelGains channelGains,
@@ -90,6 +98,12 @@ struct FluidSynthBackend::Impl {
     }
   }
   MidiVelocityCurve velocityCurve{MidiVelocityCurve::Linear};
+  MidiMixerPresets presets{};
+  bool presetAccess(AudioBackendStatus& status) const {
+    if (initialized && synth != nullptr) return true;
+    fail(status, AudioBackendError::InvalidConfiguration, "Initialize the audio backend before using mixer presets.");
+    return false;
+  }
   void discardSession() {
     silenceActiveSounds();
     if (session.state() != PlaybackSessionState::Idle) static_cast<void>(session.stop());
@@ -314,6 +328,28 @@ bool FluidSynthBackend::resetRuntimeMixer(AudioBackendStatus& status) {
   ok(status); return true;
 }
 float FluidSynthBackend::volume() const noexcept { return impl_->volume; }
+bool FluidSynthBackend::saveRuntimeMixerPreset(std::string_view name, AudioBackendStatus& status) {
+  if (!impl_->presetAccess(status)) return false;
+  return presetResult(impl_->presets.save(name, impl_->runtimeMixer), status);
+}
+bool FluidSynthBackend::recallRuntimeMixerPreset(std::string_view name, AudioBackendStatus& status) {
+  if (!impl_->presetAccess(status)) return false;
+  if (impl_->player != nullptr) {
+    fail(status, AudioBackendError::MidiPlaybackFailed, "Mixer preset recall requires compiled timeline playback.");
+    return false;
+  }
+  return presetResult(impl_->presets.recall(name, impl_->runtimeMixer), status);
+}
+bool FluidSynthBackend::deleteRuntimeMixerPreset(std::string_view name, AudioBackendStatus& status) {
+  if (!impl_->presetAccess(status)) return false;
+  return presetResult(impl_->presets.erase(name), status);
+}
+bool FluidSynthBackend::listRuntimeMixerPresets(std::vector<std::string>& names, AudioBackendStatus& status) {
+  if (!impl_->presetAccess(status)) return false;
+  names = impl_->presets.names();
+  ok(status);
+  return true;
+}
 bool FluidSynthBackend::isMuted() const noexcept { return impl_->muted; }
 bool FluidSynthBackend::isPlaying() const noexcept { return impl_->sessionActive.load(std::memory_order_acquire) || (impl_->player != nullptr && fluid_player_get_status(impl_->player) == FLUID_PLAYER_PLAYING); }
 bool FluidSynthBackend::hasActiveDevice() const noexcept { return impl_->deviceInitialized; }

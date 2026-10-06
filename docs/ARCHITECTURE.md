@@ -86,7 +86,10 @@ uses the same output boundary. The dispatcher now applies the configured
 velocity curve immediately before positive note-on dispatch. Selection is
 fixed during backend initialization; the default linear curve preserves prior
 behavior. Non-linear curves are rejected by the legacy file-player API.
-Preset backend and console integration remain planned.
+The backend owns a control-thread preset registry. Console recall publishes
+flags through the packed atomic mixer; only the callback touches the synth.
+Registry operations allocate on the control path. Presets survive reset and
+reinitialization within the same backend object, with no file persistence.
 These layers must retain the callback rules above; they do not authorize a
 FluidSynth-specific public mixer model.
 

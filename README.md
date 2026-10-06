@@ -36,6 +36,13 @@ enter `gain <1-16> <0-100>`, `mute <1-16>`, `unmute <1-16>`, `solo <1-16>`,
 runtime mixer at render-block boundaries; it does not alter the MIDI file or
 SoundFont.
 
+The development console also accepts `preset-save <name>`,
+`preset-recall <name>`, `preset-delete <name>`, and `preset-list`. Presets
+store mute/solo flags only and preserve current gains when recalled. Names
+are case-sensitive ASCII identifiers of 1–32 characters, starting with a
+letter and followed by letters, digits, hyphen, or underscore. Presets remain
+in memory for the backend object's lifetime; `reset` does not delete them.
+
 ## Principles
 
 - No BASS, BASS FX, BASSMIDI, BASSmix, BASS_VST binaries, headers, libraries or build scripts are included.

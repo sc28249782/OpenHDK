@@ -101,8 +101,15 @@ the revision once. Invalid or missing names leave the mixer unchanged. Gains
 remain independent; the registry has no access to source MIDI controllers.
 The registry can allocate and must not run in an audio callback. A single
 control thread owns the registry; the render thread reads only the mixer.
-Mixer reset does not delete saved presets. Backend and console integration
-remain planned work, so the application does not yet expose named presets.
+Mixer reset does not delete saved presets. The development backend now owns
+the registry and exposes save, recall, delete, and list operations. All require
+initialization; recall also rejects a retained legacy player. The registry
+survives backend shutdown/reinitialize and ends with its backend object.
+The Windows console uses `preset-save <name>`, `preset-recall <name>`,
+`preset-delete <name>`, and `preset-list`. List returns ASCII-sorted names.
+Only recall publishes mixer state; the callback applies the existing CC120
+transition rules at the next block boundary. No fixed count limit or disk
+persistence is added. Manual Windows release validation remains pending.
 
 `audio/StereoPeakLimiter.hpp` implements the stateless linked stereo limiter.
 The FluidSynth adapter applies it after each successful synth render segment,

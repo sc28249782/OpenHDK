@@ -195,6 +195,17 @@ Recalling a preset MUST publish all its flags as one new mixer revision. A
 missing, invalid, or deleted preset MUST fail without changing mixer state.
 Preset persistence beyond the running process is outside v0.2.
 
+The development Windows mixer console provides `preset-save <name>`,
+`preset-recall <name>`, `preset-delete <name>`, and `preset-list`. Named
+operations MUST take exactly one name; list MUST take no arguments and MUST
+report names in ASCII lexicographic order. Backend operations require an
+initialized backend. Recall MUST reject a retained legacy player because
+runtime channel mixing requires compiled-timeline playback. Save, delete, and
+list are control-path operations and do not change synth state. Presets belong
+to one backend object, survive mixer reset and backend shutdown/reinitialize,
+and end when that object is destroyed. No file persistence or fixed preset
+count is introduced in v0.2.
+
 The v0.2 master limiter is an enabled linked stereo hard-peak limiter after
 all master and channel mixing and before either device output or headless PCM
 output. For each frame, non-finite input samples MUST become zero. Let `p` be
@@ -272,9 +283,9 @@ effects/plugins, cross-platform guarantees, and any permissive parser
 compatibility mode.
 
 Velocity curves are connected to compiled playback and CLI selection in the
-development tree. Named mixer presets have a core implementation for their
-accepted contract in section 6.1; backend and console integration remain
-unfinished. The v0.2 hard-peak limiter is implemented in the shared FluidSynth
+development tree. Named mixer presets are connected to backend operations and
+the Windows interactive mixer console. The v0.2 hard-peak limiter is
+implemented in the shared FluidSynth
 render path in the development tree. These additions are not part of the
 released v0.1.0 baseline. They MUST NOT be claimed as release-supported until
 their implementation and section 9 acceptance pass.

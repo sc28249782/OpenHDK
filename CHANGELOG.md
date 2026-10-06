@@ -6,6 +6,11 @@ This file records the user-visible scope of each OpenHDK source release.
 
 ### Added
 
+- Named in-process mute/solo presets through backend operations and the
+  Windows interactive mixer console: save, recall, delete, and sorted list.
+  Recall preserves runtime gains and source controllers. Manual Windows
+  release validation is pending.
+
 - Playback velocity selection with `--velocity-curve linear|soft|hard`.
   Positive note-ons are transformed at dispatch; source MIDI and controller
   automation remain unchanged. Linear is the default. Non-linear curves
