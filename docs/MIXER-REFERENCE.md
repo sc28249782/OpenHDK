@@ -86,6 +86,7 @@ mixer work must also satisfy `DEPENDENCY-POLICY.md`.
 
 - `ROADMAP.md` — release ordering and exit gates.
 - `SPECIFICATION.md` — current normative playback behavior and deferred scope.
+- `MIXER-DYNAMICS-CONTRACT.md` — v0.2 velocity, preset, and limiter detail.
 - `MIGRATION-BOUNDARY.md` — restrictions on code and artifacts from legacy or
   reference projects.
 - `DEPENDENCY-POLICY.md` — dependency and redistribution requirements.

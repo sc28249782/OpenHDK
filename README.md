@@ -84,6 +84,9 @@ its pinned registry baseline, to resolve FluidSynth reproducibly.
 The normative contract for this implemented playback baseline is
 [docs/SPECIFICATION.md](docs/SPECIFICATION.md).
 
+The planned v0.2 velocity, preset, and limiter behavior is explained in
+[docs/MIXER-DYNAMICS-CONTRACT.md](docs/MIXER-DYNAMICS-CONTRACT.md).
+
 See [CHANGELOG.md](CHANGELOG.md) for the release scope and
 [docs/RELEASE-CHECKLIST.md](docs/RELEASE-CHECKLIST.md) for the signed-tag and
 source-release procedure.
