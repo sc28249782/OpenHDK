@@ -20,3 +20,15 @@ clean modernization effort.
 
 Every source port needs a short record in its commit or docs/ports/ containing
 the upstream repository/commit/path, original notice, modifications, and tests.
+
+## Feature-reference rule
+
+OpenHDK MAY study another project to identify user-facing capabilities and to
+compare product behavior. A feature reference is not source-port permission.
+`docs/MIXER-REFERENCE.md` records the current HandyMixer comparison and the
+adopt, redesign, defer, or reject decision for each capability.
+
+Code, build files, UI assets, dependency wrappers, and API patterns that are
+specific to the BASS family or Qt MUST NOT be copied from that reference. Any
+future source port remains subject to the port record requirement and this
+migration boundary.

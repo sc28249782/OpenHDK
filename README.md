@@ -48,7 +48,7 @@ SoundFont.
 - RtMidi or libremidi — deferred physical MIDI hardware I/O
 - SoundTouch or Rubber Band — later tempo/pitch processing
 
-See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), [docs/ROADMAP.md](docs/ROADMAP.md), [docs/DEPENDENCY-POLICY.md](docs/DEPENDENCY-POLICY.md), [docs/WRITING-STYLE.md](docs/WRITING-STYLE.md), and [docs/GLOSSARY.md](docs/GLOSSARY.md).
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), [docs/ROADMAP.md](docs/ROADMAP.md), [docs/MIXER-REFERENCE.md](docs/MIXER-REFERENCE.md), [docs/DEPENDENCY-POLICY.md](docs/DEPENDENCY-POLICY.md), [docs/WRITING-STYLE.md](docs/WRITING-STYLE.md), and [docs/GLOSSARY.md](docs/GLOSSARY.md).
 
 ## Build the proof of concept
 
