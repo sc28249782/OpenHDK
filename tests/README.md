@@ -1,5 +1,11 @@
 # Test failure diagnostics
 
+`midi-velocity-curves` checks the pure velocity helper without audio hardware.
+It covers fixed vectors, all positive MIDI velocities with an independent
+nearest-integer oracle, monotonicity, velocity zero, and invalid inputs. The
+helper is not yet connected to playback. Dispatcher integration tests will
+cover note-off and adjacent non-note-on events when that path is added.
+
 The C++ test executables use `TestCheck.hpp` to report failed conditions.
 `OPENHDK_FAIL_IF(code, condition)` returns `code` from the test function when
 `condition` is true. It writes the source file, line, exit code, and condition

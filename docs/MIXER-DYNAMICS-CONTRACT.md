@@ -79,6 +79,12 @@ logging, or callback-time interaction with the control path.
 
 ## Implementation order
 
+The pure helper `audio/MidiVelocityCurve.hpp` implements the three mappings.
+It returns no result for a velocity above 127 or an unknown curve value.
+Velocity zero returns zero for each valid curve. It is not connected to
+playback yet. Curve selection and dispatch integration remain planned work;
+the application does not yet expose velocity curves as a supported feature.
+
 Implement and review one feature per change set:
 
 1. pure velocity-curve helper and hardware-free test vectors;
