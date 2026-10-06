@@ -1,8 +1,8 @@
 # Mixer and dynamics contract reference
 
 `SPECIFICATION.md` is the normative authority. This document explains the
-v0.2 contract in implementation and test terms. It does not add a feature that
-the current `0.1.0` baseline already provides.
+implemented v0.2 contract in implementation and test terms. These additions
+are outside the released `0.1.0` baseline.
 
 ## Scope
 
@@ -82,7 +82,7 @@ logging, or callback-time interaction with the control path.
 
 The pure helper `audio/MidiVelocityCurve.hpp` implements the three mappings.
 It returns no result for a velocity above 127 or an unknown curve value.
-Velocity zero returns zero for each valid curve. The development dispatcher
+Velocity zero returns zero for each valid curve. The dispatcher
 maps positive note-on velocity once, immediately before calling the sink. Its
 two-argument API keeps linear behavior; its curve-selecting overload rejects
 unknown curves before it emits any command. Backend configuration selects one
@@ -91,7 +91,8 @@ CLI accepts `--velocity-curve linear|soft|hard`; names are case-sensitive and
 the last repeated option wins. Curve selection does not change during playback.
 Non-linear curves require compiled-timeline playback; the legacy file-player
 API rejects them. Source timeline data, timing, and diagnostic observations
-remain unchanged. Manual Windows validation is pending before release support.
+remain unchanged. Manual Windows validation passed as recorded in
+`V020-WINDOWS-ACCEPTANCE.md`.
 
 `audio/MidiMixerPresets.hpp` provides the in-process control-thread registry.
 Save replaces an existing name, erase deletes a name, and names lists names in
@@ -101,7 +102,7 @@ the revision once. Invalid or missing names leave the mixer unchanged. Gains
 remain independent; the registry has no access to source MIDI controllers.
 The registry can allocate and must not run in an audio callback. A single
 control thread owns the registry; the render thread reads only the mixer.
-Mixer reset does not delete saved presets. The development backend now owns
+Mixer reset does not delete saved presets. The backend owns
 the registry and exposes save, recall, delete, and list operations. All require
 initialization; recall also rejects a retained legacy player. The registry
 survives backend shutdown/reinitialize and ends with its backend object.
@@ -109,7 +110,8 @@ The Windows console uses `preset-save <name>`, `preset-recall <name>`,
 `preset-delete <name>`, and `preset-list`. List returns ASCII-sorted names.
 Only recall publishes mixer state; the callback applies the existing CC120
 transition rules at the next block boundary. No fixed count limit or disk
-persistence is added. Manual Windows release validation remains pending.
+persistence is added. Manual Windows validation passed for the recorded
+revision and external asset pair.
 
 `audio/StereoPeakLimiter.hpp` implements the stateless linked stereo limiter.
 The FluidSynth adapter applies it after each successful synth render segment,
@@ -120,7 +122,8 @@ inputs; final PCM remains float. Hardware-free tests cover the contract vectors,
 finite output, stereo balance, bypass, and independence from block partitions.
 The headless smoke test checks the shared boundary for compiled and legacy
 playback, including a maximum-velocity chord. Manual Windows audio validation
-is still required before release acceptance.
+passed for the recorded revision and external asset pair. The numerical tests
+remain the evidence for the limiter ceiling.
 
 Implement and review one feature per change set:
 

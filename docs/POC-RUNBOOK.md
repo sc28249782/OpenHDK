@@ -40,12 +40,16 @@ Current CLI playback reads, parses, and compiles SMF before activating the
 backend, then exercises `PlaybackSession` and `SmfMidiEventDispatcher` through
 the compiled-timeline entry point. The retained legacy file-player API and
 compiled-timeline path cannot control one synth at the same time.
-For development playback, `--velocity-curve soft` lowers positive note-on
+For playback, `--velocity-curve soft` lowers positive note-on
 velocities and `--velocity-curve hard` raises them according to the integer
 contract. The default `linear` preserves source velocity. Only note-ons are
 changed at dispatch; source events, controller automation, and diagnostics
 remain unchanged. Compare the three curves with the same MIDI and SoundFont
 during manual Windows validation. This is separate from channel/master gain.
+
+The curve also applies to drum note-ons. Soft can substantially reduce drum
+loudness; linear remains the default. The maintainer's v0.2 listening results
+are recorded in [V020-WINDOWS-ACCEPTANCE.md](V020-WINDOWS-ACCEPTANCE.md).
 
 In the Windows interactive console, use `mute 10`, `preset-save NoDrums`,
 `unmute 10`, then `preset-recall NoDrums` to restore the saved mute flags.

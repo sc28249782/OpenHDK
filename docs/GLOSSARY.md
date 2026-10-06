@@ -19,6 +19,7 @@ request descriptions.
 | Term | Definition |
 | --- | --- |
 | **0.1.0 baseline** | The initial source-release baseline. It includes the implemented audio POC and deterministic SMF playback foundation. It is not a completed user-facing application release. |
+| **0.2.0 baseline** | The mixer and dynamics source baseline. It adds velocity curves, named mute/solo presets, and a linked stereo peak limiter. It is not a complete karaoke application. |
 | **audio proof of concept (audio POC)** | The optional pinned FluidSynth and miniaudio integration used to prove parts of MIDI-to-PCM and device-output behavior. It does not by itself establish complete playback behavior. |
 | **SMF playback foundation** | The deterministic parsing, event decoding, timeline, `PlaybackSession`, and dispatch groundwork for SMF formats 0 and 1. |
 | **complete user-facing playback** | A complete application-level playback feature with the required behavior for users. OpenHDK does not provide this feature yet. |

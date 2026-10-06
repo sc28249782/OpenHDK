@@ -40,14 +40,21 @@ assets. It does not provide a complete user-facing playback application.
 
 - [x] Specify the velocity-curve, named-preset, and master-limiter contracts
   before implementation.
-- [ ] Add deterministic velocity curves while preserving source MIDI event data
+- [x] Add deterministic velocity curves while preserving source MIDI event data
   and the existing CC7/CC11 channel-volume contract.
-- [ ] Add named channel mute/solo presets without altering source SMF events.
-- [ ] Add a real-time-safe master limiter after the runtime mixer.
-- [ ] Extend hardware-free regression coverage for each mixer and dynamics
+- [x] Add named channel mute/solo presets without altering source SMF events.
+- [x] Add a real-time-safe master limiter after the runtime mixer.
+- [x] Extend hardware-free regression coverage for each mixer and dynamics
   contract, including limiter peak behavior.
-- [ ] Manually validate Windows output with an external MIDI/SoundFont pair;
+- [x] Manually validate Windows output with an external MIDI/SoundFont pair;
   do not commit those private assets.
+
+The maintainer reported successful Windows tests and device listening on
+2026-10-06. See [V020-WINDOWS-ACCEPTANCE.md](V020-WINDOWS-ACCEPTANCE.md).
+The local revision, clean tree, and asset pair are confirmed. Soft reduced
+drum loudness as expected from a global velocity curve; linear remains the
+default. The milestone is implemented and manually validated; signed tagging
+and source-only publication remain separate release steps.
 
 Exit gate: hardware-free tests and both CI workflows pass; limiter behavior is
 covered deterministically; Windows output is manually validated; no crash

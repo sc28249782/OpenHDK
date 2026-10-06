@@ -22,6 +22,8 @@ edit that historical changelog section for later work.
   the dependencies used by the source baseline.
 - [ ] Confirm that the manual Windows audio-device validation remains recorded
   in `ROADMAP.md`. Do not add the private MIDI or SoundFont assets.
+- [ ] For v0.2.0, confirm the revision and asset identification in
+  `V020-WINDOWS-ACCEPTANCE.md`; preserve its tested revision and reported scope.
 
 ## After merge
 
@@ -41,7 +43,10 @@ edit that historical changelog section for later work.
    The command must not print a tracked or untracked path.
 
 3. Confirm that both required GitHub Actions workflows pass on the exact
-   `main` commit that will receive the tag.
+   `main` commit that will receive the tag. Rebuild and run the applicable
+   local CTest suites from that commit as well. Preserve the manual listening
+   record's source revision; if runtime behavior changed after that check,
+   repeat device listening before tagging.
 
 4. Create and verify an annotated GPG-signed tag.
 

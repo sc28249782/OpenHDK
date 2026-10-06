@@ -2,23 +2,36 @@
 
 This file records the user-visible scope of each OpenHDK source release.
 
-## Unreleased
+## 0.2.0 - 2026-10-06
+
+Mixer and dynamics source baseline, prepared for signed source-only release.
 
 ### Added
 
 - Named in-process mute/solo presets through backend operations and the
   Windows interactive mixer console: save, recall, delete, and sorted list.
-  Recall preserves runtime gains and source controllers. Manual Windows
-  release validation is pending.
+  Recall preserves runtime gains and source controllers. Presets remain in
+  memory for the backend object's lifetime; reset does not delete them.
 
 - Playback velocity selection with `--velocity-curve linear|soft|hard`.
   Positive note-ons are transformed at dispatch; source MIDI and controller
   automation remain unchanged. Linear is the default. Non-linear curves
-  require compiled playback. Manual Windows release validation is pending.
+  require compiled playback.
 
 - An always-enabled linked stereo hard-peak limiter at the shared FluidSynth
   render boundary for device and headless output, with a ceiling of 0.98 and
-  non-finite sample sanitization. Manual Windows release validation is pending.
+  non-finite sample sanitization.
+
+### Validation and scope
+
+- Windows automated tests passed 9/9 and manual device listening passed on
+  `86ff592`, with an external MIDI/SoundFont pair. See
+  `docs/V020-WINDOWS-ACCEPTANCE.md` for the evidence and limits.
+- Soft applies to drums as well as melodic channels and can substantially
+  reduce drum loudness. Linear remains the default.
+- Source-only: no binary, MIDI, or SoundFont assets are bundled. This is not
+  a complete karaoke application; the deferred product scope remains unchanged.
+- Signed tagging and GitHub Release publication require the release checklist.
 
 ## 0.1.0 - 2026-10-05
 

@@ -6,11 +6,16 @@ OpenHDK is a separate development line from [HandyKaraoke](https://github.com/sc
 
 ## Status
 
-`0.1.0` — initial source-release baseline. Optional, pinned FluidSynth and
+`0.2.0` — mixer and dynamics source baseline prepared for release. It adds
+velocity curves, named mute/solo presets, and a linked stereo peak limiter.
+Optional, pinned FluidSynth and
 miniaudio dependencies support the audio POC. Deterministic SMF parsing, event
 decoding, timeline compilation, PlaybackSession timing, event dispatch, MIDI
 diagnostics, and runtime channel mixing are in place. The application does not
 yet provide complete user-facing playback.
+
+Windows tests and device listening are recorded in
+[docs/V020-WINDOWS-ACCEPTANCE.md](docs/V020-WINDOWS-ACCEPTANCE.md).
 
 Inspect a supported SMF format 0 or 1 file without a SoundFont or audio device:
 
@@ -26,7 +31,7 @@ a reset. Missing controller data is printed as `unavailable`. Diagnostics is a
 standalone, read-only mode and cannot be combined with playback or device
 options.
 
-In the development tree, playback accepts `--velocity-curve linear|soft|hard`
+Playback accepts `--velocity-curve linear|soft|hard`
 to select a note-on velocity curve. The default is `linear`. Selection leaves
 source MIDI and diagnostics unchanged and remains fixed during playback.
 
@@ -36,7 +41,7 @@ enter `gain <1-16> <0-100>`, `mute <1-16>`, `unmute <1-16>`, `solo <1-16>`,
 runtime mixer at render-block boundaries; it does not alter the MIDI file or
 SoundFont.
 
-The development console also accepts `preset-save <name>`,
+The console also accepts `preset-save <name>`,
 `preset-recall <name>`, `preset-delete <name>`, and `preset-list`. Presets
 store mute/solo flags only and preserve current gains when recalled. Names
 are case-sensitive ASCII identifiers of 1–32 characters, starting with a
@@ -95,7 +100,7 @@ its pinned registry baseline, to resolve FluidSynth reproducibly.
 The normative contract for this implemented playback baseline is
 [docs/SPECIFICATION.md](docs/SPECIFICATION.md).
 
-The planned v0.2 velocity, preset, and limiter behavior is explained in
+The v0.2 velocity, preset, and limiter behavior is explained in
 [docs/MIXER-DYNAMICS-CONTRACT.md](docs/MIXER-DYNAMICS-CONTRACT.md).
 
 See [CHANGELOG.md](CHANGELOG.md) for the release scope and
