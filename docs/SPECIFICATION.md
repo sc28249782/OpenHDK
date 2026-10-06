@@ -37,9 +37,11 @@ The baseline implements these layers:
 6. read-only MIDI channel diagnostics; and
 7. launch-time and runtime-safe per-channel mixing controls.
 
-KAR and NCN parsing, lyric display, song database/library management, Qt UI,
-physical MIDI I/O, VST/VST3 hosting, HNK/HNK3 compatibility, and packaged
-end-user karaoke workflows are outside this baseline.
+KAR and NCN parsing, lyric display, song database/library management,
+multi-SoundFont libraries and mappings, instrument grouping and bus routing,
+effects beyond the implemented channel controls, Qt UI, physical MIDI I/O,
+VST/VST3 hosting, HNK/HNK3 compatibility, and packaged end-user karaoke
+workflows are outside this baseline.
 
 ## 2. Architectural boundaries
 
@@ -211,9 +213,11 @@ committed unless their redistribution rights are verified.
 ## 10. Deferred work and change control
 
 The following require separate designs and acceptance before they may be
-claimed as supported: velocity curves, master limiter, karaoke lyrics and
-timelines, song library/database, UI, physical MIDI, external effects/plugins,
-cross-platform guarantees, and any permissive parser compatibility mode.
+claimed as supported: velocity curves, master limiter, multi-SoundFont
+libraries and mappings, instrument classification, mixer groups and bus
+routing, output routing, karaoke lyrics and timelines, song library/database,
+UI, physical or external MIDI, external effects/plugins, cross-platform
+guarantees, and any permissive parser compatibility mode.
 
 Changes to parser strictness, event ordering, time conversion, session
 completion, callback rules, channel-volume semantics, or CLI argument behavior

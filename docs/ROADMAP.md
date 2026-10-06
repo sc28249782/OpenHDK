@@ -60,6 +60,55 @@ occurs when a SoundFont or audio device is unavailable.
   NCN playback integration.
 - Add staged runtime layout and installer research.
 
+## 0.4.0 — multi-SoundFont synthesis
+
+- Specify a backend-independent SoundFont library, identity, load/unload, and
+  per-SoundFont gain contract before implementation.
+- Add deterministic GM program, bank, and drum mappings to SoundFont layers.
+- Add an instrument-family classifier only as a documented, testable mapping;
+  it MUST NOT replace source MIDI events or controller state.
+- Add headless coverage for mapping selection, missing SoundFonts, and fallback
+  errors without requiring a physical audio device.
+
+Exit gate: mappings and SoundFont lifecycle are deterministic and covered by
+hardware-free tests; no BASS-family API or asset enters the repository.
+
+## 0.5.0 — mixer and bus engine
+
+- Specify backend-independent mixer strips, instrument groups, named groups,
+  mute/solo/gain/pan, and a directed bus-routing graph before implementation.
+- Add configurable buses incrementally, beginning with a small deterministic
+  graph rather than a fixed legacy stream count.
+- Preserve the real-time callback boundary while applying mixer changes.
+
+Exit gate: graph validity, routing, mute/solo semantics, and state changes have
+deterministic regression coverage; Windows output is manually validated.
+
+## 0.6.0 — DSP and effects
+
+- Specify insert, send, return, parameter, bypass, and preset contracts before
+  adding effects.
+- Use the 0.2.0 master limiter as the foundation, then add parametric EQ,
+  compressor, and reverb/chorus in that order. Add per-bus inserts and
+  send/return paths only after those contracts are stable.
+- Keep an optional VST3-host feasibility study isolated from the playback
+  process and outside the default product path.
+
+## 0.7.0 — audio routing
+
+- Add bus-to-output-channel routing for one multi-channel audio endpoint.
+- Define channel-layout, endpoint-capability, and safe-fallback behavior.
+- Defer multiple physical audio devices until a separate clock-domain,
+  buffering, resampling, and drift policy is accepted.
+
+## 0.8.0 — mixer-focused UI
+
+- Select a UI framework only after the mixer and routing contracts are stable.
+- Add mixer strips, meters, faders, group/bus routing, and System/Dark/Light
+  themes through design tokens rather than copied UI code.
+- Consider a mixer-only companion mode only after the required MIDI/IPC input
+  contract has been designed separately.
+
 ## Scope boundaries
 
 The initial SMF parser, timeline, PlaybackSession, and dispatcher remain
@@ -72,5 +121,5 @@ file I/O, allocation, parsing, or UI work.
 
 - HNK3 authoring/container design.
 - Physical MIDI hardware regression rig.
-- Optional VST3-host feasibility study in an isolated process.
+- External MIDI input and mixer-sidecar mode.
 - Cross-platform work after Windows behaviour is stable.

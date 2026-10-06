@@ -80,9 +80,11 @@ configured SoundFont returns the existing structured recoverable error.
 
 ## Deferred layers
 
-Qt migration, karaoke library work, KAR/NCN parsing and lyric timelines,
-physical MIDI hardware and RtMidi/libremidi, HNK/HNK3 compatibility, and
-VST2/VST3 are deferred. They are not part of the implemented SMF path or the
-audio proof of concept. No BASS-family component belongs in any layer.
+Multi-SoundFont layers and mappings, instrument grouping, bus routing, effects,
+multi-channel output routing, Qt migration, karaoke library work, KAR/NCN
+parsing and lyric timelines, physical MIDI hardware and RtMidi/libremidi,
+HNK/HNK3 compatibility, and VST2/VST3 are deferred. They are not part of the
+implemented SMF path or the audio proof of concept. No BASS-family component
+belongs in any layer.
 
 Audio callbacks must not perform file I/O, allocation, parsing, or UI work.
