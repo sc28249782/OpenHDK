@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.22)
-project(OpenHDK VERSION 0.1.0 LANGUAGES C CXX)
+project(OpenHDK VERSION 0.2.0 LANGUAGES C CXX)
 option(OPENHDK_BUILD_TESTS "Build OpenHDK tests" ON)
 option(OPENHDK_FETCH_TEST_FIXTURES "Download pinned test fixtures" ON)
 option(OPENHDK_BUILD_AUDIO_POC "Build the FluidSynth + miniaudio proof of concept" ON)

@@ -1,9 +1,9 @@
 # OpenHDK System Specification
 
 **Specification ID:** OHK-SPEC
-**Status:** Normative baseline
-**Baseline:** OpenHDK `0.1.0`
-**Scope:** implemented deterministic SMF and FluidSynth/miniaudio playback foundation
+**Status:** Normative release candidate
+**Baseline:** OpenHDK `0.2.0`
+**Scope:** deterministic SMF playback, FluidSynth/miniaudio, and mixer/dynamics
 
 This document specifies the behavior that OpenHDK currently guarantees. It is
 not a specification for a complete karaoke product. A feature listed as
@@ -159,9 +159,8 @@ Invalid commands or values MUST fail safely without changing mixer state.
 
 ### 6.1 v0.2 mixer and dynamics contract
 
-This is an accepted pre-implementation contract. It is normative for a v0.2
-implementation, but it does not claim that a released baseline already offers
-these features.
+This is the implemented mixer and dynamics contract for the v0.2.0 source
+baseline. Release publication requires the separate release checklist.
 
 The v0.2 additions operate on callback-visible mixer state or rendered PCM;
 they MUST NOT change the immutable parsed SMF, compiled timeline, or recorded
@@ -177,7 +176,7 @@ The selected curve MUST be applied immediately before MIDI note-on dispatch;
 it MUST NOT rewrite a source event or alter note-off, controller, program, or
 pitch-bend messages.
 
-The development playback CLI selects a curve with
+The playback CLI selects a curve with
 `--velocity-curve <linear|soft|hard>`. The default MUST be `linear`. Names are
 case-sensitive; a repeated option uses the last valid value. Unknown or
 incomplete values MUST fail with the usage error. Backend configuration MUST
@@ -195,7 +194,7 @@ Recalling a preset MUST publish all its flags as one new mixer revision. A
 missing, invalid, or deleted preset MUST fail without changing mixer state.
 Preset persistence beyond the running process is outside v0.2.
 
-The development Windows mixer console provides `preset-save <name>`,
+The Windows mixer console provides `preset-save <name>`,
 `preset-recall <name>`, `preset-delete <name>`, and `preset-list`. Named
 operations MUST take exactly one name; list MUST take no arguments and MUST
 report names in ASCII lexicographic order. Backend operations require an
@@ -282,13 +281,12 @@ and timelines, song library/database, UI, physical or external MIDI, external
 effects/plugins, cross-platform guarantees, and any permissive parser
 compatibility mode.
 
-Velocity curves are connected to compiled playback and CLI selection in the
-development tree. Named mixer presets are connected to backend operations and
-the Windows interactive mixer console. The v0.2 hard-peak limiter is
-implemented in the shared FluidSynth
-render path in the development tree. These additions are not part of the
-released v0.1.0 baseline. They MUST NOT be claimed as release-supported until
-their implementation and section 9 acceptance pass.
+Velocity curves, named mixer presets, and the linked stereo hard-peak limiter
+are implemented for the v0.2.0 source baseline. Windows device listening and
+automated tests passed on the source revision recorded in
+`V020-WINDOWS-ACCEPTANCE.md`. These additions are not part of the released
+v0.1.0 baseline. The final release commit MUST still pass the build/test and
+CI gates in `RELEASE-CHECKLIST.md` before signed tagging and publication.
 
 Changes to parser strictness, event ordering, time conversion, session
 completion, callback rules, channel-volume semantics, or CLI argument behavior
