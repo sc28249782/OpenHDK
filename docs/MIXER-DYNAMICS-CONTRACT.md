@@ -78,7 +78,7 @@ but must assert that both samples are finite and no magnitude exceeds `0.98`
 plus that tolerance. The limiter must use no heap allocation, mutex, I/O,
 logging, or callback-time interaction with the control path.
 
-## Implementation order
+## Released implementation
 
 The pure helper `audio/MidiVelocityCurve.hpp` implements the three mappings.
 It returns no result for a velocity above 127 or an unknown curve value.
@@ -125,11 +125,9 @@ playback, including a maximum-velocity chord. Manual Windows audio validation
 passed for the recorded revision and external asset pair. The numerical tests
 remain the evidence for the limiter ceiling.
 
-Implement and review one feature per change set:
-
-1. pure velocity-curve helper and hardware-free test vectors;
-2. preset model plus atomic mixer publication and tests;
-3. pure limiter helper, render-path integration, and deterministic PCM tests.
-
-Manual Windows audio validation occurs after the three changes are integrated.
-It supplements, but does not replace, hardware-free tests and both CI jobs.
+The v0.2.0 implementation was reviewed in separate slices: the pure velocity
+helper, preset model and atomic publication, limiter and render integration,
+then velocity and preset backend/console integration. Manual Windows device
+validation passed after integration. It supplements hardware-free tests and
+both CI jobs. Future changes require updated contracts, tests, and acceptance
+evidence before release.

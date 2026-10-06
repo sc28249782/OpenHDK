@@ -6,13 +6,18 @@ OpenHDK is a separate development line from [HandyKaraoke](https://github.com/sc
 
 ## Status
 
-`0.2.0` — mixer and dynamics source baseline prepared for release. It adds
+`0.2.0` — released mixer and dynamics source baseline. It adds
 velocity curves, named mute/solo presets, and a linked stereo peak limiter.
 Optional, pinned FluidSynth and
 miniaudio dependencies support the audio POC. Deterministic SMF parsing, event
 decoding, timeline compilation, PlaybackSession timing, event dispatch, MIDI
 diagnostics, and runtime channel mixing are in place. The application does not
 yet provide complete user-facing playback.
+
+The [v0.2.0 source release](https://github.com/sc28249782/OpenHDK/releases/tag/v0.2.0)
+contains source archives only. No prebuilt binary, MIDI, or SoundFont is bundled.
+Start with the [documentation index](docs/INDEX.md) for contracts, operations,
+release evidence, and future work.
 
 Windows tests and device listening are recorded in
 [docs/V020-WINDOWS-ACCEPTANCE.md](docs/V020-WINDOWS-ACCEPTANCE.md).
@@ -76,20 +81,21 @@ ctest --test-dir build --output-on-failure
 
 The default POC configuration uses pinned FluidSynth and miniaudio dependencies
 (and downloads a pinned test SoundFont when audio POC tests are enabled). For
-the hardware-free SMF parser fixtures, use:
+the six hardware-free core test suites, use:
 
 ```powershell
-cmake -S . -B build-parser -DOPENHDK_BUILD_AUDIO_POC=OFF -DOPENHDK_BUILD_TESTS=ON
+cmake -S . -B build-parser -DOPENHDK_BUILD_AUDIO_POC=OFF -DOPENHDK_BUILD_TESTS=ON -DOPENHDK_FETCH_TEST_FIXTURES=OFF
 cmake --build build-parser --parallel
 ctest --test-dir build-parser --output-on-failure
 ```
 
 The lightweight Linux core CI job uses this hardware-free configuration with
 strict compiler warnings and AddressSanitizer/UndefinedBehaviorSanitizer. It
-runs the SMF parser fixtures, MIDI diagnostics CLI tests, and runtime mixer
-console command tests. It does not install FluidSynth or vcpkg, fetch miniaudio
-or SoundFonts, access audio hardware, build the complete audio application, or
-claim Linux support for the Windows interactive console. The Windows CI job
+runs six suites: SMF parser fixtures, MIDI diagnostics CLI, runtime mixer
+console, velocity curves, mixer presets, and stereo peak limiting. It does not
+install FluidSynth or vcpkg, fetch miniaudio or SoundFonts, access audio
+hardware, build the complete audio application, or claim Linux support for
+the Windows interactive console. The Windows CI job
 continues to validate the complete audio and device-output build.
 
 The POC command uses vcpkg's checked-in `vcpkg-configuration.json`, including

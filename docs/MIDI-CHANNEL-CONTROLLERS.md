@@ -76,8 +76,11 @@ voices; it affects subsequent note-on events.
 
 `--midi-diagnostics` reports note-on count and observed programs, then reports
 the following per controller: first observation, most recent observation before
-the channel's first audible note, final observation, 7-bit range, and count of
-actual value changes. Samples are rendered as `<value>@<tick>t/<microseconds>us`.
+the channel's first positive-velocity note-on, final observation, 7-bit range,
+and count of
+actual value changes. A positive-velocity note-on need not be audible when
+volume, expression, mute, or the SoundFont suppresses output.
+Samples are rendered as `<value>@<tick>t/<microseconds>us`.
 
 The command also reports a final 14-bit value for CC7 and CC11 only after the
 corresponding MSB and LSB have both occurred on that channel. It does not
@@ -88,7 +91,7 @@ observations and do not invent an implied CC7 or CC11 event after a reset.
 For the OpenHDK playback path, `effective-cc7` is also reported. It starts only
 when an SMF emits CC7 or CC121, follows raw CC7 events, and becomes 100 at each
 CC121 reset because `FluidSynthBackend` restores that source CC7 value before
-applying a launch-time channel trim. This is a backend-contract diagnostic, not
+applying launch-time or runtime channel gain. This is a backend-contract diagnostic, not
 a claim about every MIDI synthesizer's internal reset semantics.
 
 Use public, synthetic SMF fixtures for all automated tests.  MIDI and

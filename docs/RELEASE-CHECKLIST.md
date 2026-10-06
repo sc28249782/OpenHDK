@@ -6,8 +6,10 @@ repository clone in Windows Subsystem for Linux (WSL) that has the maintainer's
 GitHub GPG signing key.
 
 The `v0.1.0` source release completed this procedure on 2026-10-05. Its release
-record remains in `CHANGELOG.md` and in the GitHub Release; do not reopen or
-edit that historical changelog section for later work.
+record remains in `CHANGELOG.md` and in the GitHub Release. The `v0.2.0`
+source release completed the procedure on 2026-10-06; its final evidence is in
+[V020-WINDOWS-ACCEPTANCE.md](V020-WINDOWS-ACCEPTANCE.md). Do not reopen or
+edit either historical changelog section for later work.
 
 ## Before merge
 
@@ -72,6 +74,18 @@ edit that historical changelog section for later work.
 
 8. Verify that GitHub shows the signed tag, source archives, GPL-3.0-or-later
    license, and required third-party notices.
+
+## Windows and WSL worktrees
+
+Run Git commands for a WSL-created worktree in the owning WSL distribution.
+Its `.git` file can refer to Linux paths that Windows Git cannot resolve.
+Run Windows CMake and CTest in a Windows developer shell with a separate build
+directory. Do not share one CMake build directory between Windows and Linux.
+Build before running CTest; configure alone does not create executables.
+
+If the existing checkout has local changes, preserve them and use a separate
+clean worktree for release validation. Do not reset or restore user changes
+to make a release checkout clean.
 
 ## WSL signing recovery
 

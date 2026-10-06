@@ -1,7 +1,7 @@
 # OpenHDK System Specification
 
 **Specification ID:** OHK-SPEC
-**Status:** Normative release candidate
+**Status:** Normative released baseline
 **Baseline:** OpenHDK `0.2.0`
 **Scope:** deterministic SMF playback, FluidSynth/miniaudio, and mixer/dynamics
 
@@ -14,9 +14,9 @@ The key words **MUST**, **MUST NOT**, **SHOULD**, **SHOULD NOT**, and **MAY**
 are normative.
 
 This specification is the normative authority for the implemented behavior in
-its stated scope. `ARCHITECTURE.md`, `PLAYBACK-SESSION-CONTRACT.md`, and
-`MIDI-CHANNEL-CONTROLLERS.md` provide design context and detailed explanations;
-if their descriptions conflict with this specification, this specification
+its stated scope. `ARCHITECTURE.md`, `PLAYBACK-SESSION-CONTRACT.md`,
+`MIDI-CHANNEL-CONTROLLERS.md`, and `MIXER-DYNAMICS-CONTRACT.md` provide design
+context and detailed explanations. If their descriptions conflict with this specification, this specification
 takes precedence and the conflicting documents MUST be corrected together.
 `ROADMAP.md` describes planned work and does not extend the implemented scope.
 
@@ -34,12 +34,14 @@ The baseline implements these layers:
 3. frame-derived playback-session timing;
 4. ordered MIDI-command dispatch;
 5. FluidSynth SoundFont synthesis and miniaudio device or headless PCM output;
-6. read-only MIDI channel diagnostics; and
-7. launch-time and runtime-safe per-channel mixing controls.
+6. read-only MIDI channel diagnostics;
+7. launch-time and runtime-safe per-channel mixing controls;
+8. playback velocity curves and named mute/solo presets; and
+9. linked stereo hard-peak limiting.
 
 KAR and NCN parsing, lyric display, song database/library management,
 multi-SoundFont libraries and mappings, instrument grouping and bus routing,
-effects beyond the implemented channel controls, Qt UI, physical MIDI I/O,
+effects beyond the implemented mixer/dynamics controls, Qt UI, physical MIDI I/O,
 VST/VST3 hosting, HNK/HNK3 compatibility, and packaged end-user karaoke
 workflows are outside this baseline.
 
@@ -153,8 +155,9 @@ CC120 (All Sound Off) to stop voices already sounding on that channel.
 Unmuting or removing solo does not reconstruct those killed voices; it affects
 subsequent note-on events.
 
-The interactive runtime mixer console provides `mute`, `unmute`, `solo`,
-`unsolo`, `gain`, `reset`, and `quit` commands for a one-based channel number.
+The Windows interactive runtime mixer console provides channel commands
+`mute`, `unmute`, `solo`, `unsolo`, and `gain` with one-based channel numbers
+1 through 16. `reset` and `quit` take no channel number.
 Invalid commands or values MUST fail safely without changing mixer state.
 
 ### 6.1 v0.2 mixer and dynamics contract
@@ -229,7 +232,8 @@ Playback accepts optional `--device <index>`, `--volume <0-100>`, repeated
 `--channel-volume <1-16>:<0-100>`, `--mute`, `--no-device`,
 `--interactive-mixer`, and `--velocity-curve <linear|soft|hard>` arguments.
 `--interactive-mixer` enables the runtime
-mixer console described in section 6 during playback.
+Windows device-output mixer console described in section 6 during playback.
+It MUST reject `--no-device` and non-Windows console builds with a usage error.
 `--device` and `--no-device` are mutually exclusive. Unknown, incomplete, or
 invalid CLI input MUST report usage and return a nonzero usage error. A
 backend, SMF, SoundFont, or audio-device failure MUST report a safe diagnostic
@@ -285,8 +289,11 @@ Velocity curves, named mixer presets, and the linked stereo hard-peak limiter
 are implemented for the v0.2.0 source baseline. Windows device listening and
 automated tests passed on the source revision recorded in
 `V020-WINDOWS-ACCEPTANCE.md`. These additions are not part of the released
-v0.1.0 baseline. The final release commit MUST still pass the build/test and
-CI gates in `RELEASE-CHECKLIST.md` before signed tagging and publication.
+v0.1.0 baseline. The published v0.2.0 tag points to
+`0175cac739ea7100e7e298a5c4527c3175fc0323`. Final build/test, CI, signature,
+and source-only publication evidence is recorded in
+`V020-WINDOWS-ACCEPTANCE.md`. Future releases MUST pass the gates in
+`RELEASE-CHECKLIST.md` before signed tagging and publication.
 
 Changes to parser strictness, event ordering, time conversion, session
 completion, callback rules, channel-volume semantics, or CLI argument behavior

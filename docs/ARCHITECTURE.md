@@ -40,8 +40,8 @@ programs. For CC7, CC39, CC11, and CC43, it retains first, pre-first-note,
 final, minimum, maximum, and value-change observations in deterministic
 timeline order. It reports a 14-bit final value only after both the controller
 MSB and LSB have appeared on the same channel, and counts CC121 reset events.
-It also reports `effective-cc7`, the source CC7 state OpenHDK will send before
-the launch-time channel gain: each CC121 makes that state 100 at the reset's
+It also reports `effective-cc7`, the source CC7 state OpenHDK uses before
+launch-time or runtime channel gain: each CC121 makes that state 100 at the reset's
 timeline position. This is an OpenHDK playback-contract view, distinct from
 the raw CC7 events in the SMF.
 The CLI owns text formatting and file I/O. Its standalone `--midi-diagnostics`
@@ -50,7 +50,7 @@ SoundFont or audio device dependency.
 
 ## Current audio proof of concept
 
-`AudioBackend` separates the 0.1 FluidSynth + miniaudio proof of concept from
+`AudioBackend` separates the current FluidSynth + miniaudio adapter from
 the SMF path above. Its explicit compiled-timeline entry prepares a
 `PlaybackSession` outside the callback, renders PCM segments between due-event
 frame offsets in the callback, and dispatches events at those offsets. The CLI
@@ -75,7 +75,7 @@ the callback remains the only path that calls FluidSynth for runtime changes.
 The legacy file-player path is not permitted to run alongside compiled-timeline
 playback on the same synth.
 
-The specified v0.2 path inserts a note-on velocity transform immediately before
+The implemented v0.2 path inserts a note-on velocity transform immediately before
 MIDI dispatch, not in the parser or timeline. Named presets are control-path
 snapshots of runtime mute/solo flags and publish through the same revision
 boundary as other mixer state. A linked stereo peak limiter sits after the
