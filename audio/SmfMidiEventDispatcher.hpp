@@ -3,6 +3,7 @@
 #pragma once
 
 #include "audio/SmfTimelineCompiler.hpp"
+#include "audio/MidiVelocityCurve.hpp"
 
 #include <cstdint>
 #include <span>
@@ -29,6 +30,14 @@ public:
 class SmfMidiEventDispatcher {
 public:
     static void dispatch(std::span<const SmfTimelineEvent> events, MidiCommandSink& sink) {
+        static_cast<void>(dispatch(events, sink, MidiVelocityCurve::Linear));
+    }
+
+    // Reject an unknown curve before emitting any command. The source span
+    // remains immutable; only positive note-on velocity is transformed.
+    [[nodiscard]] static bool dispatch(std::span<const SmfTimelineEvent> events,
+                                       MidiCommandSink& sink, MidiVelocityCurve curve) {
+        if (!applyMidiVelocityCurve(0U, curve)) return false;
         for (const auto& timelineEvent : events) {
             const auto& event = timelineEvent.event();
             switch (event.kind()) {
@@ -38,7 +47,7 @@ public:
                 if (data[1] == 0U) {
                     sink.noteOff(channel, data[0], 0U);
                 } else {
-                    sink.noteOn(channel, data[0], data[1]);
+                    sink.noteOn(channel, data[0], *applyMidiVelocityCurve(data[1], curve));
                 }
                 break;
             }
@@ -76,6 +85,7 @@ public:
                 break;
             }
         }
+        return true;
     }
 };
 

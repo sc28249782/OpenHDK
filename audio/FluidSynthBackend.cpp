@@ -89,6 +89,7 @@ struct FluidSynthBackend::Impl {
       fluid_synth_all_sounds_off(synth, channel);
     }
   }
+  MidiVelocityCurve velocityCurve{MidiVelocityCurve::Linear};
   void discardSession() {
     silenceActiveSounds();
     if (session.state() != PlaybackSessionState::Idle) static_cast<void>(session.stop());
@@ -157,7 +158,11 @@ struct FluidSynthBackend::Impl {
           if (nextOffset != eventOffset) break;
           ++dispatchEnd;
         }
-        SmfMidiEventDispatcher::dispatch(events.subspan(eventIndex, dispatchEnd - eventIndex), *midiSink);
+        if (!SmfMidiEventDispatcher::dispatch(events.subspan(eventIndex, dispatchEnd - eventIndex),
+                                               *midiSink, velocityCurve)) {
+          discardSession();
+          return false;
+        }
         renderedFrames = eventOffset;
         eventIndex = dispatchEnd;
       }
@@ -189,6 +194,7 @@ FluidSynthBackend::~FluidSynthBackend() { shutdown(); }
 AudioBackendInfo FluidSynthBackend::info() const noexcept { return {"fluidsynth-miniaudio", "FluidSynth + miniaudio", AudioCapability::MidiSynthesis | AudioCapability::DeviceOutput | AudioCapability::Mixing}; }
 bool FluidSynthBackend::initialize(const AudioBackendConfig& config, AudioBackendStatus& status) {
   shutdown();
+  if (!applyMidiVelocityCurve(0U, config.velocityCurve)) { fail(status, AudioBackendError::InvalidConfiguration, "Unknown MIDI velocity curve."); return false; }
   if (config.sampleRate == 0U) { fail(status, AudioBackendError::InvalidConfiguration, "Sample rate must be greater than zero."); return false; }
   if (!isNormalizedVolume(config.volume) || !areNormalizedMidiChannelGains(config.channelGains)) { fail(status, AudioBackendError::InvalidConfiguration, "Volume and every MIDI channel gain must be finite and between 0.0 and 1.0."); return false; }
   if (!std::filesystem::is_regular_file(config.soundFontPath)) { fail(status, AudioBackendError::SoundFontNotFound, "SoundFont was not found: " + config.soundFontPath.string()); return false; }
@@ -198,6 +204,7 @@ bool FluidSynthBackend::initialize(const AudioBackendConfig& config, AudioBacken
   impl_->synth = new_fluid_synth(impl_->settings);
   if (impl_->synth == nullptr) { shutdown(); fail(status, AudioBackendError::InvalidConfiguration, "FluidSynth could not create a synthesizer."); return false; }
   impl_->channelGains = config.channelGains; impl_->runtimeMixer.reset(); impl_->volume = config.volume; impl_->sampleRate = config.sampleRate; impl_->muted = config.muted;
+  impl_->velocityCurve = config.velocityCurve;
   fluid_synth_set_gain(impl_->synth, config.muted ? 0.0 : static_cast<double>(config.volume));
   if (fluid_synth_sfload(impl_->synth, config.soundFontPath.string().c_str(), 1) == FLUID_FAILED) { shutdown(); fail(status, AudioBackendError::SoundFontLoadFailed, "FluidSynth could not load SoundFont: " + config.soundFontPath.string()); return false; }
   impl_->midiSink = std::make_unique<FluidSynthMidiCommandSink>(impl_->synth, impl_->channelGains, &impl_->runtimeMixer);
@@ -225,6 +232,7 @@ bool FluidSynthBackend::initialize(const AudioBackendConfig& config, AudioBacken
 }
 bool FluidSynthBackend::playMidiFile(const std::filesystem::path& midi, AudioBackendStatus& status) {
   if (!impl_->initialized || impl_->synth == nullptr) { fail(status, AudioBackendError::InvalidConfiguration, "Initialize the audio backend before MIDI playback."); return false; }
+  if (impl_->velocityCurve != MidiVelocityCurve::Linear) { fail(status, AudioBackendError::MidiPlaybackFailed, "MIDI velocity curves require compiled timeline playback."); return false; }
   if (impl_->sessionActive.load(std::memory_order_acquire)) { fail(status, AudioBackendError::MidiPlaybackFailed, "Compiled timeline playback is active."); return false; }
   if (impl_->channelGains != defaultMidiChannelGains() || !impl_->runtimeMixer.isDefault()) { fail(status, AudioBackendError::MidiPlaybackFailed, "MIDI channel mixing requires compiled timeline playback."); return false; }
   if (!std::filesystem::is_regular_file(midi)) { fail(status, AudioBackendError::MidiFileNotFound, "MIDI file was not found: " + midi.string()); return false; }

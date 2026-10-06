@@ -82,9 +82,16 @@ logging, or callback-time interaction with the control path.
 
 The pure helper `audio/MidiVelocityCurve.hpp` implements the three mappings.
 It returns no result for a velocity above 127 or an unknown curve value.
-Velocity zero returns zero for each valid curve. It is not connected to
-playback yet. Curve selection and dispatch integration remain planned work;
-the application does not yet expose velocity curves as a supported feature.
+Velocity zero returns zero for each valid curve. The development dispatcher
+maps positive note-on velocity once, immediately before calling the sink. Its
+two-argument API keeps linear behavior; its curve-selecting overload rejects
+unknown curves before it emits any command. Backend configuration selects one
+curve for the initialized session, with linear as the default. The playback
+CLI accepts `--velocity-curve linear|soft|hard`; names are case-sensitive and
+the last repeated option wins. Curve selection does not change during playback.
+Non-linear curves require compiled-timeline playback; the legacy file-player
+API rejects them. Source timeline data, timing, and diagnostic observations
+remain unchanged. Manual Windows validation is pending before release support.
 
 `audio/MidiMixerPresets.hpp` provides the in-process control-thread registry.
 Save replaces an existing name, erase deletes a name, and names lists names in

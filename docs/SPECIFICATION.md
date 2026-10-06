@@ -177,6 +177,14 @@ The selected curve MUST be applied immediately before MIDI note-on dispatch;
 it MUST NOT rewrite a source event or alter note-off, controller, program, or
 pitch-bend messages.
 
+The development playback CLI selects a curve with
+`--velocity-curve <linear|soft|hard>`. The default MUST be `linear`. Names are
+case-sensitive; a repeated option uses the last valid value. Unknown or
+incomplete values MUST fail with the usage error. Backend configuration MUST
+reject unknown curve values before creating audio resources. Selection is
+fixed for the initialized backend. The legacy file-player API MUST reject
+non-linear curves because it bypasses the compiled-timeline dispatcher.
+
 A named mixer preset stores exactly the 16-channel runtime mute and solo
 flags. It MUST NOT store source controller state, launch-time channel trims,
 runtime gains, master volume, SoundFont state, or playback position. Preset
@@ -208,8 +216,9 @@ The application provides these modes:
 | `--midi <file.mid> --soundfont <file.sf2>` | Parse, compile, initialize, and play the SMF timeline. |
 
 Playback accepts optional `--device <index>`, `--volume <0-100>`, repeated
-`--channel-volume <1-16>:<0-100>`, `--mute`, `--no-device`, and
-`--interactive-mixer` arguments. `--interactive-mixer` enables the runtime
+`--channel-volume <1-16>:<0-100>`, `--mute`, `--no-device`,
+`--interactive-mixer`, and `--velocity-curve <linear|soft|hard>` arguments.
+`--interactive-mixer` enables the runtime
 mixer console described in section 6 during playback.
 `--device` and `--no-device` are mutually exclusive. Unknown, incomplete, or
 invalid CLI input MUST report usage and return a nonzero usage error. A
@@ -262,8 +271,9 @@ and timelines, song library/database, UI, physical or external MIDI, external
 effects/plugins, cross-platform guarantees, and any permissive parser
 compatibility mode.
 
-Velocity curves and named mixer presets have core implementations for their
-accepted contract in section 6.1; playback and console integration remain
+Velocity curves are connected to compiled playback and CLI selection in the
+development tree. Named mixer presets have a core implementation for their
+accepted contract in section 6.1; backend and console integration remain
 unfinished. The v0.2 hard-peak limiter is implemented in the shared FluidSynth
 render path in the development tree. These additions are not part of the
 released v0.1.0 baseline. They MUST NOT be claimed as release-supported until

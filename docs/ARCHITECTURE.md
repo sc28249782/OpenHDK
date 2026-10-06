@@ -82,7 +82,11 @@ boundary as other mixer state. A linked stereo peak limiter sits after the
 runtime mixer has produced PCM and before both device and headless output.
 The development FluidSynth adapter applies the stateless limiter in
 `renderSynthFrames`, so every successful segment, including legacy playback,
-uses the same output boundary. Velocity and preset integration remain planned.
+uses the same output boundary. The dispatcher now applies the configured
+velocity curve immediately before positive note-on dispatch. Selection is
+fixed during backend initialization; the default linear curve preserves prior
+behavior. Non-linear curves are rejected by the legacy file-player API.
+Preset backend and console integration remain planned.
 These layers must retain the callback rules above; they do not authorize a
 FluidSynth-specific public mixer model.
 

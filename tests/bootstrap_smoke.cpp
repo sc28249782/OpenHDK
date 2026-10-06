@@ -41,6 +41,9 @@ int main() {
   const auto compiledTimeline = OpenHDK::SmfTimelineCompiler::compile(*parsedMidi.file());
   OPENHDK_FAIL_IF(17, !compiledTimeline.timeline());
   OpenHDK::FluidSynthBackend backend; OpenHDK::AudioBackendStatus status;
+  OPENHDK_FAIL_IF(42, backend.initialize({.soundFontPath = "does-not-exist.sf2", .enableDeviceOutput = false,
+                          .velocityCurve = static_cast<OpenHDK::MidiVelocityCurve>(999)}, status)
+      || status.error != OpenHDK::AudioBackendError::InvalidConfiguration);
   OPENHDK_FAIL_IF(1, backend.info().id != "fluidsynth-miniaudio");
   OPENHDK_FAIL_IF(13, backend.initialize({.soundFontPath = "does-not-exist.sf2", .enableDeviceOutput = false,
                           .volume = std::numeric_limits<float>::quiet_NaN()}, status)
@@ -151,6 +154,21 @@ int main() {
     });
   }
   OPENHDK_FAIL_IF(41, backend.isPlaying() || !chordHeard);
+  for (const auto curve : {OpenHDK::MidiVelocityCurve::Soft, OpenHDK::MidiVelocityCurve::Hard}) {
+    OPENHDK_FAIL_IF(43, !backend.initialize({.soundFontPath = OPENHDK_TEST_SOUNDFONT_PATH,
+                            .enableDeviceOutput = false, .velocityCurve = curve}, status));
+    OPENHDK_FAIL_IF(44, backend.playMidiFile(midi, status)
+                        || status.error != OpenHDK::AudioBackendError::MidiPlaybackFailed);
+    OPENHDK_FAIL_IF(45, !backend.playCompiledTimeline(*compiledTimeline.timeline(), status));
+    bool curveHeard{};
+    for (std::size_t block = 0U; block < 1024U && backend.isPlaying(); ++block) {
+      OPENHDK_FAIL_IF(46, !backend.renderStereo(compiledPcm, status) || !isLimitedPcm(compiledPcm));
+      curveHeard = curveHeard || std::any_of(compiledPcm.begin(), compiledPcm.end(), [](float sample) {
+        return std::abs(sample) > 0.0001F;
+      });
+    }
+    OPENHDK_FAIL_IF(47, backend.isPlaying() || !curveHeard);
+  }
   backend.shutdown(); std::filesystem::remove(midi);
   OPENHDK_FAIL_IF(35, !completedCompiledAfterLegacy);
   return 0;

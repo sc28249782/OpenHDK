@@ -16,8 +16,11 @@ backend integration will test source CC7 preservation and CC120 behavior.
 `midi-velocity-curves` checks the pure velocity helper without audio hardware.
 It covers fixed vectors, all positive MIDI velocities with an independent
 nearest-integer oracle, monotonicity, velocity zero, and invalid inputs. The
-helper is not yet connected to playback. Dispatcher integration tests will
-cover note-off and adjacent non-note-on events when that path is added.
+dispatcher tests cover all three curves, zero-velocity note-off, explicit
+note-off velocity, adjacent CC7/CC11, program and pitch-bend messages, ignored
+pressure events, default linear behavior, invalid curve rejection before
+dispatch, and preservation of source event data and times. The audio smoke
+test also plays soft and hard compiled sessions and checks legacy rejection.
 
 The C++ test executables use `TestCheck.hpp` to report failed conditions.
 `OPENHDK_FAIL_IF(code, condition)` returns `code` from the test function when

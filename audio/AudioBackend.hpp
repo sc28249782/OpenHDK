@@ -3,6 +3,7 @@
 #pragma once
 #include "audio/MidiChannelMix.hpp"
 #include "audio/MidiRuntimeMixer.hpp"
+#include "audio/MidiVelocityCurve.hpp"
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
@@ -18,7 +19,7 @@ constexpr AudioCapability operator|(AudioCapability left, AudioCapability right)
 struct AudioBackendInfo { std::string_view id; std::string_view displayName; AudioCapability capabilities; };
 enum class AudioBackendError { None, InvalidConfiguration, SoundFontNotFound, SoundFontLoadFailed, MidiFileNotFound, MidiPlaybackFailed, AudioDeviceUnavailable, AudioDeviceNotFound, RenderFailed };
 struct AudioBackendStatus { AudioBackendError error{AudioBackendError::None}; std::string message{}; [[nodiscard]] explicit operator bool() const noexcept { return error == AudioBackendError::None; } };
-struct AudioBackendConfig { std::filesystem::path soundFontPath; std::uint32_t sampleRate{44100}; bool enableDeviceOutput{true}; std::optional<std::uint32_t> outputDeviceIndex{}; float volume{1.0F}; bool muted{false}; MidiChannelGains channelGains{defaultMidiChannelGains()}; };
+struct AudioBackendConfig { std::filesystem::path soundFontPath; std::uint32_t sampleRate{44100}; bool enableDeviceOutput{true}; std::optional<std::uint32_t> outputDeviceIndex{}; float volume{1.0F}; bool muted{false}; MidiChannelGains channelGains{defaultMidiChannelGains()}; MidiVelocityCurve velocityCurve{MidiVelocityCurve::Linear}; };
 [[nodiscard]] inline bool isNormalizedVolume(float value) noexcept {
   return std::isfinite(value) && value >= 0.0F && value <= 1.0F;
 }
