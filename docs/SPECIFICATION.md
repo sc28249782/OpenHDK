@@ -157,6 +157,46 @@ The interactive runtime mixer console provides `mute`, `unmute`, `solo`,
 `unsolo`, `gain`, `reset`, and `quit` commands for a one-based channel number.
 Invalid commands or values MUST fail safely without changing mixer state.
 
+### 6.1 v0.2 mixer and dynamics contract
+
+This is an accepted pre-implementation contract. It is normative for a v0.2
+implementation, but it does not claim that a released baseline already offers
+these features.
+
+The v0.2 additions operate on callback-visible mixer state or rendered PCM;
+they MUST NOT change the immutable parsed SMF, compiled timeline, or recorded
+source controller observations.
+
+A velocity curve applies only to a dispatched note-on with a source velocity
+from 1 through 127. A source velocity of zero remains note-off. The baseline
+curves are `linear`, `soft`, and `hard`. For a positive source velocity `v`,
+`linear` returns `v`; `soft` returns `max(1, round(v*v/127))`; and `hard`
+returns `min(127, 127-round((127-v)*(127-v)/127))`. `round` means
+non-negative integer rounding to nearest, with an exact half rounded upward.
+The selected curve MUST be applied immediately before MIDI note-on dispatch;
+it MUST NOT rewrite a source event or alter note-off, controller, program, or
+pitch-bend messages.
+
+A named mixer preset stores exactly the 16-channel runtime mute and solo
+flags. It MUST NOT store source controller state, launch-time channel trims,
+runtime gains, master volume, SoundFont state, or playback position. Preset
+names are ASCII, case-sensitive identifiers of 1 through 32 characters: the
+first character is a letter; remaining characters are letters, digits,
+hyphen, or underscore. Saving an existing name replaces its stored flags.
+Recalling a preset MUST publish all its flags as one new mixer revision. A
+missing, invalid, or deleted preset MUST fail without changing mixer state.
+Preset persistence beyond the running process is outside v0.2.
+
+The v0.2 master limiter is an enabled linked stereo hard-peak limiter after
+all master and channel mixing and before either device output or headless PCM
+output. For each frame, non-finite input samples MUST become zero. Let `p` be
+the greater absolute value of the resulting left and right samples. With a
+ceiling of 0.98, the frame gain is 1 when `p <= 0.98`, otherwise `0.98/p`.
+The same gain MUST multiply both stereo samples. This limiter has no lookahead,
+release state, allocation, lock, I/O, logging, or control-thread interaction.
+Later limiter algorithms or adjustable parameters require a compatibility
+change to this specification.
+
 ## 7. Command-line contract
 
 The application provides these modes:
@@ -204,7 +244,10 @@ Every change that affects this specification MUST update the relevant test and
 documentation in the same change set. At minimum, the Windows CMake/Ninja
 build and CTest suite MUST pass. The baseline suite covers parser fixtures,
 diagnostics CLI success and error cases, runtime mixer console behavior,
-FluidSynth headless playback, CLI help, and bootstrap audio behavior.
+FluidSynth headless playback, CLI help, and bootstrap audio behavior. v0.2
+work MUST additionally cover every baseline velocity curve, atomic preset
+recall semantics, linked-stereo peak limiting, and non-finite PCM handling in
+hardware-free tests.
 
 Manual validation with a user-supplied MIDI and SoundFont remains required for
 audible balance changes and audio-device behavior. Such assets MUST NOT be
@@ -213,11 +256,15 @@ committed unless their redistribution rights are verified.
 ## 10. Deferred work and change control
 
 The following require separate designs and acceptance before they may be
-claimed as supported: velocity curves, master limiter, multi-SoundFont
-libraries and mappings, instrument classification, mixer groups and bus
-routing, output routing, karaoke lyrics and timelines, song library/database,
-UI, physical or external MIDI, external effects/plugins, cross-platform
-guarantees, and any permissive parser compatibility mode.
+claimed as supported: multi-SoundFont libraries and mappings, instrument
+classification, mixer groups and bus routing, output routing, karaoke lyrics
+and timelines, song library/database, UI, physical or external MIDI, external
+effects/plugins, cross-platform guarantees, and any permissive parser
+compatibility mode.
+
+Velocity curves, named mixer presets, and the v0.2 hard-peak limiter have an
+accepted contract in section 6.1 but remain unimplemented. They MUST NOT be
+claimed as supported until their implementation and section 9 acceptance pass.
 
 Changes to parser strictness, event ordering, time conversion, session
 completion, callback rules, channel-volume semantics, or CLI argument behavior

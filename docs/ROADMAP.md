@@ -38,7 +38,7 @@ assets. It does not provide a complete user-facing playback application.
 
 ## 0.2.0 — mixer and dynamics polish
 
-- [ ] Specify the velocity-curve, named-preset, and master-limiter contracts
+- [x] Specify the velocity-curve, named-preset, and master-limiter contracts
   before implementation.
 - [ ] Add deterministic velocity curves while preserving source MIDI event data
   and the existing CC7/CC11 channel-volume contract.

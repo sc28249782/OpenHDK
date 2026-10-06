@@ -75,6 +75,14 @@ the callback remains the only path that calls FluidSynth for runtime changes.
 The legacy file-player path is not permitted to run alongside compiled-timeline
 playback on the same synth.
 
+The specified v0.2 path inserts a note-on velocity transform immediately before
+MIDI dispatch, not in the parser or timeline. Named presets are control-path
+snapshots of runtime mute/solo flags and publish through the same revision
+boundary as other mixer state. A linked stereo peak limiter sits after the
+runtime mixer has produced PCM and before both device and headless output.
+These layers must retain the callback rules above; they do not authorize a
+FluidSynth-specific public mixer model.
+
 The POC has no implicit or bundled SoundFont fallback. A missing or unloadable
 configured SoundFont returns the existing structured recoverable error.
 
