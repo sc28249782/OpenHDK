@@ -45,8 +45,9 @@ It is not a song-file setting and is not serialized in v0.2. Runtime gain is
 deliberately excluded: gain has a separate user-adjustment lifecycle, while a
 preset answers only which channels should be mute or solo.
 
-The public operation set is save, recall, delete, and list. All require the
-name grammar in the specification. Recall replaces the complete mute/solo
+The public operation set is save, recall, delete, and list. Operations that
+take a name require the name grammar in the specification. Recall replaces
+the complete mute/solo
 snapshot and increments the published mixer revision once. The callback may
 observe that revision only at its next block boundary. Existing CC120 behavior
 still applies when the recalled state makes a channel effectively silent;
@@ -84,6 +85,17 @@ It returns no result for a velocity above 127 or an unknown curve value.
 Velocity zero returns zero for each valid curve. It is not connected to
 playback yet. Curve selection and dispatch integration remain planned work;
 the application does not yet expose velocity curves as a supported feature.
+
+`audio/MidiMixerPresets.hpp` provides the in-process control-thread registry.
+Save replaces an existing name, erase deletes a name, and names lists names in
+ASCII lexicographic order. Recall uses `MidiRuntimeMixer::setChannelFlags` to
+publish both 16-bit masks in one lock-free 32-bit atomic store and increments
+the revision once. Invalid or missing names leave the mixer unchanged. Gains
+remain independent; the registry has no access to source MIDI controllers.
+The registry can allocate and must not run in an audio callback. A single
+control thread owns the registry; the render thread reads only the mixer.
+Mixer reset does not delete saved presets. Backend and console integration
+remain planned work, so the application does not yet expose named presets.
 
 Implement and review one feature per change set:
 

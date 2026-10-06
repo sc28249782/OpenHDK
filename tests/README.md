@@ -1,5 +1,11 @@
 # Test failure diagnostics
 
+`midi-mixer-presets` checks name validation, save/overwrite/recall/delete/list,
+all-channel flags, revision counts, gain preservation, and existing channel
+setters. A control writer and render reader also check that mute/solo masks
+remain one complete pair during repeated recall. This is a core-only test;
+backend integration will test source CC7 preservation and CC120 behavior.
+
 `midi-velocity-curves` checks the pure velocity helper without audio hardware.
 It covers fixed vectors, all positive MIDI velocities with an independent
 nearest-integer oracle, monotonicity, velocity zero, and invalid inputs. The
