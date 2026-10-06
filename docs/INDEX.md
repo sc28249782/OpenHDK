@@ -23,6 +23,8 @@ continue to apply independently of feature plans.
 | [PLAYBACK-SESSION-CONTRACT](PLAYBACK-SESSION-CONTRACT.md) | Frame clock, state transitions, dispatch, and completion. |
 | [MIDI-CHANNEL-CONTROLLERS](MIDI-CHANNEL-CONTROLLERS.md) | Source controllers, runtime gain, resets, and diagnostics interpretation. |
 | [MIXER-DYNAMICS-CONTRACT](MIXER-DYNAMICS-CONTRACT.md) | Implemented velocity curves, presets, and peak limiter. |
+| [KARAOKE-LIBRARY-CONTRACT](KARAOKE-LIBRARY-CONTRACT.md) | Proposed 0.3.0 catalog identity, discovery, storage ownership, and preparation. |
+| [LYRIC-TIMELINE-CONTRACT](LYRIC-TIMELINE-CONTRACT.md) | Proposed KAR selection, encoding, media timing, and gated NCN24 profile. |
 | [POC-RUNBOOK](POC-RUNBOOK.md) | Windows build, diagnostics, playback, and console operations. |
 | [Test README](../tests/README.md) | Test scope and failure diagnostics. |
 | [V020-WINDOWS-ACCEPTANCE](V020-WINDOWS-ACCEPTANCE.md) | Reported listening results and final release gate evidence. |
@@ -40,7 +42,8 @@ continue to apply independently of feature plans.
 
 ## Post-release review
 
-All Markdown documents listed above, plus LICENSE and NOTICE, were reviewed
+All Markdown documents present in the v0.2.0 baseline, the new index,
+LICENSE, and NOTICE were reviewed
 against the v0.2.0 source baseline on 2026-10-06. The review compared CLI
 constraints, diagnostic fields, dependency acquisition, and test counts with
 source code, CMake, and both workflow definitions.
@@ -57,10 +60,12 @@ and device. Numerical limiter claims come from deterministic tests.
 ## Next work gate
 
 The next planned milestone is 0.3.0 karaoke library work. Before implementation,
-review contracts for song identity, file discovery, database ownership, KAR
-lyric events and timing, and the NCN input boundary. Define malformed-input
-behavior and public synthetic fixtures. Preserve the canonical SMF and mixer
-contracts unless a compatibility change is explicitly accepted.
+review the [library proposal](KARAOKE-LIBRARY-CONTRACT.md) and
+[lyric timeline proposal](LYRIC-TIMELINE-CONTRACT.md). They specify identity,
+discovery, database ownership, malformed-input behavior, and synthetic fixture
+requirements. Persistent storage selection, backend progress publication, and
+NCN24 format evidence remain explicit pre-implementation gates. Preserve the
+canonical SMF and mixer contracts unless a compatibility change is accepted.
 
 This review does not establish KAR/NCN support or select a UI framework. Later
 multi-SoundFont, bus, effects, and output-routing work keeps the ordering in

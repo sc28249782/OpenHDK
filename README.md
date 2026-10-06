@@ -101,6 +101,14 @@ continues to validate the complete audio and device-output build.
 The POC command uses vcpkg's checked-in `vcpkg-configuration.json`, including
 its pinned registry baseline, to resolve FluidSynth reproducibly.
 
+## Planned 0.3.0 contracts
+
+The [karaoke library proposal](docs/KARAOKE-LIBRARY-CONTRACT.md) and
+[lyric timeline proposal](docs/LYRIC-TIMELINE-CONTRACT.md) define the next
+review boundary: song identity, discovery, catalog ownership, KAR lyric
+selection/timing, and a gated NCN24 profile. They are pre-implementation
+proposals. Released v0.2.0 does not provide library or KAR/NCN services.
+
 ## Specification
 
 The normative contract for this implemented playback baseline is

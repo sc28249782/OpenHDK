@@ -1,0 +1,207 @@
+# Lyric timeline and NCN profile proposal
+
+**Contract ID:** OHK-LYR-030
+**Status:** Proposed pre-implementation contract; requires review and acceptance.
+**Target:** 0.3.0; no KAR/NCN support is claimed for released v0.2.0.
+
+`SPECIFICATION.md` remains normative for implemented behavior. The obligations
+below apply to future code only after this proposal is accepted. Catalog and
+file ownership are specified in
+[KARAOKE-LIBRARY-CONTRACT.md](KARAOKE-LIBRARY-CONTRACT.md).
+
+## 1. Immutable lyric timeline
+
+A cue contains a compiled tick, media time in integer microseconds, source
+track/event index or NCN cursor index, ordered display actions, decoded UTF-8
+text, and retained raw source bytes. A cue is an event fragment, not an inferred
+syllable, note, or grapheme. Preserve spaces and punctuation; do not insert
+spaces, guess syllable durations, or distribute one fragment across notes.
+
+Build cues on the control path. KAR cues reuse each selected event's exact
+`SmfTimeline` tick/time and source order. Do not calculate time again from a
+single BPM. At equal timestamps preserve tick, track index, and source event
+index; action order within a cue precedes its text. Empty payloads produce no
+cue. Metadata is retained separately and never becomes timed lyric text.
+
+A consumer advances from the PlaybackSession media clock, never wall time.
+At position `t`, all cues at or before `t` are due in stable order. It MUST
+emit each cue once per forward traversal. Equal-position polls emit nothing
+new; a paused clock emits nothing new. At completion, retain the final lyric
+state until explicit stop/reset. Stop/reset clears the consumer cursor and
+display state; a new session starts from the beginning. A lyric consumer MUST
+NOT alter PlaybackSession completion or invent an audio release tail.
+
+A pure consumer can receive media positions without a device. Publishing those
+positions from the running backend requires a separate bounded, lock-free
+handoff design; no UI work, allocation, logging, or lyric decoding is permitted
+in the audio callback. Seeking/backward traversal is outside this increment;
+reject backward positions unless the consumer was explicitly reset.
+
+## 2. KAR selection: FF 05 first, FF 01 only when identified
+
+These are OpenHDK compatibility policies, not a claim that all karaoke dialects
+share one convention. A `.kar` extension alone does not identify lyric tracks.
+Use decoded Meta types; never search raw file bytes for `FF 01` or `FF 05`.
+
+Without an explicit track selection:
+
+1. Find tracks with nonempty Lyric Meta (`FF 05`) payloads. If exactly one
+   exists, use its FF 05 events. If several exist, return AmbiguousLyricTrack.
+2. Only when no such FF 05 track exists, find FF 01 text tracks whose Track
+   Name (`FF 03`) is `Words` or `Lyrics`, after trimming ASCII space/tab and
+   folding ASCII case. A track qualifies if any Track Name event has that
+   name. Exclude leading-`@` metadata and empty payloads when finding candidates.
+3. Exactly one eligible track selects that text profile. Several eligible
+   tracks return AmbiguousLyricTrack; none produce a successful empty lyric
+   timeline with state NoLyrics.
+
+An explicit zero-based track index restricts selection to that track first.
+Within it, nonempty FF 05 takes precedence. Otherwise it must satisfy the named
+FF 01 rule or returns NoLyrics. An out-of-range index is InvalidLyricTrack.
+Do not merge FF 01 and FF 05, join competing language tracks, or fall back after
+a selected track fails text decoding. Music can be valid without lyrics;
+NoLyrics is not an InvalidSmf error.
+
+In the named FF 01 profile, each payload starting with ASCII `@` is metadata,
+not sung text. Retain the raw tag and event position. Recognized `@T` values
+may supply title metadata, but MUST NOT be heuristically split into title and
+artist. Title uses the first nonempty `@T` in selected track order; retain
+additional values without claiming their role. This proposal does not decode
+`@L` as a charset instruction or accept a marker-only unnamed track.
+
+## 3. Text encoding and display actions
+
+Selection supplies an explicit `UTF-8` or `TIS-620` decoder. UTF-8 is the
+initial default for KAR; ASCII is a subset. Never use the host locale, guess
+encoding from Thai-looking bytes, or retry another encoding after failure.
+Raw bytes remain available independently of decoded display text.
+
+UTF-8 MUST reject invalid, overlong, surrogate, and out-of-range sequences.
+TIS-620 MUST use a reviewed fixed mapping and reject undefined bytes. Decoder
+errors identify the selected member/event and payload byte offset. No silent
+replacement characters, normalization, transliteration, BOM stripping, or
+platform-codepage conversion is permitted. NUL and other C0 controls except
+CR/LF/tab fail InvalidText. Tab is retained as text; no tab width is implied.
+
+| Selected profile | Control policy |
+| --- | --- |
+| FF 05 lyric | CR, LF, or CRLF within one payload becomes one LineBreak per logical newline. Slash, backslash, and `@` remain literal text. |
+| Named FF 01 text | Leading `/` becomes LineBreak; leading `\` becomes ParagraphBreak. Consume all consecutive leading markers in order, then retain the remainder as text. CR/LF rules match FF 05. Markers elsewhere remain literal. |
+
+CRLF is combined only within a payload, not across event boundaries. A
+ParagraphBreak is a semantic request to start a new paragraph/display section;
+this contract does not require a particular screen layout. Marker-only payloads
+produce an action-only cue. UTF-8 combining characters remain code points;
+grapheme highlighting and typography require later UI contracts. The same
+encoding policy applies to extracted metadata. Generic FF 01 comments,
+copyright, and track-name events never become lyric cues by default.
+
+## 4. NCN24 bundle boundary
+
+NCN24 is a proposed, intentionally narrow OpenHDK profile based on the pinned
+legacy reader in section 7. It is not an official specification for every NCN
+collection. Selecting it is explicit; a loose MIDI file never activates it.
+
+A registered NCN root has `Song`, `Lyrics`, and `Cursor` directories. Resolve
+`Song/<relative stem>.mid` to `Lyrics/<relative stem>.lyr` and
+`Cursor/<relative stem>.cur`. Preserve subdirectories and the whole filename
+stem. Match directory names, stem components, and extensions using ASCII case
+folding; reject multiple matches. Non-ASCII characters compare exactly. All
+members must be regular files inside the root under the library containment
+rules. Missing, ambiguous, or unreadable members fail the whole bundle.
+NCN24 accepts `.mid` as its primary member; `.midi` is not a profile alias.
+
+The proposed LYR profile uses explicit TIS-620. Its first four terminated text
+lines are title, artist, key text, and an uninterpreted reserved header line.
+The remaining body is lyrics. Accept CRLF, LF, and CR line endings, normalized
+to LF in the body. Keep empty lines, spaces, and a terminal body newline; do
+not trim them. Missing header terminators fail InvalidText. Key text is
+metadata, not a transposition command. Retain header bytes and provenance.
+
+The proposed CUR profile is a headerless stream of unsigned 16-bit
+little-endian positions. Odd byte length fails InvalidCursor; no padded last
+value is allowed. Values must be nondecreasing; equal values are valid.
+For a cursor value `u` and primary MIDI PPQN `q`, normalize to the integer tick
+`floor(u*q/24)` using checked multiplication/division. Interpret the 24 divisor
+as this profile's cursor units per quarter note. This is a compatibility choice
+inferred from the pinned reader, not a universal NCN timing guarantee.
+
+Use the primary MIDI's compiled tempo map, including fractional carry, to
+convert normalized ticks to media microseconds. Do not use file length, first
+BPM, or a wall-clock timer. Reject positions beyond the primary timeline's
+last tick. Floor conversion may collapse adjacent positions at small PPQN;
+retain cursor order and never reorder equal-time cues.
+
+After newline normalization, require one cursor position per Unicode scalar
+in the body, including spaces and each LF. LF produces LineBreak; other
+scalars produce text cues. Thai combining scalars consume separate positions;
+no grapheme inference is performed. Cursor/body count mismatch fails the
+bundle, with no inferred timing, truncation, duplicated cursor, or partial
+lyric result. Empty body plus empty CUR is NoLyrics; a nonempty body with empty
+CUR is invalid. This rule is deliberately stricter than a tolerant legacy UI.
+
+## 5. NCN evidence gate before implementation
+
+The layout, TIS-620 use, and integer cursor formula are observations from one
+reader. The proposed count/newline rules need independent evidence. Before
+implementing the NCN normalizer, publish a reviewed profile supplement with:
+
+- independently authored minimal LYR/CUR/MID byte fixtures and expected cues;
+- evidence for four header lines, CRLF/terminal-newline handling, code-point
+  counts (including Thai combining characters), and cursor/body correspondence;
+- expected little-endian values, PPQN-divisible and non-divisible examples,
+  tempo changes, duplicate positions, decreasing values, and odd-byte errors;
+- explicit limits and malformed-input offsets; and
+- maintainer-reported comparison on a lawfully available representative bundle
+  or another independently verifiable primary format source.
+
+Private files remain external. A source sample is not a redistribution license.
+If evidence disagrees, revise this proposal before writing the parser. Until
+this gate closes, discovery may report NCN24 as UnsupportedProfile, but MUST
+NOT advertise NCN lyric playback. A release claiming NCN24 support must close
+this gate; it cannot silently substitute KAR-only scope.
+
+## 6. Required independent test vectors
+
+| Case | Required result |
+| --- | --- |
+| FF 05 and eligible FF 01 present | Use FF 05 only. |
+| Two FF 05 tracks, no selection | AmbiguousLyricTrack; no mixed cues. |
+| Named Words track; generic comment elsewhere | Use selected text, ignore comment. |
+| `@TTitle`, `/Hello`, `\World` in text profile | Metadata, LineBreak + text, ParagraphBreak + text. |
+| Slash/backslash in FF 05 | Literal characters. |
+| CRLF in one payload; split CR/LF payloads | One LineBreak; two LineBreaks respectively. |
+| PPQN 3, default tempo, KAR events at ticks 1/2 | Exact compiler times 166666/333333 microseconds. |
+| Tempo change and equal-time events | Preserve compiler times and source order. |
+| Poll equal time, pause, stop/reset | No repeat cue; no advance; cleared cursor/state. |
+| Invalid UTF-8, undefined TIS-620, NUL | InvalidText with event/member and byte position. |
+| NCN u=24/48, q=480, default tempo | Ticks 480/960, times 500000/1000000 microseconds. |
+| NCN u=7/8, q=3, default tempo | Ticks 0/1, times 0/166666 microseconds. |
+| NCN odd/decreasing/count mismatch/missing member | Structured failure, no partial preparation. |
+
+Test every limit in the library contract. Source bytes, MIDI event order,
+controllers, diagnostics, and mixer behavior must remain unchanged. Public
+synthetic fixtures MUST have independent expected values rather than copying
+the parser's formula as the only oracle. Add state/encoding/selection tests
+before connecting the library to audio or any display surface.
+
+## 7. Evidence and provenance
+
+The MIDI Association describes SMF lyric recommendations and separate language
+and display extensions. Those sources establish that text conventions require
+an explicit profile; this proposal does not claim full RP-017/RP-026 conformance:
+
+- [SMF specifications](https://midi.org/standard-midi-files)
+- [SMF Lyric Meta Event Definition](https://midi.org/smf-lyric-meta-event-definition)
+- [SMF Language and Display Extensions](https://midi.org/smf-language-and-display-extensions)
+
+Legacy observations were reviewed on 2026-10-06 at HandyKaraoke commit
+`7b9a6e2e8a69c0854298a8387f1ffbf2f16d15d8`:
+
+- [SongDatabase.cpp](https://github.com/sc28249782/HandyKaraoke/blob/7b9a6e2e8a69c0854298a8387f1ffbf2f16d15d8/SongDatabase.cpp): NCN directory/member layout and LYR metadata reading.
+- [Utils.cpp](https://github.com/sc28249782/HandyKaraoke/blob/7b9a6e2e8a69c0854298a8387f1ffbf2f16d15d8/Utils.cpp): TIS-620, four skipped header lines, little-endian CUR values, and PPQN/24 conversion.
+- [MidiFile.cpp](https://github.com/sc28249782/HandyKaraoke/blob/7b9a6e2e8a69c0854298a8387f1ffbf2f16d15d8/Midi/MidiFile.cpp): FF 05 preference and named FF 01 fallback.
+
+These are behavioral references, not copied implementation or universal format
+proof. No Qt/BASS code or media is imported. Any future source port requires
+[MIGRATION-BOUNDARY.md](MIGRATION-BOUNDARY.md) provenance and preserved notices.

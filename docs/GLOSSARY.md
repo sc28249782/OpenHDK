@@ -55,6 +55,19 @@ request descriptions.
 | **mixer preset** | An in-process named snapshot of 16-channel mute/solo flags. Recall preserves current gains and source controllers. |
 | **linked stereo peak limiter** | The stateless PCM boundary that uses one gain per stereo frame, limits peaks to 0.98, and replaces non-finite input samples with zero. |
 
+## Proposed library terms
+
+These terms belong to the unimplemented v0.3.0 proposals; they do not extend
+released v0.2.0 behavior.
+
+| Term | Definition |
+| --- | --- |
+| **SongId** | An opaque identity owned by one library, independent of song title, source stem, or content hash. |
+| **source key** | A registered RootId and normalized relative primary-MIDI locator. |
+| **catalog snapshot** | An immutable reader view of one committed catalog revision. |
+| **lyric cue** | A timed text fragment or display action retaining source order and media time. It does not imply a syllable or grapheme. |
+| **NCN24** | The proposed narrow MIDI/LYR/CUR profile, with a format-evidence gate before implementation. It is not all NCN dialects. |
+
 ## Out-of-scope terms
 
 | Term | Meaning in current documentation |

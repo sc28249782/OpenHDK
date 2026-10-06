@@ -96,6 +96,21 @@ FluidSynth-specific public mixer model.
 The POC has no implicit or bundled SoundFont fallback. A missing or unloadable
 configured SoundFont returns the existing structured recoverable error.
 
+## Proposed library and lyric layers
+
+The v0.3.0 proposals in [KARAOKE-LIBRARY-CONTRACT.md](KARAOKE-LIBRARY-CONTRACT.md)
+and [LYRIC-TIMELINE-CONTRACT.md](LYRIC-TIMELINE-CONTRACT.md) remain
+unimplemented. A control-path scanner stages catalog changes; a library owns
+source identity and immutable revision snapshots. Playback preparation checks
+source revisions and creates immutable MIDI/lyric timelines before audio starts.
+Lyric timing reuses compiled media time rather than an independent wall clock.
+
+The audio callback owns no filesystem, database, text-decoding, or UI work.
+Backend progress publication needs a separate real-time-safe handoff contract.
+Persistent storage needs a selected/reviewed adapter. NCN24 normalization needs
+its evidence supplement before implementation. The public library model must
+not expose Qt, SQL, BASS, or FluidSynth types.
+
 ## Deferred layers
 
 Multi-SoundFont layers and mappings, instrument grouping, bus routing, effects,
