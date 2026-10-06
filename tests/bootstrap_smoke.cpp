@@ -14,6 +14,12 @@
 #include <thread>
 #include <vector>
 namespace {
+bool isLimitedPcm(std::span<const float> samples) {
+  constexpr float ceilingTolerance = 1.0e-6F;
+  return std::all_of(samples.begin(), samples.end(), [](float sample) {
+    return std::isfinite(sample) && std::abs(sample) <= 0.98F + ceilingTolerance;
+  });
+}
 std::filesystem::path writeMidi() {
   constexpr std::array<unsigned char, 45> bytes{
     'M','T','h','d',0,0,0,6,0,0,0,1,1,0xE0, 'M','T','r','k',0,0,0,0x17,
@@ -78,6 +84,7 @@ int main() {
   std::array<float, 256> compiledPcm{};
   OPENHDK_FAIL_IF(24, !backend.setRuntimeChannelMuted(0U, true, status));
   OPENHDK_FAIL_IF(27, !backend.renderStereo(compiledPcm, status));
+  OPENHDK_FAIL_IF(36, !isLimitedPcm(compiledPcm));
   constexpr float runtimeMuteSilenceThreshold = 1.0e-6F;
   OPENHDK_FAIL_IF(28, std::any_of(compiledPcm.begin(), compiledPcm.end(), [runtimeMuteSilenceThreshold](float sample) {
         return std::abs(sample) > runtimeMuteSilenceThreshold;
@@ -85,6 +92,7 @@ int main() {
   OPENHDK_FAIL_IF(29, !backend.setRuntimeChannelMuted(0U, false, status));
   for (std::size_t block = 0U; block < 1024U && backend.isPlaying(); ++block) {
     OPENHDK_FAIL_IF(20, !backend.renderStereo(compiledPcm, status));
+    OPENHDK_FAIL_IF(36, !isLimitedPcm(compiledPcm));
   }
   OPENHDK_FAIL_IF(21, backend.isPlaying());
   OPENHDK_FAIL_IF(30, !backend.playCompiledTimeline(*compiledTimeline.timeline(), status) || !backend.isPlaying());
@@ -92,6 +100,7 @@ int main() {
   for (std::size_t block = 0U; block < 1024U && backend.isPlaying(); ++block) {
     OPENHDK_FAIL_IF(20, !backend.renderStereo(compiledPcm, status));
     compiledHeard = compiledHeard || std::any_of(compiledPcm.begin(), compiledPcm.end(), [](float x) { return x > 0.0001F || x < -0.0001F; });
+    OPENHDK_FAIL_IF(36, !isLimitedPcm(compiledPcm));
   }
   OPENHDK_FAIL_IF(21, backend.isPlaying() || !compiledHeard);
   OPENHDK_FAIL_IF(26, !backend.resetRuntimeMixer(status));
@@ -101,16 +110,47 @@ int main() {
   std::this_thread::sleep_for(std::chrono::milliseconds(25));
   std::vector<float> legacyPcm(4096U);
   OPENHDK_FAIL_IF(5, !backend.renderStereo(legacyPcm, status));
+  OPENHDK_FAIL_IF(37, !isLimitedPcm(legacyPcm));
   const bool heardLegacy = std::any_of(legacyPcm.begin(), legacyPcm.end(), [](float x) { return x > 0.0001F || x < -0.0001F; });
   for (std::size_t block = 0U; block < 1024U && backend.isPlaying(); ++block) {
     OPENHDK_FAIL_IF(31, !backend.renderStereo(legacyPcm, status));
+    OPENHDK_FAIL_IF(37, !isLimitedPcm(legacyPcm));
   }
   OPENHDK_FAIL_IF(32, !heardLegacy || backend.isPlaying());
   OPENHDK_FAIL_IF(33, !backend.playCompiledTimeline(*compiledTimeline.timeline(), status) || !backend.isPlaying());
   for (std::size_t block = 0U; block < 1024U && backend.isPlaying(); ++block) {
     OPENHDK_FAIL_IF(34, !backend.renderStereo(compiledPcm, status));
+    OPENHDK_FAIL_IF(36, !isLimitedPcm(compiledPcm));
   }
   const bool completedCompiledAfterLegacy = !backend.isPlaying();
+  // A dense, maximum-velocity chord stresses the shared output boundary at
+  // maximum supported master gain without changing the runtime SoundFont.
+  std::vector<std::uint8_t> chordTrack{0U, 0xc0U, 0U, 0U, 0xb0U, 7U, 127U};
+  for (std::uint8_t note = 36U; note < 84U; ++note) {
+    chordTrack.insert(chordTrack.end(), {0U, 0x90U, note, 127U});
+  }
+  chordTrack.insert(chordTrack.end(), {0x83U, 0x60U, 0xb0U, 120U, 0U,
+                                      0U, 0xffU, 0x2fU, 0U});
+  std::vector<std::uint8_t> chordMidi{
+    'M','T','h','d',0,0,0,6,0,0,0,1,1,0xe0,'M','T','r','k'};
+  for (const unsigned shift : {24U, 16U, 8U, 0U}) {
+    chordMidi.push_back(static_cast<std::uint8_t>(chordTrack.size() >> shift));
+  }
+  chordMidi.insert(chordMidi.end(), chordTrack.begin(), chordTrack.end());
+  const auto chordParsed = OpenHDK::SmfParser::parse(chordMidi);
+  OPENHDK_FAIL_IF(38, !chordParsed.file());
+  const auto chordTimeline = OpenHDK::SmfTimelineCompiler::compile(*chordParsed.file());
+  OPENHDK_FAIL_IF(39, !chordTimeline.timeline() || !backend.setVolume(1.0F, status)
+                    || !backend.playCompiledTimeline(*chordTimeline.timeline(), status));
+  bool chordHeard{};
+  for (std::size_t block = 0U; block < 1024U && backend.isPlaying(); ++block) {
+    OPENHDK_FAIL_IF(40, !backend.renderStereo(compiledPcm, status)
+                      || !isLimitedPcm(compiledPcm));
+    chordHeard = chordHeard || std::any_of(compiledPcm.begin(), compiledPcm.end(), [](float sample) {
+      return std::abs(sample) > 0.0001F;
+    });
+  }
+  OPENHDK_FAIL_IF(41, backend.isPlaying() || !chordHeard);
   backend.shutdown(); std::filesystem::remove(midi);
   OPENHDK_FAIL_IF(35, !completedCompiledAfterLegacy);
   return 0;

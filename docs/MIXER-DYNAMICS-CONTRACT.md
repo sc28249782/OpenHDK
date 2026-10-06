@@ -97,6 +97,17 @@ control thread owns the registry; the render thread reads only the mixer.
 Mixer reset does not delete saved presets. Backend and console integration
 remain planned work, so the application does not yet expose named presets.
 
+`audio/StereoPeakLimiter.hpp` implements the stateless linked stereo limiter.
+The FluidSynth adapter applies it after each successful synth render segment,
+after master/channel gain, before device or headless output. It is always
+enabled, including legacy file-player output. No CLI toggle or limiter state
+is added. Double intermediates preserve linked gain for extreme finite float
+inputs; final PCM remains float. Hardware-free tests cover the contract vectors,
+finite output, stereo balance, bypass, and independence from block partitions.
+The headless smoke test checks the shared boundary for compiled and legacy
+playback, including a maximum-velocity chord. Manual Windows audio validation
+is still required before release acceptance.
+
 Implement and review one feature per change set:
 
 1. pure velocity-curve helper and hardware-free test vectors;
