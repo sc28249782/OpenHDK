@@ -38,6 +38,7 @@ struct CommandLineOptions {
     bool hasPlaybackOption{};
     std::optional<std::uint32_t> deviceIndex;
     float volume{1.0F};
+    OpenHDK::MidiVelocityCurve velocityCurve{OpenHDK::MidiVelocityCurve::Linear};
     OpenHDK::MidiChannelGains channelGains{OpenHDK::defaultMidiChannelGains()};
 };
 
@@ -45,7 +46,7 @@ void usage() {
     std::cout
         << "Usage: OpenHDK --midi <file.mid> --soundfont <file.sf2> [--device <index>] "
            "[--volume <0-100>] [--channel-volume <1-16>:<0-100>] [--mute] "
-           "[--interactive-mixer] [--no-device]\n"
+           "[--velocity-curve <linear|soft|hard>] [--interactive-mixer] [--no-device]\n"
            "       OpenHDK --midi-diagnostics <file.mid>\n"
            "       OpenHDK --list-devices\n";
 }
@@ -154,6 +155,17 @@ std::optional<int> parseCommandLine(int argc, char* argv[], CommandLineOptions& 
                 std::cerr << "Channel volume must be <1-16>:<0-100>.\n";
                 return kUsageError;
             }
+            options.hasPlaybackOption = true;
+            continue;
+        }
+        if (argument == "--velocity-curve" && index + 1 < argc) {
+            const auto curve = OpenHDK::parseMidiVelocityCurve(argv[++index]);
+            if (!curve) {
+                std::cerr << "Velocity curve must be linear, soft, or hard.\n";
+                usage();
+                return kUsageError;
+            }
+            options.velocityCurve = *curve;
             options.hasPlaybackOption = true;
             continue;
         }
@@ -298,6 +310,7 @@ int runPlayback(const CommandLineOptions& options, OpenHDK::AudioBackendStatus& 
         .volume = options.volume,
         .muted = options.muted,
         .channelGains = options.channelGains,
+        .velocityCurve = options.velocityCurve,
     };
     if (!backend.initialize(configuration, status)) {
         std::cerr << "Audio initialization failed: " << status.message << '\n';

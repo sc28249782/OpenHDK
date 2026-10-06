@@ -40,6 +40,13 @@ Current CLI playback reads, parses, and compiles SMF before activating the
 backend, then exercises `PlaybackSession` and `SmfMidiEventDispatcher` through
 the compiled-timeline entry point. The retained legacy file-player API and
 compiled-timeline path cannot control one synth at the same time.
+For development playback, `--velocity-curve soft` lowers positive note-on
+velocities and `--velocity-curve hard` raises them according to the integer
+contract. The default `linear` preserves source velocity. Only note-ons are
+changed at dispatch; source events, controller automation, and diagnostics
+remain unchanged. Compare the three curves with the same MIDI and SoundFont
+during manual Windows validation. This is separate from channel/master gain.
+
 `--channel-volume <1-16>:<0-100>` may be repeated to trim the GM MIDI channel
 shown (using the conventional 1–16 numbering; channel 10 is percussion). It
 multiplies the SMF's CC7 channel volume, including the default CC7 value of

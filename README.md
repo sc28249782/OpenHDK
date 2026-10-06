@@ -26,6 +26,10 @@ a reset. Missing controller data is printed as `unavailable`. Diagnostics is a
 standalone, read-only mode and cannot be combined with playback or device
 options.
 
+In the development tree, playback accepts `--velocity-curve linear|soft|hard`
+to select a note-on velocity curve. The default is `linear`. Selection leaves
+source MIDI and diagnostics unchanged and remains fixed during playback.
+
 For a Windows device-output playback session, add `--interactive-mixer` and
 enter `gain <1-16> <0-100>`, `mute <1-16>`, `unmute <1-16>`, `solo <1-16>`,
 `unsolo <1-16>`, `reset`, `help`, or `quit` in the console. It controls the

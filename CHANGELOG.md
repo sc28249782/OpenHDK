@@ -6,6 +6,11 @@ This file records the user-visible scope of each OpenHDK source release.
 
 ### Added
 
+- Playback velocity selection with `--velocity-curve linear|soft|hard`.
+  Positive note-ons are transformed at dispatch; source MIDI and controller
+  automation remain unchanged. Linear is the default. Non-linear curves
+  require compiled playback. Manual Windows release validation is pending.
+
 - An always-enabled linked stereo hard-peak limiter at the shared FluidSynth
   render boundary for device and headless output, with a ceiling of 0.98 and
   non-finite sample sanitization. Manual Windows release validation is pending.

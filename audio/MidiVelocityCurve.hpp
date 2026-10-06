@@ -4,10 +4,19 @@
 
 #include <cstdint>
 #include <optional>
+#include <string_view>
 
 namespace OpenHDK {
 
 enum class MidiVelocityCurve { Linear, Soft, Hard };
+
+[[nodiscard]] constexpr std::optional<MidiVelocityCurve> parseMidiVelocityCurve(
+    std::string_view name) noexcept {
+    if (name == "linear") return MidiVelocityCurve::Linear;
+    if (name == "soft") return MidiVelocityCurve::Soft;
+    if (name == "hard") return MidiVelocityCurve::Hard;
+    return std::nullopt;
+}
 
 /// Maps one MIDI velocity without allocation or mutable state. Zero remains
 /// zero; the dispatcher must still interpret a velocity-zero note-on as
