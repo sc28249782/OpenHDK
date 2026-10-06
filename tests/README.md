@@ -7,6 +7,16 @@ headless playback, CLI help, and diagnostics error cases, for nine suites.
 Both counts describe v0.2.0. Linux core CI runs the six hardware-free suites;
 Windows bootstrap CI runs all nine.
 
+## Planned 0.3.0 acceptance
+
+The library and lyric proposals define future test requirements in
+[the library contract](../docs/KARAOKE-LIBRARY-CONTRACT.md) and
+[the lyric contract](../docs/LYRIC-TIMELINE-CONTRACT.md). They add no CTest
+suite yet. Identity/discovery/transaction and encoding/selection/timing tests
+must use independently authored fixtures. NCN24 requires a reviewed evidence
+supplement before normalizer implementation. No private song or SoundFont
+is a repository test asset.
+
 ## Failure diagnostics
 
 `stereo-peak-limiter` checks deterministic contract vectors, extreme finite

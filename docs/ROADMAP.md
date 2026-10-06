@@ -63,14 +63,29 @@ occurs when a SoundFont or audio device is unavailable.
 
 ## 0.3.0 — karaoke library (planned)
 
-- Specify library identity, discovery, database ownership, lyric event timing,
-  and KAR/NCN format boundaries before implementation. Keep the released
-  canonical SMF and mixer contracts unchanged unless a compatibility change
-  is explicitly reviewed.
-- Port song database and file discovery deliberately, with source attribution.
-- Add KAR lyric parsing and timeline tests for FF 01 and FF 05, then KAR and
-  NCN playback integration.
-- Add staged runtime layout and installer research.
+- [ ] Review and accept [library](KARAOKE-LIBRARY-CONTRACT.md) and
+  [lyric timeline](LYRIC-TIMELINE-CONTRACT.md) proposals before implementation.
+- [ ] Implement pure catalog identity and immutable snapshots, then bounded
+  discovery and in-memory scan transactions with synthetic fixtures.
+- [ ] Implement KAR extraction, FF 05/identified FF 01 selection, explicit
+  text encoding, and deterministic lyric-consumer tests.
+- [ ] Close the NCN24 format evidence gate before implementing its bundle
+  normalizer; do not claim generic NCN compatibility.
+- [ ] Select and review persistent storage/schema/recovery and backend
+  media-position publication before implementing those adapters.
+- [ ] Integrate library preparation and lyric observation without changing
+  released MIDI, mixer, or limiter semantics; validate Windows playback.
+- Research staged runtime layout and installers separately; this proposal
+  does not authorize a binary release or select a UI framework.
+
+These are proposed contracts, not an accepted implementation milestone. Any
+future source port requires provenance and attribution under
+`MIGRATION-BOUNDARY.md`; copying the legacy database/UI is not implied.
+
+Exit gate: proposal and adapter designs accepted; NCN24 evidence complete;
+identity, discovery, rollback, encoding, selection, and timing regressions pass
+without hardware; both CI workflows pass; identified Windows playback/lyric
+checks pass. If a gate remains open, do not claim full 0.3.0 support.
 
 ## 0.4.0 — multi-SoundFont synthesis
 

@@ -218,6 +218,22 @@ release state, allocation, lock, I/O, logging, or control-thread interaction.
 Later limiter algorithms or adjustable parameters require a compatibility
 change to this specification.
 
+### 6.2 Proposed v0.3.0 library and lyric contracts
+
+`KARAOKE-LIBRARY-CONTRACT.md` and `LYRIC-TIMELINE-CONTRACT.md` propose the
+next implementation boundary. They cover catalog identity and transactions,
+deterministic file discovery, immutable lyric timelines, explicit encoding,
+FF 05 preference and identified FF 01 fallback, and an NCN24 evidence gate.
+These proposals require review and acceptance before implementation. They
+MUST NOT be described as implemented or released behavior. The v0.2.0 parser,
+playback, MIDI-controller, mixer, and limiter contracts remain unchanged.
+
+Persistent storage selection, running-backend media-position publication, and
+the NCN format evidence supplement require reviewed designs before their
+adapters are implemented. No database dependency, new CLI option, Qt UI, or
+legacy database migration is authorized by these documents. Acceptance tests
+and any later support claim MUST close the corresponding gates.
+
 ## 7. Command-line contract
 
 The application provides these modes:
