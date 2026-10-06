@@ -11,12 +11,12 @@ OpenHDK deliberately excludes BASS, BASS FX, BASSMIDI, BASSmix, BASS_VST,
 and their DLLs, import libraries, headers, SDK archives, redistribution scripts,
 license text, and API wrappers.
 
-## Approved proof-of-concept dependencies
+## Approved audio dependencies
 
 | Component | Candidate | Intended role | Decision |
 |---|---|---|---|
-| MIDI/SF2 synth | FluidSynth | MIDI events to SoundFont PCM | Approved for 0.1 POC |
-| Audio output/mixing | miniaudio | Windows device output and PCM routing | Approved for 0.1 POC |
+| MIDI/SF2 synth | FluidSynth | MIDI events to SoundFont PCM | Approved for the 0.1.0 and 0.2.0 source baselines |
+| Audio output/mixing | miniaudio | Windows device output and PCM routing | Approved for the 0.1.0 and 0.2.0 source baselines |
 
 ## Deferred candidates
 
@@ -34,7 +34,7 @@ linking model, notice requirements, security/update plan, and test coverage.
 No binary release may be published until every bundled dependency has a reviewed
 redistribution basis and required notices.
 
-## Exact approved 0.1 pins
+## Exact approved baseline pins
 
 | Component | Exact pin | SPDX/license | Acquisition and redistribution |
 |---|---|---|---|

@@ -19,11 +19,16 @@ dictionary and writing rules.
 This guide defines project-wide writing principles. The following documents take
 precedence when they define a more specific technical, licensing, or scope rule:
 
+- `docs/SPECIFICATION.md` (normative implemented behavior)
 - `docs/ARCHITECTURE.md`
 - `docs/ROADMAP.md`
 - `docs/DEPENDENCY-POLICY.md`
 - `LICENSE`
 - `docs/THIRD_PARTY_NOTICES.md`
+
+`ROADMAP.md` describes plans; it does not override implemented behavior in
+`SPECIFICATION.md`. Contract references explain that specification and must
+be corrected together when descriptions conflict.
 
 Use the definitions in [GLOSSARY.md](GLOSSARY.md). Do not define a conflicting
 meaning in another document.
@@ -57,8 +62,9 @@ State the current implementation boundary precisely.
 
 Do not describe OpenHDK as a complete user-facing karaoke player. The current
 work includes deterministic SMF parsing, event decoding, timeline compilation,
-`PlaybackSession` timing and dispatch groundwork, and an optional audio proof
-of concept. It does not yet provide complete user-facing playback.
+`PlaybackSession` timing, dispatch, diagnostics, runtime channel mixing,
+velocity curves, named presets, and linked stereo peak limiting through an
+optional FluidSynth/miniaudio adapter. It does not yet provide complete user-facing playback.
 
 Do not describe deferred work as current work. In the current SMF foundation,
 the following are outside scope: a Qt migration, KAR/NCN parsing or playback,

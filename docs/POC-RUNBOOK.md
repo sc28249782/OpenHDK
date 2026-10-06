@@ -1,5 +1,6 @@
-# FluidSynth + miniaudio 0.1 proof of concept
+# OpenHDK v0.2 playback runbook
 
+Use a Windows developer shell with CMake, Ninja, MSVC, and `VCPKG_ROOT` set.
 Configure with the vcpkg toolchain and the manifest baseline:
 
 ~~~powershell
@@ -28,8 +29,12 @@ event decoder, and deterministic compiled timeline as playback, prints all 16
 channels, and exits before an audio backend is constructed. It therefore needs
 neither a SoundFont nor an audio device. Each channel reports the count of
 nonzero-velocity note-ons, distinct observed program numbers in ascending
-user-facing 1–128 order, and the final observed CC7 volume in native 0–127
-units. An unobserved program or CC7 field is reported as `unavailable`.
+user-facing 1–128 order, CC7/CC11 and optional CC39/CC43 histories, paired
+14-bit values, effective CC7 after CC121, and reset counts/positions. Histories
+show first, pre-note, final, range, and changes in native 0–127 controller
+units with tick/microsecond positions. Missing observations are
+`unavailable`. `pre-note` is before the first positive-velocity note-on; it
+does not measure audible output. See [the controller reference](MIDI-CHANNEL-CONTROLLERS.md).
 
 `--list-devices` enumerates endpoints without opening a playback stream; an
 asterisk marks the default endpoint. In contrast, `--device <index>` selects
@@ -51,7 +56,13 @@ The curve also applies to drum note-ons. Soft can substantially reduce drum
 loudness; linear remains the default. The maintainer's v0.2 listening results
 are recorded in [V020-WINDOWS-ACCEPTANCE.md](V020-WINDOWS-ACCEPTANCE.md).
 
-In the Windows interactive console, use `mute 10`, `preset-save NoDrums`,
+Start Windows device playback with the interactive console:
+
+```powershell
+.\build\OpenHDK.exe --midi C:\Music\demo.mid --soundfont C:\SoundFonts\demo.sf2 --interactive-mixer
+```
+
+Do not combine this mode with `--no-device`. In the console, use `mute 10`, `preset-save NoDrums`,
 `unmute 10`, then `preset-recall NoDrums` to restore the saved mute flags.
 `preset-list` prints sorted names; `preset-delete NoDrums` removes the preset.
 Recall preserves current gains and source automation. `reset` clears mixer

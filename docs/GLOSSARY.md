@@ -50,7 +50,10 @@ request descriptions.
 | **FluidSynth backend** | An audio backend that uses FluidSynth to synthesize MIDI through an SF2 SoundFont. |
 | **miniaudio callback** | The audio callback that sends generated PCM to a miniaudio output device. It must not allocate memory, perform file I/O, parse data, or update the UI. |
 | **hardware-free test** | A test that does not require an audio device or physical MIDI hardware. |
-| **manual Windows audio validation** | A manual check of Windows device output, startup reliability, and output latency. It is separate from hardware-free tests. |
+| **manual Windows audio validation** | A reported check of Windows device output and playback controls with an identified MIDI/SoundFont pair and source revision. It is separate from hardware-free tests and does not establish measured latency or limiter ceilings. |
+| **velocity curve** | A dispatch-time mapping of positive note-on velocity. It does not change CC7, CC11, source data, or note-off messages. |
+| **mixer preset** | An in-process named snapshot of 16-channel mute/solo flags. Recall preserves current gains and source controllers. |
+| **linked stereo peak limiter** | The stateless PCM boundary that uses one gain per stereo frame, limits peaks to 0.98, and replaces non-finite input samples with zero. |
 
 ## Out-of-scope terms
 

@@ -67,3 +67,24 @@ This record does not authorize creating a tag or publishing a release.
 The device listening gate passed for the recorded source revision and asset
 pair. Release preparation changes metadata and documentation only. The final
 tag commit still requires clean-tree, build/test, CI, and signature checks.
+
+## Completed release gates
+
+The signed `v0.2.0` source release was published on 2026-10-06. Its exact
+release commit is `0175cac739ea7100e7e298a5c4527c3175fc0323`. The runtime
+listening revision above remains `86ff592`; release preparation changed only
+metadata and documentation.
+
+- The maintainer reported a successful final Windows build and CTest 9/9
+  in 1.62 seconds before tagging.
+- [Linux core CI](https://github.com/sc28249782/OpenHDK/actions/runs/37470772234)
+  and [Windows bootstrap CI](https://github.com/sc28249782/OpenHDK/actions/runs/37470772230)
+  passed on the exact release commit.
+- Local `git tag -v v0.2.0` reported a good signature from key fingerprint
+  `C4E9AFA9C97FC94CA2448E9218BDAEA561529B86`. GitHub verified the signed tag.
+- The [GitHub Release](https://github.com/sc28249782/OpenHDK/releases/tag/v0.2.0)
+  is published, not a draft or prerelease. It provides automatic source ZIP
+  and TAR.GZ archives with no uploaded binary, MIDI, or SoundFont assets.
+
+These checks close the release gates for v0.2.0 only. Later behavior changes
+require new acceptance evidence and the release checklist.

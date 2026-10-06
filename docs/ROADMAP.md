@@ -36,7 +36,7 @@ The `v0.1.0` source release includes this completed baseline. Its Windows
 audio-device check has passed with external, non-distributable validation
 assets. It does not provide a complete user-facing playback application.
 
-## 0.2.0 — mixer and dynamics polish
+## 0.2.0 — released mixer and dynamics baseline
 
 - [x] Specify the velocity-curve, named-preset, and master-limiter contracts
   before implementation.
@@ -53,15 +53,20 @@ The maintainer reported successful Windows tests and device listening on
 2026-10-06. See [V020-WINDOWS-ACCEPTANCE.md](V020-WINDOWS-ACCEPTANCE.md).
 The local revision, clean tree, and asset pair are confirmed. Soft reduced
 drum loudness as expected from a global velocity curve; linear remains the
-default. The milestone is implemented and manually validated; signed tagging
-and source-only publication remain separate release steps.
+default. The signed `v0.2.0` tag and source-only GitHub Release were published
+on 2026-10-06 at commit `0175cac`. The release gates below passed; the
+acceptance record includes the final commit checks.
 
 Exit gate: hardware-free tests and both CI workflows pass; limiter behavior is
 covered deterministically; Windows output is manually validated; no crash
 occurs when a SoundFont or audio device is unavailable.
 
-## 0.3.0 — karaoke library
+## 0.3.0 — karaoke library (planned)
 
+- Specify library identity, discovery, database ownership, lyric event timing,
+  and KAR/NCN format boundaries before implementation. Keep the released
+  canonical SMF and mixer contracts unchanged unless a compatibility change
+  is explicitly reviewed.
 - Port song database and file discovery deliberately, with source attribution.
 - Add KAR lyric parsing and timeline tests for FF 01 and FF 05, then KAR and
   NCN playback integration.
@@ -118,10 +123,15 @@ deterministic regression coverage; Windows output is manually validated.
 
 ## Scope boundaries
 
-The initial SMF parser, timeline, PlaybackSession, and dispatcher remain
-limited to SMF formats 0 and 1. Do not add BASS-family artifacts, Qt migration,
-KAR/NCN parsing or playback, HNK/HNK3 compatibility, VST2/VST3 integration,
-or physical MIDI hardware I/O to this work. Audio callbacks must not perform
+The future milestones above are plans, not implemented release guarantees.
+KAR/NCN work requires the separate 0.3.0 contracts; Qt or another UI framework
+requires a later reviewed selection.
+
+The released v0.2.0 SMF parser, timeline, PlaybackSession, and dispatcher
+remain limited to SMF formats 0 and 1. Qt migration, KAR/NCN parsing or
+playback, HNK/HNK3 compatibility, VST2/VST3 integration, and physical MIDI
+hardware I/O are outside that released baseline. BASS-family artifacts remain
+excluded from all milestones. Audio callbacks must not perform
 file I/O, allocation, parsing, or UI work.
 
 ## Later work

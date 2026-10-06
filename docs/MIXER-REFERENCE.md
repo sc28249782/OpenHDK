@@ -48,7 +48,7 @@ before it becomes an OpenHDK feature.
 | Instrument-family grouping | Redesign | Explicit, testable classifier; never rewrite source MIDI events. |
 | Channel mute, solo, and gain | Extend | Current channel controls remain the baseline; group semantics belong to the mixer engine. |
 | Bus groups | Redesign | Directed, validated bus graph in 0.5.0; do not reproduce a fixed stream or bus count. |
-| Master limiter | Adopt with a new contract | Complete the 0.2.0 real-time-safe limiter first. |
+| Master limiter | Adopt with a new contract | Implemented in 0.2.0; preserve its contract when adding later DSP layers. |
 | EQ, compressor, reverb, and chorus | Redesign | Add only after insert/send/return contracts in 0.6.0. |
 | Bus-to-speaker routing | Redesign | Start with one multi-channel endpoint in 0.7.0. |
 | Multiple physical output devices | Defer | Needs explicit clock-domain, drift, buffering, and resampling policy. |

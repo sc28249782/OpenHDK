@@ -1,4 +1,13 @@
-# Test failure diagnostics
+# Test coverage and failure diagnostics
+
+The hardware-free configuration registers six CTest suites: parser fixtures,
+MIDI diagnostics CLI, runtime mixer console, velocity curves, mixer presets,
+and stereo peak limiter. The audio-enabled test configuration adds FluidSynth
+headless playback, CLI help, and diagnostics error cases, for nine suites.
+Both counts describe v0.2.0. Linux core CI runs the six hardware-free suites;
+Windows bootstrap CI runs all nine.
+
+## Failure diagnostics
 
 `stereo-peak-limiter` checks deterministic contract vectors, extreme finite
 inputs, NaN/Infinity sanitization, linked stereo balance, unchanged samples
