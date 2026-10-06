@@ -80,6 +80,9 @@ MIDI dispatch, not in the parser or timeline. Named presets are control-path
 snapshots of runtime mute/solo flags and publish through the same revision
 boundary as other mixer state. A linked stereo peak limiter sits after the
 runtime mixer has produced PCM and before both device and headless output.
+The development FluidSynth adapter applies the stateless limiter in
+`renderSynthFrames`, so every successful segment, including legacy playback,
+uses the same output boundary. Velocity and preset integration remain planned.
 These layers must retain the callback rules above; they do not authorize a
 FluidSynth-specific public mixer model.
 

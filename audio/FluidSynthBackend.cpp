@@ -3,6 +3,7 @@
 #include "audio/FluidSynthBackend.hpp"
 #include "audio/PlaybackSession.hpp"
 #include "audio/SmfMidiEventDispatcher.hpp"
+#include "audio/StereoPeakLimiter.hpp"
 #include <algorithm>
 #include <atomic>
 #include <filesystem>
@@ -119,8 +120,12 @@ struct FluidSynthBackend::Impl {
   }
   bool renderSynthFrames(float* samples, std::size_t frames) {
     if (frames > static_cast<std::size_t>(std::numeric_limits<int>::max())) return false;
-    return frames == 0U || fluid_synth_write_float(synth, static_cast<int>(frames), samples, 0, 2,
-                                                    samples, 1, 2) == FLUID_OK;
+    if (frames == 0U) return true;
+    if (fluid_synth_write_float(synth, static_cast<int>(frames), samples, 0, 2,
+                               samples, 1, 2) != FLUID_OK) return false;
+    // Every successful synth segment reaches this boundary, including legacy,
+    // compiled playback, device callbacks, and headless rendering.
+    return limitInterleavedStereo({samples, frames * kChannels});
   }
   bool renderFrames(float* samples, std::size_t frames) {
     if (synth == nullptr) return false;

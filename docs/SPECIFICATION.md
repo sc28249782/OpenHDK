@@ -262,9 +262,12 @@ and timelines, song library/database, UI, physical or external MIDI, external
 effects/plugins, cross-platform guarantees, and any permissive parser
 compatibility mode.
 
-Velocity curves, named mixer presets, and the v0.2 hard-peak limiter have an
-accepted contract in section 6.1 but remain unimplemented. They MUST NOT be
-claimed as supported until their implementation and section 9 acceptance pass.
+Velocity curves and named mixer presets have core implementations for their
+accepted contract in section 6.1; playback and console integration remain
+unfinished. The v0.2 hard-peak limiter is implemented in the shared FluidSynth
+render path in the development tree. These additions are not part of the
+released v0.1.0 baseline. They MUST NOT be claimed as release-supported until
+their implementation and section 9 acceptance pass.
 
 Changes to parser strictness, event ordering, time conversion, session
 completion, callback rules, channel-volume semantics, or CLI argument behavior

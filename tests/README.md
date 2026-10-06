@@ -1,5 +1,12 @@
 # Test failure diagnostics
 
+`stereo-peak-limiter` checks deterministic contract vectors, extreme finite
+inputs, NaN/Infinity sanitization, linked stereo balance, unchanged samples
+below the ceiling, and equal results across block partitions. The tolerance
+for float output and ceiling checks is `1e-6`. Incomplete interleaved frames
+fail without changing PCM. The audio smoke test checks bounded finite output
+from compiled and legacy playback and a dense maximum-velocity chord.
+
 `midi-mixer-presets` checks name validation, save/overwrite/recall/delete/list,
 all-channel flags, revision counts, gain preservation, and existing channel
 setters. A control writer and render reader also check that mute/solo masks

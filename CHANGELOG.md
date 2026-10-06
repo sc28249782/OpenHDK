@@ -2,6 +2,14 @@
 
 This file records the user-visible scope of each OpenHDK source release.
 
+## Unreleased
+
+### Added
+
+- An always-enabled linked stereo hard-peak limiter at the shared FluidSynth
+  render boundary for device and headless output, with a ceiling of 0.98 and
+  non-finite sample sanitization. Manual Windows release validation is pending.
+
 ## 0.1.0 - 2026-10-05
 
 Initial source-release baseline.
