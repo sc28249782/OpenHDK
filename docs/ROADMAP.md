@@ -4,7 +4,7 @@ OpenHDK versioning begins with the `0.1.0` source-release baseline. It is
 independent from HandyKaraoke 3.0.0-alpha.1, which remains the
 compatibility/recovery release.
 
-## 0.1.0 — bootstrap and audio proof of concept
+## 0.1.0 — released source baseline
 
 - [x] Build CMake skeleton and Windows CI.
 - [x] Define backend boundary and dependency policy.
@@ -13,18 +13,6 @@ compatibility/recovery release.
 - [x] Manually validate Windows device output with an external MIDI/SoundFont
   pair; no private asset was added to the repository.
 - Do not port the HandyKaraoke UI or user song folders yet.
-
-Exit gate: reproducible Windows build; MIDI fixture produces PCM/audio; no
-BASS artefact enters the repository.
-
-Implementation note: feat/fluidsynth-miniaudio-poc adds the pinned dependency
-path, FluidSynthBackend, miniaudio device callback, and a headless CI test.
-feat/audio-device-diagnostics adds a non-invasive playback-device listing
-command. The manual Windows audio-device check has passed with external,
-non-distributable validation assets.
-
-## 0.2.0 — deterministic SMF playback foundation
-
 - [x] Select an output endpoint by the index shown by --list-devices.
 - [x] Reject unavailable endpoint indices and --device with --no-device.
 - [x] Set initial FluidSynth output gain with --volume or mute it with --mute.
@@ -41,13 +29,29 @@ non-distributable validation assets.
   programs, CC7/CC11 history, optional CC39/CC43 14-bit pairs, and deterministic
   event positions, including an OpenHDK effective-CC7 view after CC121, without
   requiring a SoundFont or audio device.
+- [x] Add runtime channel gain, mute, solo, reset, and an interactive Windows
+  mixer console without changing source SMF controller automation.
 
-Next unfinished work: add velocity curves and named channel-mute/solo presets,
-then add a master limiter. This does not yet provide complete user-facing
-playback.
+The `v0.1.0` source release includes this completed baseline. Its Windows
+audio-device check has passed with external, non-distributable validation
+assets. It does not provide a complete user-facing playback application.
 
-Exit gate: fixtures behave correctly and no crash occurs when a SoundFont or
-audio device is unavailable.
+## 0.2.0 — mixer and dynamics polish
+
+- [ ] Specify the velocity-curve, named-preset, and master-limiter contracts
+  before implementation.
+- [ ] Add deterministic velocity curves while preserving source MIDI event data
+  and the existing CC7/CC11 channel-volume contract.
+- [ ] Add named channel mute/solo presets without altering source SMF events.
+- [ ] Add a real-time-safe master limiter after the runtime mixer.
+- [ ] Extend hardware-free regression coverage for each mixer and dynamics
+  contract, including limiter peak behavior.
+- [ ] Manually validate Windows output with an external MIDI/SoundFont pair;
+  do not commit those private assets.
+
+Exit gate: hardware-free tests and both CI workflows pass; limiter behavior is
+covered deterministically; Windows output is manually validated; no crash
+occurs when a SoundFont or audio device is unavailable.
 
 ## 0.3.0 — karaoke library
 

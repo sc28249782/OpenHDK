@@ -1,17 +1,22 @@
 # Release checklist
 
-Use this checklist to publish the OpenHDK `0.1.0` source release. Run the Git
-commands from the repository clone in Windows Subsystem for Linux (WSL) that
-has the maintainer's GitHub GPG signing key.
+Use this checklist to publish an OpenHDK source release. Replace `<version>`
+with the release version without the leading `v`. Run the Git commands from the
+repository clone in Windows Subsystem for Linux (WSL) that has the maintainer's
+GitHub GPG signing key.
+
+The `v0.1.0` source release completed this procedure on 2026-10-05. Its release
+record remains in `CHANGELOG.md` and in the GitHub Release; do not reopen or
+edit that historical changelog section for later work.
 
 ## Before merge
 
-- [ ] Confirm that the release pull request changes only version metadata,
+- [ ] Confirm that the `<version>` release pull request changes only version metadata,
   documentation, and release records.
 - [ ] Confirm that `git diff --check` reports no error.
 - [ ] Confirm that the Linux core and Windows bootstrap workflows pass on the
   release pull request head.
-- [ ] Confirm that the `0.1.0` scope in `CHANGELOG.md` matches
+- [ ] Confirm that the `<version>` scope in `CHANGELOG.md` matches
   `SPECIFICATION.md` and `ROADMAP.md`.
 - [ ] Confirm that `THIRD_PARTY_NOTICES.md` and `DEPENDENCY-POLICY.md` identify
   the dependencies used by the source baseline.
@@ -41,8 +46,8 @@ has the maintainer's GitHub GPG signing key.
 4. Create and verify an annotated GPG-signed tag.
 
    ```bash
-   git tag -s v0.1.0 -m "OpenHDK v0.1.0"
-   git tag -v v0.1.0
+   git tag -s v<version> -m "OpenHDK v<version>"
+   git tag -v v<version>
    ```
 
    Verification must report a good signature from the maintainer's expected
@@ -51,10 +56,10 @@ has the maintainer's GitHub GPG signing key.
 5. Push only the verified tag.
 
    ```bash
-   git push origin v0.1.0
+   git push origin v<version>
    ```
 
-6. Create a GitHub Release from `v0.1.0`. Use the `0.1.0` section of
+6. Create a GitHub Release from `v<version>`. Use the `<version>` section of
    `CHANGELOG.md` as the release notes.
 
 7. Publish the release as source-only. Do not attach a prebuilt binary, private
@@ -62,6 +67,18 @@ has the maintainer's GitHub GPG signing key.
 
 8. Verify that GitHub shows the signed tag, source archives, GPL-3.0-or-later
    license, and required third-party notices.
+
+## WSL signing recovery
+
+If GPG cannot open its pinentry from the active WSL terminal, set the terminal
+for the GPG agent before creating the tag:
+
+```bash
+export GPG_TTY="$(tty)"
+gpg-connect-agent updatestartuptty /bye
+```
+
+Retry the signing command, then verify the tag before pushing it.
 
 ## Stop conditions
 
