@@ -55,6 +55,12 @@ note-on/off, controller, program-change, and pitch-bend only. It normalizes a
 zero-velocity note-on to note-off and deliberately ignores tempo, End-of-Track,
 generic Meta, SysEx, Polyphonic Key Pressure, and Channel Pressure records.
 
+Preset recall replaces the complete runtime mute/solo flag pair as one mixer
+revision. It does not change gains, source controllers, or session position.
+The render callback observes the next revision and applies the existing CC120
+mute/solo transitions; recalling an audible preset does not recreate stopped
+voices. A retained legacy player blocks recall.
+
 The curve-selecting dispatcher overload transforms only positive note-on
 velocity immediately before the sink call. The default overload remains
 linear. An unknown curve fails before any command is sent. Curve selection

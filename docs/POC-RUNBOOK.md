@@ -47,6 +47,13 @@ changed at dispatch; source events, controller automation, and diagnostics
 remain unchanged. Compare the three curves with the same MIDI and SoundFont
 during manual Windows validation. This is separate from channel/master gain.
 
+In the Windows interactive console, use `mute 10`, `preset-save NoDrums`,
+`unmute 10`, then `preset-recall NoDrums` to restore the saved mute flags.
+`preset-list` prints sorted names; `preset-delete NoDrums` removes the preset.
+Recall preserves current gains and source automation. `reset` clears mixer
+flags and gains but keeps the saved presets. Unmuting does not restore voices
+that CC120 stopped; subsequent note-ons can sound. Presets have no disk file.
+
 `--channel-volume <1-16>:<0-100>` may be repeated to trim the GM MIDI channel
 shown (using the conventional 1–16 numbering; channel 10 is percussion). It
 multiplies the SMF's CC7 channel volume, including the default CC7 value of
