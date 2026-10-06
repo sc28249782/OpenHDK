@@ -43,23 +43,32 @@ public:
 
     [[nodiscard]] bool setMuted(std::size_t channel, bool muted) noexcept {
         if (channel >= kMidiChannelCount) return false;
-        updateMask(mutedChannels_, channel, muted);
+        updateMask(channel, muted);
         publish();
         return true;
     }
 
     [[nodiscard]] bool setSoloed(std::size_t channel, bool soloed) noexcept {
         if (channel >= kMidiChannelCount) return false;
-        updateMask(soloedChannels_, channel, soloed);
+        updateMask(channel + kMidiChannelCount, soloed);
         publish();
         return true;
     }
 
     void reset() noexcept {
         for (auto& gain : gains_) gain.store(kMidiRuntimeGainScale, std::memory_order_release);
-        mutedChannels_.store(0U, std::memory_order_release);
-        soloedChannels_.store(0U, std::memory_order_release);
+        channelFlags_.store(0U, std::memory_order_release);
         publish();
+    }
+
+    // A preset replaces both masks in one indivisible store and one revision.
+    // Gains are intentionally independent of this flag-only operation.
+    [[nodiscard]] bool setChannelFlags(std::uint32_t muted, std::uint32_t soloed) noexcept {
+        if ((muted & ~kMidiRuntimeChannelMask) != 0U
+            || (soloed & ~kMidiRuntimeChannelMask) != 0U) return false;
+        channelFlags_.store(muted | (soloed << kMidiChannelCount), std::memory_order_release);
+        publish();
+        return true;
     }
 
     [[nodiscard]] MidiRuntimeMixerSnapshot snapshot() const noexcept {
@@ -68,8 +77,9 @@ public:
         for (std::size_t channel = 0U; channel < kMidiChannelCount; ++channel) {
             result.gains[channel] = decodeGain(gains_[channel].load(std::memory_order_acquire));
         }
-        result.mutedChannels = mutedChannels_.load(std::memory_order_acquire) & kMidiRuntimeChannelMask;
-        result.soloedChannels = soloedChannels_.load(std::memory_order_acquire) & kMidiRuntimeChannelMask;
+        const auto flags = channelFlags_.load(std::memory_order_acquire);
+        result.mutedChannels = flags & kMidiRuntimeChannelMask;
+        result.soloedChannels = flags >> kMidiChannelCount;
         return result;
     }
 
@@ -95,13 +105,12 @@ private:
         return static_cast<float>(gain) / static_cast<float>(kMidiRuntimeGainScale);
     }
 
-    static void updateMask(std::atomic<std::uint32_t>& target, std::size_t channel,
-                           bool enabled) noexcept {
+    void updateMask(std::size_t channel, bool enabled) noexcept {
         const auto bit = 1U << channel;
-        auto current = target.load(std::memory_order_relaxed);
+        auto current = channelFlags_.load(std::memory_order_relaxed);
         while (true) {
             const auto updated = enabled ? (current | bit) : (current & ~bit);
-            if (target.compare_exchange_weak(current, updated, std::memory_order_release,
+            if (channelFlags_.compare_exchange_weak(current, updated, std::memory_order_release,
                                              std::memory_order_relaxed)) return;
         }
     }
@@ -109,8 +118,7 @@ private:
     void publish() noexcept { revision_.fetch_add(1U, std::memory_order_release); }
 
     std::array<std::atomic<std::uint32_t>, kMidiChannelCount> gains_{};
-    std::atomic<std::uint32_t> mutedChannels_{};
-    std::atomic<std::uint32_t> soloedChannels_{};
+    std::atomic<std::uint32_t> channelFlags_{};
     std::atomic<std::uint32_t> revision_{};
 };
 
