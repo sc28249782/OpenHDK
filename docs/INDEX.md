@@ -23,8 +23,8 @@ continue to apply independently of feature plans.
 | [PLAYBACK-SESSION-CONTRACT](PLAYBACK-SESSION-CONTRACT.md) | Frame clock, state transitions, dispatch, and completion. |
 | [MIDI-CHANNEL-CONTROLLERS](MIDI-CHANNEL-CONTROLLERS.md) | Source controllers, runtime gain, resets, and diagnostics interpretation. |
 | [MIXER-DYNAMICS-CONTRACT](MIXER-DYNAMICS-CONTRACT.md) | Implemented velocity curves, presets, and peak limiter. |
-| [KARAOKE-LIBRARY-CONTRACT](KARAOKE-LIBRARY-CONTRACT.md) | Proposed 0.3.0 catalog identity, discovery, storage ownership, and preparation. |
-| [LYRIC-TIMELINE-CONTRACT](LYRIC-TIMELINE-CONTRACT.md) | Proposed KAR selection, encoding, media timing, and gated NCN24 profile. |
+| [KARAOKE-LIBRARY-CONTRACT](KARAOKE-LIBRARY-CONTRACT.md) | Accepted 0.3.0 catalog identity, discovery, storage ownership, and preparation. |
+| [LYRIC-TIMELINE-CONTRACT](LYRIC-TIMELINE-CONTRACT.md) | Accepted KAR selection, encoding, media timing, and gated NCN24 profile. |
 | [POC-RUNBOOK](POC-RUNBOOK.md) | Windows build, diagnostics, playback, and console operations. |
 | [Test README](../tests/README.md) | Test scope and failure diagnostics. |
 | [V020-WINDOWS-ACCEPTANCE](V020-WINDOWS-ACCEPTANCE.md) | Reported listening results and final release gate evidence. |
@@ -59,9 +59,9 @@ and device. Numerical limiter claims come from deterministic tests.
 
 ## Next work gate
 
-The next planned milestone is 0.3.0 karaoke library work. Before implementation,
-review the [library proposal](KARAOKE-LIBRARY-CONTRACT.md) and
-[lyric timeline proposal](LYRIC-TIMELINE-CONTRACT.md). They specify identity,
+The next planned milestone is 0.3.0 karaoke library work. Implementation uses the accepted
+[library contract](KARAOKE-LIBRARY-CONTRACT.md) and
+[lyric timeline contract](LYRIC-TIMELINE-CONTRACT.md). They specify identity,
 discovery, database ownership, malformed-input behavior, and synthetic fixture
 requirements. Persistent storage selection, backend progress publication, and
 NCN24 format evidence remain explicit pre-implementation gates. Preserve the

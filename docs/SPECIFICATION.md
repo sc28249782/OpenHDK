@@ -218,13 +218,14 @@ release state, allocation, lock, I/O, logging, or control-thread interaction.
 Later limiter algorithms or adjustable parameters require a compatibility
 change to this specification.
 
-### 6.2 Proposed v0.3.0 library and lyric contracts
+### 6.2 Accepted v0.3.0 library and lyric contracts
 
-`KARAOKE-LIBRARY-CONTRACT.md` and `LYRIC-TIMELINE-CONTRACT.md` propose the
-next implementation boundary. They cover catalog identity and transactions,
+`KARAOKE-LIBRARY-CONTRACT.md` and `LYRIC-TIMELINE-CONTRACT.md` define the
+accepted target implementation boundary (PR #34). They cover catalog identity and transactions,
 deterministic file discovery, immutable lyric timelines, explicit encoding,
 FF 05 preference and identified FF 01 fallback, and an NCN24 evidence gate.
-These proposals require review and acceptance before implementation. They
+The development tree implements only the pure logical catalog boundary
+listed in library contract section 9. Complete library and lyric services
 MUST NOT be described as implemented or released behavior. The v0.2.0 parser,
 playback, MIDI-controller, mixer, and limiter contracts remain unchanged.
 

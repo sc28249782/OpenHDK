@@ -1,18 +1,23 @@
 # Test coverage and failure diagnostics
 
-The hardware-free configuration registers six CTest suites: parser fixtures,
+The hardware-free configuration registers seven CTest suites: parser fixtures,
 MIDI diagnostics CLI, runtime mixer console, velocity curves, mixer presets,
-and stereo peak limiter. The audio-enabled test configuration adds FluidSynth
-headless playback, CLI help, and diagnostics error cases, for nine suites.
-Both counts describe v0.2.0. Linux core CI runs the six hardware-free suites;
-Windows bootstrap CI runs all nine.
+stereo peak limiter, and song catalog core. The audio-enabled test configuration adds
+FluidSynth
+headless playback, CLI help, and diagnostics error cases, for ten suites.
+These counts describe the development tree; v0.2.0 has six/nine respectively.
+Linux core CI runs seven hardware-free suites; Windows bootstrap runs all ten.
 
 ## Planned 0.3.0 acceptance
 
-The library and lyric proposals define future test requirements in
+The accepted library and lyric contracts define target test requirements in
 [the library contract](../docs/KARAOKE-LIBRARY-CONTRACT.md) and
-[the lyric contract](../docs/LYRIC-TIMELINE-CONTRACT.md). They add no CTest
-suite yet. Identity/discovery/transaction and encoding/selection/timing tests
+[the lyric contract](../docs/LYRIC-TIMELINE-CONTRACT.md).
+`song-catalog-core` checks logical IDs, unsigned UTF-8 ordering, strict locators,
+ASCII case collisions, state changes on complete scans, rollback including a
+late staging failure, boundary limits, relocation conflicts, catalog-only
+removal, and old snapshot preservation. It performs no filesystem or media I/O.
+Remaining discovery and encoding/selection/timing tests
 must use independently authored fixtures. NCN24 requires a reviewed evidence
 supplement before normalizer implementation. No private song or SoundFont
 is a repository test asset.

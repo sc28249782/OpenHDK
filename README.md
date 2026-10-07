@@ -81,7 +81,7 @@ ctest --test-dir build --output-on-failure
 
 The default POC configuration uses pinned FluidSynth and miniaudio dependencies
 (and downloads a pinned test SoundFont when audio POC tests are enabled). For
-the six hardware-free core test suites, use:
+the seven hardware-free core test suites, use:
 
 ```powershell
 cmake -S . -B build-parser -DOPENHDK_BUILD_AUDIO_POC=OFF -DOPENHDK_BUILD_TESTS=ON -DOPENHDK_FETCH_TEST_FIXTURES=OFF
@@ -91,8 +91,9 @@ ctest --test-dir build-parser --output-on-failure
 
 The lightweight Linux core CI job uses this hardware-free configuration with
 strict compiler warnings and AddressSanitizer/UndefinedBehaviorSanitizer. It
-runs six suites: SMF parser fixtures, MIDI diagnostics CLI, runtime mixer
-console, velocity curves, mixer presets, and stereo peak limiting. It does not
+runs seven suites: SMF parser fixtures, MIDI diagnostics CLI, runtime mixer
+console, velocity curves, mixer presets, stereo peak limiting, and song catalog
+identity/transactions. It does not
 install FluidSynth or vcpkg, fetch miniaudio or SoundFonts, access audio
 hardware, build the complete audio application, or claim Linux support for
 the Windows interactive console. The Windows CI job
@@ -103,11 +104,14 @@ its pinned registry baseline, to resolve FluidSynth reproducibly.
 
 ## Planned 0.3.0 contracts
 
-The [karaoke library proposal](docs/KARAOKE-LIBRARY-CONTRACT.md) and
-[lyric timeline proposal](docs/LYRIC-TIMELINE-CONTRACT.md) define the next
-review boundary: song identity, discovery, catalog ownership, KAR lyric
+The [karaoke library contract](docs/KARAOKE-LIBRARY-CONTRACT.md) and
+[lyric timeline contract](docs/LYRIC-TIMELINE-CONTRACT.md) define the
+accepted planning boundary (PR #34): song identity, discovery, catalog ownership,
+KAR lyric
 selection/timing, and a gated NCN24 profile. They are pre-implementation
-proposals. Released v0.2.0 does not provide library or KAR/NCN services.
+contracts. The development tree adds a pure in-memory catalog model;
+filesystem discovery, metadata, storage, lyrics, and library playback remain
+unimplemented. Released v0.2.0 does not provide library or KAR/NCN services.
 
 ## Specification
 
