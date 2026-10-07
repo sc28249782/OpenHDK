@@ -65,8 +65,10 @@ occurs when a SoundFont or audio device is unavailable.
 
 - [x] Review and accept [library](KARAOKE-LIBRARY-CONTRACT.md) and
   [lyric timeline](LYRIC-TIMELINE-CONTRACT.md) proposals before implementation.
-- [ ] Implement pure catalog identity and immutable snapshots, then bounded
-  discovery and in-memory scan transactions with synthetic fixtures.
+- [x] Implement pure catalog identity and immutable snapshots.
+- [x] Add bounded SMF/KAR discovery, content revision checks, and in-memory
+  scan transactions with synthetic fixtures.
+- [ ] Add root reattachment and source/member metadata before library integration.
 - [ ] Implement KAR extraction, FF 05/identified FF 01 selection, explicit
   text encoding, and deterministic lyric-consumer tests.
 - [ ] Close the NCN24 format evidence gate before implementing its bundle

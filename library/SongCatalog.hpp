@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
 
+#include "library/SourceRevision.hpp"
 #include <algorithm>
 #include <compare>
 #include <cstdint>
@@ -47,12 +48,14 @@ struct CatalogLimits {
 struct CatalogCandidate {
   std::string locator;
   CatalogState state = CatalogState::Ready;
+  std::optional<SourceRevision> revision = std::nullopt;
 };
 struct CatalogSong {
   SongId id;
   RootId root;
   std::string locator;
   CatalogState state;
+  std::optional<SourceRevision> sourceRevision = std::nullopt;
 };
 struct CatalogSnapshot {
   std::uint64_t revision = 0U;
@@ -112,7 +115,8 @@ inline bool isCatalogLocator(std::string_view text) noexcept {
 // immutable snapshots may be shared with other threads. Snapshots survive later
 // commits and catalog destruction.
 // This is a logical model: root containment, source validation, exact revision
-// tokens, metadata, and filesystem discovery belong to subsequent slices.
+// validation and filesystem discovery are provided by the discovery wrapper;
+// metadata and playback preparation belong to subsequent slices.
 // Allocation exceptions propagate; staged mutation preserves the old snapshot.
 class SongCatalog {
  public:
@@ -191,11 +195,12 @@ class SongCatalog {
       const auto found = existing.find(candidate.locator);
       if (found != existing.end()) {
         staged->songs[found->second].state = candidate.state;
+        staged->songs[found->second].sourceRevision = candidate.revision;
       } else {
         // Case-only rename requires explicit relocation, including Missing entries.
         if (folded.contains(fold(candidate.locator))) return CatalogError::AmbiguousPath;
         if (nextSong == std::numeric_limits<std::uint64_t>::max()) return CatalogError::IdExhausted;
-        staged->songs.push_back({SongId(nextSong++), root, candidate.locator, candidate.state});
+        staged->songs.push_back({SongId(nextSong++), root, candidate.locator, candidate.state, candidate.revision});
       }
     }
     ++staged->revision;
@@ -221,6 +226,7 @@ class SongCatalog {
     song.locator = std::move(locator);
     // The new source must be validated by a later complete scan.
     song.state = CatalogState::Invalid;
+    song.sourceRevision.reset();
     ++staged->revision;
     snapshot_ = std::move(staged);
     return CatalogError::None;

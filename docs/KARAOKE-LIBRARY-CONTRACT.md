@@ -206,23 +206,62 @@ without selecting a GUI framework. Source-only release rules still apply.
 
 ## 9. Current implementation boundary
 
-`library/SongCatalog.hpp` implements only opaque logical IDs, strict UTF-8
-relative locators, committed immutable snapshots, complete-scan reconciliation,
-logical relocation, and catalog-only removal. A scan consumes caller-validated
-candidate descriptors; it does not enumerate directories or validate media.
-Ready in this model is a supplied validation result, not permission to start
-playback. Relocation marks the entry Invalid until a complete scan validates it.
+`library/SongCatalog.hpp` provides logical IDs, locators, immutable snapshots,
+complete-scan reconciliation, relocation, and catalog-only removal. It accepts
+caller-supplied validation results. `library/SongDiscovery.hpp` now wraps this
+model for explicitly registered local SMF/KAR directories. Registration resolves
+roots and rejects equivalent or overlapping roots. Windows UNC roots are
+rejected; local mounted-filesystem selection remains the caller's responsibility. Discovery sorts regular
+`.mid`, `.midi`, and `.kar` candidates, skips symbolic links and Windows reparse
+points, enforces configured limits, and validates canonical SMF parsing and
+compilation before publishing Ready. A `.kar` extension does not establish
+lyric support. NCN root modes and lyric-policy registration remain unimplemented.
 
-`addRoot()` allocates a logical root only. Directory existence, overlap,
-aliases, containment, root reattachment, metadata, exact source revisions,
-structured source diagnostics, persistent storage, and playback preparation
-remain unimplemented. Scan limits here cover candidate count, one locator,
-and incoming locator bytes only; the full payload budget needs later layers.
-The 10,000-candidate default is unchanged; larger real collections require a
-reviewed limit change based on usage evidence.
+The source token is SHA-256 plus byte count over the bytes actually read, using
+an independent implementation of [NIST FIPS 180-4](https://doi.org/10.6028/NIST.FIPS.180-4).
+It is not SongId, a deduplication key, source authentication, or a claim of
+FIPS certification. Size/mtime are not used to skip hashing. Digest tests use
+fixed independent Python hashlib vectors, including padding boundaries.
+The token detects content replacement under the SHA-256 collision-resistance
+assumption; no digest can establish mathematical uniqueness for all inputs.
 
-All catalog calls require one serialized control path. Acquire a snapshot
-there before sharing that immutable handle with readers. Concurrent calls to
-catalog methods are not supported. Allocation exceptions preserve the previous
-snapshot and propagate to the future control-path adapter; they are not yet
-mapped to library operation diagnostics. No code runs in an audio callback.
+POSIX reads traverse relative components from an opened root with `openat`,
+`O_NOFOLLOW`, and regular-file checks. Windows reads hold parent directory
+handles without delete sharing, reject reparse attributes, and compare the
+normalized final handle path before reading. Hard links at distinct locators
+remain distinct songs. These are control-path native filesystem APIs; no new
+library dependency is introduced. The implementation sources are the
+[POSIX open specification](https://pubs.opengroup.org/onlinepubs/9799919799/functions/open.html),
+[CreateFileW](https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-createfilew),
+and [GetFinalPathNameByHandleW](https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-getfinalpathnamebyhandlew).
+
+The scanner processes one SMF at a time and releases its temporary parse and
+compile storage before the next. The locator budget reserves the old snapshot's
+staged locators plus four copies of incoming locator bytes to cover enumeration,
+descriptors, re-enumeration/fold sorting, and publication. Source bytes have a
+separate per-SMF bound. Metadata and lyrics require additional accounting when
+those layers arrive. Allocation failure aborts without partial publication.
+
+Before publication, the scanner re-enumerates the candidate set and re-reads
+content tokens. Detected changes, cancellation, directory failures, limit
+exhaustion, or aliases discard the staged scan. A malformed SMF is a per-song
+Invalid result with the nested parser/compiler error; an unreadable retained
+source can also be Invalid with no current content token. A source that
+disappears during preparation aborts the scan. Complete later scans can mark
+Missing. `DiscoveryResult` carries operation/code/member, per-file diagnostics,
+and the initial candidate count once enumeration succeeds.
+
+This consistency check is not a filesystem-wide atomic snapshot. Edits after
+an individual final check are still possible; playback preparation MUST reopen
+and verify every source again before using it. This slice provides no prepared
+playback input. Root reattachment, source/member metadata, durable storage,
+KAR/NCN lyrics, and playback preparation remain unimplemented. Native mounted
+filesystem changes are not a hostile-writer sandbox guarantee.
+
+All methods require one serialized control path and must not be reentered from
+control hooks. Only previously acquired immutable snapshots may be shared with
+readers. Checkpoint/cancellation hooks run on the control path and allow
+deterministic change/cancellation tests; they do not run in the audio callback.
+The 10,000-candidate default is unchanged. Larger collections require a reviewed
+limit change based on usage evidence. The pure model still propagates allocation
+exceptions; the discovery wrapper maps allocation failure to StorageFailure.

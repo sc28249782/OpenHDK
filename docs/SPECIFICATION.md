@@ -224,8 +224,8 @@ change to this specification.
 accepted target implementation boundary (PR #34). They cover catalog identity and transactions,
 deterministic file discovery, immutable lyric timelines, explicit encoding,
 FF 05 preference and identified FF 01 fallback, and an NCN24 evidence gate.
-The development tree implements only the pure logical catalog boundary
-listed in library contract section 9. Complete library and lyric services
+The development tree implements the logical catalog and bounded SMF/KAR
+discovery/content-token boundary listed in library contract section 9. Complete library and lyric services
 MUST NOT be described as implemented or released behavior. The v0.2.0 parser,
 playback, MIDI-controller, mixer, and limiter contracts remain unchanged.
 

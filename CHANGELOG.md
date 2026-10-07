@@ -2,6 +2,14 @@
 
 This file records the user-visible scope of each OpenHDK source release.
 
+## Unreleased
+
+- Development library core: opaque song IDs, immutable in-memory catalog
+  snapshots, and bounded local SMF/KAR discovery with canonical SMF validation,
+  SHA-256 content revisions, per-file diagnostics, and scan rollback.
+  No library CLI, metadata database, KAR/NCN lyrics, or library playback
+  preparation is provided yet. Released v0.2.0 behavior is unchanged.
+
 ## 0.2.0 - 2026-10-06
 
 Mixer and dynamics source baseline, prepared for signed source-only release.
