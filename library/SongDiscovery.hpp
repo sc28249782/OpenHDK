@@ -65,8 +65,7 @@ class SongDiscovery {
     if (ec || !fs::is_directory(canonical, ec) || ec) return {{}, diagnostic(DiscoveryError::InvalidRoot, DiscoveryOperation::RegisterRoot)};
 #ifdef _WIN32
     // UNC/network roots are outside the local-directory discovery slice.
-    const auto rootName = canonical.root_name().native();
-    if (rootName.size() >= 2U && rootName[0] == L'\\' && rootName[1] == L'\\')
+    if (LibraryFilesystem::windowsNetworkPath(LibraryFilesystem::utf8(canonical)))
       return {{}, diagnostic(DiscoveryError::InvalidRoot, DiscoveryOperation::RegisterRoot)};
 #endif
     for (const auto& entry : roots_) {

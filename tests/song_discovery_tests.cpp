@@ -28,6 +28,12 @@ std::string hex(const OpenHDK::SourceRevision& revision) {
 
 int main() {
   using namespace OpenHDK;
+  OPENHDK_FAIL_IF(46, !LibraryFilesystem::windowsNetworkPath("//server/share") ||
+      !LibraryFilesystem::windowsNetworkPath("//?/unc/server/share") ||
+      !LibraryFilesystem::windowsNetworkPath(R"(\\server\share)"));
+  OPENHDK_FAIL_IF(47, LibraryFilesystem::windowsNetworkPath("//?/C:/songs") ||
+      LibraryFilesystem::windowsNetworkPath(R"(\\?\C:\songs)") ||
+      LibraryFilesystem::windowsNetworkPath("C:/songs"));
   // Fixed independent Python hashlib vectors, covering both padding branches.
   struct Vector { std::size_t size; const char* digest; };
   const Vector vectors[] = {

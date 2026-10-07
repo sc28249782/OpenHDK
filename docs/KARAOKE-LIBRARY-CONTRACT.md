@@ -211,7 +211,7 @@ complete-scan reconciliation, relocation, and catalog-only removal. It accepts
 caller-supplied validation results. `library/SongDiscovery.hpp` now wraps this
 model for explicitly registered local SMF/KAR directories. Registration resolves
 roots and rejects equivalent or overlapping roots. Windows UNC roots are
-rejected; local mounted-filesystem selection remains the caller's responsibility. Discovery sorts regular
+rejected, while extended local paths remain eligible; local mounted-filesystem selection remains the caller's responsibility. Discovery sorts regular
 `.mid`, `.midi`, and `.kar` candidates, skips symbolic links and Windows reparse
 points, enforces configured limits, and validates canonical SMF parsing and
 compilation before publishing Ready. A `.kar` extension does not establish

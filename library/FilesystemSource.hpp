@@ -25,6 +25,12 @@ inline std::string utf8(const fs::path& path) {
 inline fs::path fromUtf8(std::string_view text) {
   return fs::path(std::u8string(text.begin(), text.end()));
 }
+inline bool windowsNetworkPath(std::string_view path) noexcept {
+  const auto separator = [](char c) { return c == '/' || c == '\\'; };
+  if (path.size() < 2U || !separator(path[0]) || !separator(path[1])) return false;
+  if (path.size() < 4U || path[2] != '?' || !separator(path[3])) return true;
+  return path.size() >= 8U && catalogAliases(path.substr(4U, 3U), "UNC") && separator(path[7]);
+}
 inline bool contains(const fs::path& root, const fs::path& path) {
   auto a = root.begin(), b = path.begin();
   for (; a != root.end(); ++a, ++b) {
