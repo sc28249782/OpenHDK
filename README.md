@@ -81,7 +81,7 @@ ctest --test-dir build --output-on-failure
 
 The default POC configuration uses pinned FluidSynth and miniaudio dependencies
 (and downloads a pinned test SoundFont when audio POC tests are enabled). For
-the seven hardware-free core test suites, use:
+the eight hardware-free core test suites, use:
 
 ```powershell
 cmake -S . -B build-parser -DOPENHDK_BUILD_AUDIO_POC=OFF -DOPENHDK_BUILD_TESTS=ON -DOPENHDK_FETCH_TEST_FIXTURES=OFF
@@ -91,9 +91,9 @@ ctest --test-dir build-parser --output-on-failure
 
 The lightweight Linux core CI job uses this hardware-free configuration with
 strict compiler warnings and AddressSanitizer/UndefinedBehaviorSanitizer. It
-runs seven suites: SMF parser fixtures, MIDI diagnostics CLI, runtime mixer
+runs eight suites: SMF parser fixtures, MIDI diagnostics CLI, runtime mixer
 console, velocity curves, mixer presets, stereo peak limiting, and song catalog
-identity/transactions. It does not
+identity/transactions and filesystem discovery. It does not
 install FluidSynth or vcpkg, fetch miniaudio or SoundFonts, access audio
 hardware, build the complete audio application, or claim Linux support for
 the Windows interactive console. The Windows CI job
@@ -109,8 +109,9 @@ The [karaoke library contract](docs/KARAOKE-LIBRARY-CONTRACT.md) and
 accepted planning boundary (PR #34): song identity, discovery, catalog ownership,
 KAR lyric
 selection/timing, and a gated NCN24 profile. They are pre-implementation
-contracts. The development tree adds a pure in-memory catalog model;
-filesystem discovery, metadata, storage, lyrics, and library playback remain
+contracts. The development tree adds an in-memory catalog, bounded local
+SMF/KAR discovery, and content revision checks. Metadata, durable storage,
+lyrics, and library playback remain
 unimplemented. Released v0.2.0 does not provide library or KAR/NCN services.
 
 ## Specification

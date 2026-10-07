@@ -1,12 +1,12 @@
 # Test coverage and failure diagnostics
 
-The hardware-free configuration registers seven CTest suites: parser fixtures,
+The hardware-free configuration registers eight CTest suites: parser fixtures,
 MIDI diagnostics CLI, runtime mixer console, velocity curves, mixer presets,
-stereo peak limiter, and song catalog core. The audio-enabled test configuration adds
+stereo peak limiter, song catalog core, and filesystem discovery. The audio-enabled test configuration adds
 FluidSynth
-headless playback, CLI help, and diagnostics error cases, for ten suites.
+headless playback, CLI help, and diagnostics error cases, for eleven suites.
 These counts describe the development tree; v0.2.0 has six/nine respectively.
-Linux core CI runs seven hardware-free suites; Windows bootstrap runs all ten.
+Linux core CI runs eight hardware-free suites; Windows bootstrap runs all eleven.
 
 ## Planned 0.3.0 acceptance
 
@@ -17,7 +17,18 @@ The accepted library and lyric contracts define target test requirements in
 ASCII case collisions, state changes on complete scans, rollback including a
 late staging failure, boundary limits, relocation conflicts, catalog-only
 removal, and old snapshot preservation. It performs no filesystem or media I/O.
-Remaining discovery and encoding/selection/timing tests
+`song-discovery` uses isolated synthetic directories and SMFs. It checks pinned
+SHA-256 vectors, mixed extension case, UTF-8 paths, root overlap/aliases,
+per-file nested parse/compile errors, content changes with unchanged size/time,
+complete Missing states, detected-change/cancellation rollback, depth/count/byte
+limits, hard links, and no-follow symlink escape reads. Windows additionally
+tests sharing-denied files; Linux CI tests source/directory permissions. A local
+privileged process skips permission tests, and Windows symlink tests report
+unavailable fixtures when the account lacks symlink privilege. Windows reparse
+code is compiled and executed in Windows CI; this does not establish coverage
+of every junction/mount variant.
+
+Remaining metadata, root reattachment, and encoding/selection/timing tests
 must use independently authored fixtures. NCN24 requires a reviewed evidence
 supplement before normalizer implementation. No private song or SoundFont
 is a repository test asset.
