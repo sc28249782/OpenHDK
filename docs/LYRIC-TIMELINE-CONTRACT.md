@@ -205,3 +205,43 @@ Legacy observations were reviewed on 2026-10-06 at HandyKaraoke commit
 These are behavioral references, not copied implementation or universal format
 proof. No Qt/BASS code or media is imported. Any future source port requires
 [MIGRATION-BOUNDARY.md](MIGRATION-BOUNDARY.md) provenance and preserved notices.
+
+## 8. Current implementation boundary and text mapping
+
+The development tree provides `lyrics/LyricTextDecoder.hpp`, a pure allocating
+control-path helper. It returns owned UTF-8 on success or an error code and
+payload byte offset with no partial text. Invalid UTF-8 reports the first
+invalid byte; a missing continuation reports the payload end. Future extraction
+must attach member, track, and source-event provenance to this local offset.
+Allocation exceptions propagate. Input spans remain unchanged and are not
+retained by this helper; future cues must retain raw source bytes separately.
+
+The fixed TIS-620 mapping is reviewed against
+[CPython v3.13.0 TIS-620 mapping](https://github.com/python/cpython/blob/v3.13.0/Tools/unicode/python-mappings/TIS-620.TXT).
+It is expressed independently as ranges, without importing that implementation:
+
+| Source bytes | Unicode scalars |
+| --- | --- |
+| `00..9F` | `U+0000..U+009F`, subject to the C0 policy in section 3 |
+| `A1..DA` | `U+0E01..U+0E3A` |
+| `DF` | `U+0E3F` |
+| `E0..FB` | `U+0E40..U+0E5B` |
+| `A0`, `DB..DE`, `FC..FF` | Undefined; InvalidText |
+
+DEL and C1 scalars are retained literally in both encodings; they have no
+implied display action. This is an explicit mapping profile, not a CP874 or
+ISO-8859-11 alias. The decoder preserves CR/LF/tab, BOM, spaces, punctuation,
+and combining characters without interpretation or normalization.
+
+Per-call input defaults to the library's 4 MiB lyric-source bound and decoded
+output to its 64 MiB staging ceiling. Positive lower limits are accepted for
+testing; higher limits fail configuration. Output capacity is checked before
+each scalar is appended, including TIS-to-UTF-8 expansion. These are per-call
+byte bounds, not aggregate cue/metadata accounting or allocator-overhead caps;
+the future extractor must enforce the full staging budget across its results.
+
+Selection, cue construction, metadata, the media-clock consumer, and audio/CLI
+integration remain unimplemented. The NCN evidence gate remains open. Before
+cue construction, clarify how a newline within text such as `A\r\nB` preserves
+its display position alongside section 1's action-before-text rule. This decoder
+preserves those bytes and does not choose a display ordering policy.

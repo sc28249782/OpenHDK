@@ -10,6 +10,11 @@ This file records the user-visible scope of each OpenHDK source release.
   No library CLI, metadata database, KAR/NCN lyrics, or library playback
   preparation is provided yet. Released v0.2.0 behavior is unchanged.
 
+- Development lyric text core: explicit bounded UTF-8/TIS-620 decoding with
+  payload byte-offset failures and no partial result or encoding fallback.
+  Track selection, cues, metadata, media-clock consumption, and audio/CLI lyric
+  integration remain unimplemented.
+
 ## 0.2.0 - 2026-10-06
 
 Mixer and dynamics source baseline, prepared for signed source-only release.

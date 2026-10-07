@@ -105,6 +105,11 @@ canonical SMF validation, SHA-256 content tokens, and a final consistency check
 feed one catalog publication. Immutable snapshots retain identities and tokens;
 scans never replace buffers owned by active playback.
 
+A pure allocating control-path text decoder adds explicit UTF-8/TIS-620
+validation and byte-offset failures. It preserves newline/marker bytes; it does
+not build cues or execute display actions. Aggregate lyric budgets and event
+provenance remain the future extractor's responsibility.
+
 Metadata, root reattachment, durable storage, lyric extraction, and library
 playback preparation remain unimplemented. A final scan check is not an atomic
 filesystem snapshot; future playback preparation must revalidate source tokens.
