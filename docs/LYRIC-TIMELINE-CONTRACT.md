@@ -339,7 +339,8 @@ to the observing control path.
 
 The helper is not a concurrent backend publication protocol, a GUI, or an audio
 callback adapter. Shared ownership and serialized method calls do not establish
-real-time-safe cross-thread handoff. Running-backend media-position publication
-still requires a separate reviewed bounded handoff design. Headless tests feed
+real-time-safe cross-thread handoff. Running-backend media-position publication has a separate
+[proposed bounded handoff design](MEDIA-CLOCK-HANDOFF-CONTRACT.md), which still
+requires review and acceptance before implementation. Headless tests feed
 actual PlaybackSession frame-derived positions, including pause, completion,
 and stop/reprepare; they do not establish device/GUI lyric synchronization.

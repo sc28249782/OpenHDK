@@ -87,3 +87,9 @@ sounds, and marks compiled playback complete. A future adapter that needs a
 synthesis tail must make that completion decision explicit rather than adding
 an implicit duration. The legacy FluidSynth file player and compiled-timeline
 entry points cannot control the synth together.
+
+A proposed [running-backend media-clock handoff](MEDIA-CLOCK-HANDOFF-CONTRACT.md)
+would publish only positions whose complete MIDI dispatch and PCM render block
+succeeded. It would not expose callback-owned `PlaybackSession` state or treat
+the frame-derived render clock as a device presentation clock. This handoff is
+not implemented and requires review before it changes the adapter.

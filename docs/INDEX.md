@@ -25,6 +25,7 @@ continue to apply independently of feature plans.
 | [MIXER-DYNAMICS-CONTRACT](MIXER-DYNAMICS-CONTRACT.md) | Implemented velocity curves, presets, and peak limiter. |
 | [KARAOKE-LIBRARY-CONTRACT](KARAOKE-LIBRARY-CONTRACT.md) | Accepted 0.3.0 contract; catalog/discovery slice implemented, storage/preparation gated. |
 | [LYRIC-TIMELINE-CONTRACT](LYRIC-TIMELINE-CONTRACT.md) | Accepted KAR/media timing contract; decoder, cue extraction, and pure consumer implemented; backend/NCN24 gated. |
+| [MEDIA-CLOCK-HANDOFF-CONTRACT](MEDIA-CLOCK-HANDOFF-CONTRACT.md) | Proposed bounded publication of running-backend media time to a lyric observer. |
 | [POC-RUNBOOK](POC-RUNBOOK.md) | Windows build, diagnostics, playback, and console operations. |
 | [Test README](../tests/README.md) | Test scope and failure diagnostics. |
 | [V020-WINDOWS-ACCEPTANCE](V020-WINDOWS-ACCEPTANCE.md) | Reported listening results and final release gate evidence. |
@@ -63,8 +64,10 @@ The next planned milestone is 0.3.0 karaoke library work. Implementation uses th
 [library contract](KARAOKE-LIBRARY-CONTRACT.md) and
 [lyric timeline contract](LYRIC-TIMELINE-CONTRACT.md). They specify identity,
 discovery, database ownership, malformed-input behavior, and synthetic fixture
-requirements. Persistent storage selection, backend progress publication, and
-NCN24 format evidence remain explicit pre-implementation gates. Preserve the
+requirements. Persistent storage selection and NCN24 format evidence remain
+explicit pre-implementation gates. Running-backend publication has a
+[proposed handoff contract](MEDIA-CLOCK-HANDOFF-CONTRACT.md) that requires
+review and acceptance before implementation. Preserve the
 canonical SMF and mixer contracts unless a compatibility change is accepted.
 
 This review does not establish KAR/NCN support or select a UI framework. Later

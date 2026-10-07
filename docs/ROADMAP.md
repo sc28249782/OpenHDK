@@ -76,7 +76,9 @@ occurs when a SoundFont or audio device is unavailable.
 - [ ] Close the NCN24 format evidence gate before implementing its bundle
   normalizer; do not claim generic NCN compatibility.
 - [ ] Select and review persistent storage/schema/recovery and backend
-  media-position publication before implementing those adapters.
+  media-position publication before implementing those adapters. The
+  [media-clock handoff proposal](MEDIA-CLOCK-HANDOFF-CONTRACT.md) is ready for
+  review but is not yet accepted.
 - [ ] Integrate library preparation and lyric observation without changing
   released MIDI, mixer, or limiter semantics; validate Windows playback.
 - Research staged runtime layout and installers separately; this proposal
