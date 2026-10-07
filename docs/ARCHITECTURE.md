@@ -122,14 +122,17 @@ state; equal-time polling emits no repeat cues, and reset/stop clears the prefix
 It does not construct UI state or publish clocks from the running backend.
 
 Catalog metadata, root reattachment, durable storage, running-backend clock
-publication, and library playback preparation remain unimplemented. A final scan check is
+publication, and library playback preparation remain unimplemented. The
+[media-clock handoff proposal](MEDIA-CLOCK-HANDOFF-CONTRACT.md) defines a fixed
+atomic latest-value cell, playback generations, and successful-block commit
+rules; it requires review before implementation. A final scan check is
 not an atomic filesystem snapshot; future playback preparation must revalidate source tokens.
 Catalog methods are serialized and non-reentrant. Readers share acquired
 immutable snapshots. Lyric extraction and the pure consumer reuse compiled/session media time
 rather than an independent wall clock.
 
 The audio callback owns no filesystem, database, text-decoding, or UI work.
-Backend progress publication needs a separate real-time-safe handoff contract.
+Backend progress publication needs acceptance of its real-time-safe handoff contract.
 Persistent storage needs a selected/reviewed adapter. NCN24 normalization needs
 its evidence supplement before implementation. The public library model must
 not expose Qt, SQL, BASS, or FluidSynth types.

@@ -50,7 +50,11 @@ reset/stop/reprepare, NoLyrics, null preparation, and owning batch lifetime.
 Known frame-derived positions from a real PlaybackSession cover pause/resume,
 completion without changing session state, stop/restart, and partition-invariant
 cue order. These hardware-free tests do not establish backend/device/GUI lyric
-synchronization; running-backend clock publication still needs its own contract.
+synchronization; running-backend clock publication still needs an accepted
+contract and implementation. The proposed
+[media-clock handoff contract](../docs/MEDIA-CLOCK-HANDOFF-CONTRACT.md) defines
+the required concurrency, lifecycle, failure, and exhaustion tests. Those tests
+are acceptance requirements, not current coverage.
 
 Remaining catalog metadata, root reattachment, and library integration tests
 must use independently authored fixtures. NCN24 requires a reviewed evidence

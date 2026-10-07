@@ -117,6 +117,11 @@ consumer. Catalog metadata, durable storage, running-backend clock publication,
 and library playback remain unimplemented. Released v0.2.0 does not provide
 library or KAR/NCN services.
 
+The proposed
+[running-backend media-clock handoff](docs/MEDIA-CLOCK-HANDOFF-CONTRACT.md)
+defines the next observation boundary. It requires review and acceptance before
+implementation.
+
 ## Specification
 
 The normative contract for this implemented playback baseline is

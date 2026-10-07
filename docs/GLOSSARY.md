@@ -57,8 +57,9 @@ request descriptions.
 
 ## Proposed library terms
 
-These terms belong to the unimplemented v0.3.0 proposals; they do not extend
-released v0.2.0 behavior.
+These terms belong to the v0.3.0 contracts. Pure catalog and KAR helpers are
+partly implemented in the development tree, but they do not extend released
+v0.2.0 behavior.
 
 | Term | Definition |
 | --- | --- |
@@ -67,6 +68,8 @@ released v0.2.0 behavior.
 | **catalog snapshot** | An immutable reader view of one committed catalog revision. |
 | **lyric cue** | A timed text fragment or display action retaining source order and media time. It does not imply a syllable or grapheme. |
 | **NCN24** | The proposed narrow MIDI/LYR/CUR profile, with a format-evidence gate before implementation. It is not all NCN dialects. |
+| **playback generation** | A nonzero identity for one admitted compiled-playback attempt. It prevents an observer from mixing positions and lyrics across attempts. |
+| **committed media position** | Frame-derived media time for a block whose MIDI dispatch and PCM rendering both succeeded. It is not a device presentation timestamp. |
 
 ## Out-of-scope terms
 
