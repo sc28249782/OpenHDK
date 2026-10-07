@@ -231,8 +231,11 @@ text runs. No new clock positions or inferred durations are introduced.
 The development tree implements the logical catalog and bounded SMF/KAR
 discovery/content-token boundary listed in library contract section 9, plus the
 pure bounded lyric text decoder and KAR selection/immutable cue extractor
-described in lyric contract section 8. The extractor is control-path only;
-consumer, catalog preparation, and audio/CLI integration remain pending.
+described in lyric contract section 8, plus the pure media-clock consumer in
+section 9. The consumer returns once-only whole-cue batches and an emitted
+prefix as current display state; reset/stop clears that state. These helpers
+are control/observation-path only; catalog preparation and running-backend
+publication/audio/CLI integration remain pending.
 Complete library and lyric services
 MUST NOT be described as implemented or released behavior. The v0.2.0 parser,
 playback, MIDI-controller, mixer, and limiter contracts remain unchanged.

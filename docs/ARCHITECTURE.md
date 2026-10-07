@@ -116,12 +116,17 @@ compiler timestamps/provenance without MIDI dispatch. Published const timelines
 own their storage; Text operations store byte offsets rather than dangling views.
 Selected-payload, cue, title and staging limits apply before publication.
 
-The media-clock consumer, catalog metadata, root reattachment, durable storage,
-and library playback preparation remain unimplemented. A final scan check is
+A pure consumer observes integer PlaybackSession media positions and returns
+owning immutable due batches. Its emitted cue prefix represents current display
+state; equal-time polling emits no repeat cues, and reset/stop clears the prefix.
+It does not construct UI state or publish clocks from the running backend.
+
+Catalog metadata, root reattachment, durable storage, running-backend clock
+publication, and library playback preparation remain unimplemented. A final scan check is
 not an atomic filesystem snapshot; future playback preparation must revalidate source tokens.
 Catalog methods are serialized and non-reentrant. Readers share acquired
-immutable snapshots. Lyric timing will reuse compiled media time rather than
-an independent wall clock.
+immutable snapshots. Lyric extraction and the pure consumer reuse compiled/session media time
+rather than an independent wall clock.
 
 The audio callback owns no filesystem, database, text-decoding, or UI work.
 Backend progress publication needs a separate real-time-safe handoff contract.
