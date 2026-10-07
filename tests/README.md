@@ -1,12 +1,12 @@
 # Test coverage and failure diagnostics
 
-The hardware-free configuration registers eight CTest suites: parser fixtures,
+The hardware-free configuration registers nine CTest suites: parser fixtures,
 MIDI diagnostics CLI, runtime mixer console, velocity curves, mixer presets,
-stereo peak limiter, song catalog core, and filesystem discovery. The audio-enabled test configuration adds
-FluidSynth
-headless playback, CLI help, and diagnostics error cases, for eleven suites.
+stereo peak limiter, song catalog core, filesystem discovery, and lyric text
+decoding. The audio-enabled test configuration adds FluidSynth headless
+playback, CLI help, and diagnostics error cases, for twelve suites.
 These counts describe the development tree; v0.2.0 has six/nine respectively.
-Linux core CI runs eight hardware-free suites; Windows bootstrap runs all eleven.
+Linux core CI runs nine hardware-free suites; Windows bootstrap runs all twelve.
 
 ## Planned 0.3.0 acceptance
 
@@ -28,7 +28,13 @@ unavailable fixtures when the account lacks symlink privilege. Windows reparse
 code is compiled and executed in Windows CI; this does not establish coverage
 of every junction/mount variant.
 
-Remaining metadata, root reattachment, and encoding/selection/timing tests
+`lyric-text-decoder` checks every TIS-620 byte against fixed UTF-8 strings
+independently generated with Python's strict codec, malformed UTF-8 with exact
+byte offsets, C0 policy, BOM/combining-mark preservation, no charset fallback,
+invalid configuration, and input/output limits. It preserves CR/LF and marker
+characters; it does not implement lyric selection, display actions, or timing.
+
+Remaining metadata, root reattachment, and selection/timing tests
 must use independently authored fixtures. NCN24 requires a reviewed evidence
 supplement before normalizer implementation. No private song or SoundFont
 is a repository test asset.
