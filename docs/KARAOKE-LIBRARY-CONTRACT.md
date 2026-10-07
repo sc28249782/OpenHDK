@@ -1,12 +1,12 @@
 # Karaoke library contract proposal
 
 **Contract ID:** OHK-LIB-030
-**Status:** Proposed pre-implementation contract; requires review and acceptance.
+**Status:** Accepted planning contract (PR #34); implementation proceeds in reviewed slices.
 **Target:** 0.3.0; not part of released OpenHDK v0.2.0.
 
 `SPECIFICATION.md` remains the authority for implemented behavior. MUST and
-MUST NOT below define obligations for a future implementation after this
-proposal is accepted. They do not claim that library services exist today.
+MUST NOT below define obligations for the target implementation. They do not
+claim that complete library services exist today.
 Lyric extraction and NCN format rules are in
 [LYRIC-TIMELINE-CONTRACT.md](LYRIC-TIMELINE-CONTRACT.md).
 
@@ -203,3 +203,26 @@ close the NCN evidence gate, pass hardware-free regression and both CI jobs,
 and report manual Windows playback/lyric timing with identified revisions and
 external assets. A headless lyric inspection surface may validate integration
 without selecting a GUI framework. Source-only release rules still apply.
+
+## 9. Current implementation boundary
+
+`library/SongCatalog.hpp` implements only opaque logical IDs, strict UTF-8
+relative locators, committed immutable snapshots, complete-scan reconciliation,
+logical relocation, and catalog-only removal. A scan consumes caller-validated
+candidate descriptors; it does not enumerate directories or validate media.
+Ready in this model is a supplied validation result, not permission to start
+playback. Relocation marks the entry Invalid until a complete scan validates it.
+
+`addRoot()` allocates a logical root only. Directory existence, overlap,
+aliases, containment, root reattachment, metadata, exact source revisions,
+structured source diagnostics, persistent storage, and playback preparation
+remain unimplemented. Scan limits here cover candidate count, one locator,
+and incoming locator bytes only; the full payload budget needs later layers.
+The 10,000-candidate default is unchanged; larger real collections require a
+reviewed limit change based on usage evidence.
+
+All catalog calls require one serialized control path. Acquire a snapshot
+there before sharing that immutable handle with readers. Concurrent calls to
+catalog methods are not supported. Allocation exceptions preserve the previous
+snapshot and propagate to the future control-path adapter; they are not yet
+mapped to library operation diagnostics. No code runs in an audio callback.

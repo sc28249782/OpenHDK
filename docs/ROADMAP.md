@@ -63,7 +63,7 @@ occurs when a SoundFont or audio device is unavailable.
 
 ## 0.3.0 — karaoke library (planned)
 
-- [ ] Review and accept [library](KARAOKE-LIBRARY-CONTRACT.md) and
+- [x] Review and accept [library](KARAOKE-LIBRARY-CONTRACT.md) and
   [lyric timeline](LYRIC-TIMELINE-CONTRACT.md) proposals before implementation.
 - [ ] Implement pure catalog identity and immutable snapshots, then bounded
   discovery and in-memory scan transactions with synthetic fixtures.

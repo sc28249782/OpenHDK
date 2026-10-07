@@ -98,9 +98,11 @@ configured SoundFont returns the existing structured recoverable error.
 
 ## Proposed library and lyric layers
 
-The v0.3.0 proposals in [KARAOKE-LIBRARY-CONTRACT.md](KARAOKE-LIBRARY-CONTRACT.md)
-and [LYRIC-TIMELINE-CONTRACT.md](LYRIC-TIMELINE-CONTRACT.md) remain
-unimplemented. A control-path scanner stages catalog changes; a library owns
+The accepted v0.3.0 contracts in [KARAOKE-LIBRARY-CONTRACT.md](KARAOKE-LIBRARY-CONTRACT.md)
+and [LYRIC-TIMELINE-CONTRACT.md](LYRIC-TIMELINE-CONTRACT.md) have a pure logical catalog model in `library/SongCatalog.hpp`; directory
+discovery, metadata, source revisions, storage, and lyric services remain
+unimplemented. Catalog methods are serialized on the control path; readers
+share previously acquired immutable snapshots. A future control-path scanner stages catalog changes; a library owns
 source identity and immutable revision snapshots. Playback preparation checks
 source revisions and creates immutable MIDI/lyric timelines before audio starts.
 Lyric timing reuses compiled media time rather than an independent wall clock.

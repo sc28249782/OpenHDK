@@ -1,11 +1,11 @@
 # Lyric timeline and NCN profile proposal
 
 **Contract ID:** OHK-LYR-030
-**Status:** Proposed pre-implementation contract; requires review and acceptance.
+**Status:** Accepted planning contract (PR #34); implementation proceeds in reviewed slices.
 **Target:** 0.3.0; no KAR/NCN support is claimed for released v0.2.0.
 
 `SPECIFICATION.md` remains normative for implemented behavior. The obligations
-below apply to future code only after this proposal is accepted. Catalog and
+below apply to the target implementation accepted in PR #34. Catalog and
 file ownership are specified in
 [KARAOKE-LIBRARY-CONTRACT.md](KARAOKE-LIBRARY-CONTRACT.md).
 
