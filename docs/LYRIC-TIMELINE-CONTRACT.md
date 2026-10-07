@@ -12,16 +12,35 @@ file ownership are specified in
 ## 1. Immutable lyric timeline
 
 A cue contains a compiled tick, media time in integer microseconds, source
-track/event index or NCN cursor index, ordered display actions, decoded UTF-8
-text, and retained raw source bytes. A cue is an event fragment, not an inferred
-syllable, note, or grapheme. Preserve spaces and punctuation; do not insert
+track/event index or NCN cursor index, an ordered display-operation sequence,
+decoded UTF-8 payload text, and retained raw source bytes. A cue is an event
+fragment, not an inferred syllable, note, or grapheme. Preserve spaces and punctuation; do not insert
 spaces, guess syllable durations, or distribute one fragment across notes.
 
 Build cues on the control path. KAR cues reuse each selected event's exact
 `SmfTimeline` tick/time and source order. Do not calculate time again from a
 single BPM. At equal timestamps preserve tick, track index, and source event
-index; action order within a cue precedes its text. Empty payloads produce no
-cue. Metadata is retained separately and never becomes timed lyric text.
+index. Within a cue, text and break operations MUST preserve source order.
+Empty payloads produce no cue. Metadata is retained separately and never
+becomes timed lyric text.
+
+The display sequence consists of `Text`, `LineBreak`, and `ParagraphBreak`
+operations. Each `Text` operation contains a nonempty contiguous run of decoded
+text between recognized controls. Leading markers produce break operations
+before the following text; an embedded newline produces a break at its original
+position between text runs. Do not move embedded breaks before all text.
+Adjacent literal characters form one `Text` run; do not emit empty `Text`
+operations. Operations can refer to immutable decoded storage or own text,
+but all retained storage counts toward the existing staging budget.
+
+One selected nonempty, non-metadata KAR event produces one cue, including
+an action-only event. All of its operations share that event's tick, media time, and provenance.
+Splitting text into display runs MUST NOT split the cue, assign additional
+cue times, or infer durations. Retain the full decoded payload independently
+of display operations, including markers and original CR/LF bytes, alongside
+the raw source bytes. Only the display sequence interprets the selected
+profile's controls. The consumer emits the whole ordered cue once when due;
+its operations do not have separate clock positions.
 
 A consumer advances from the PlaybackSession media clock, never wall time.
 At position `t`, all cues at or before `t` are due in stable order. It MUST
@@ -87,6 +106,20 @@ CR/LF/tab fail InvalidText. Tab is retained as text; no tab width is implied.
 | --- | --- |
 | FF 05 lyric | CR, LF, or CRLF within one payload becomes one LineBreak per logical newline. Slash, backslash, and `@` remain literal text. |
 | Named FF 01 text | Leading `/` becomes LineBreak; leading `\` becomes ParagraphBreak. Consume all consecutive leading markers in order, then retain the remainder as text. CR/LF rules match FF 05. Markers elsewhere remain literal. |
+
+The following display vectors use escape notation for source controls.
+They describe operations inside one cue unless two events are explicitly shown:
+
+| Profile and payload | Ordered display operations |
+| --- | --- |
+| FF 05 `A\r\nB` | Text(`A`), LineBreak, Text(`B`) |
+| FF 05 `\r\n` | LineBreak; no empty Text operation |
+| FF 05 `/A\\B@` | Text(`/A\\B@`); markers remain literal |
+| Named FF 01 `/\\/Hello` | LineBreak, ParagraphBreak, LineBreak, Text(`Hello`) |
+| Named FF 01 `/A\r\nB` | LineBreak, Text(`A`), LineBreak, Text(`B`) |
+| Named FF 01 `A/B\\C` | Text(`A/B\\C`); non-leading markers remain literal |
+| Named FF 01 `/\\` | LineBreak, ParagraphBreak; action-only cue |
+| FF 05 event `A\r`, then event `\nB` | First cue: Text(`A`), LineBreak; second cue: LineBreak, Text(`B`) |
 
 CRLF is combined only within a payload, not across event boundaries. A
 ParagraphBreak is a semantic request to start a new paragraph/display section;
@@ -241,7 +274,7 @@ byte bounds, not aggregate cue/metadata accounting or allocator-overhead caps;
 the future extractor must enforce the full staging budget across its results.
 
 Selection, cue construction, metadata, the media-clock consumer, and audio/CLI
-integration remain unimplemented. The NCN evidence gate remains open. Before
-cue construction, clarify how a newline within text such as `A\r\nB` preserves
-its display position alongside section 1's action-before-text rule. This decoder
-preserves those bytes and does not choose a display ordering policy.
+integration remain unimplemented. The NCN evidence gate remains open.
+Sections 1 and 3 specify source-ordered display operations for the next KAR
+extraction slice. The current decoder preserves payload bytes and does not
+construct those operations.

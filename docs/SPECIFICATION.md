@@ -224,6 +224,10 @@ change to this specification.
 accepted target implementation boundary (PR #34). They cover catalog identity and transactions,
 deterministic file discovery, immutable lyric timelines, explicit encoding,
 FF 05 preference and identified FF 01 fallback, and an NCN24 evidence gate.
+The target KAR cue contract preserves text and display breaks in source order
+inside one event-timed cue, while retaining decoded payload and raw bytes.
+Leading markers precede their following text; embedded newlines remain between
+text runs. No new clock positions or inferred durations are introduced.
 The development tree implements the logical catalog and bounded SMF/KAR
 discovery/content-token boundary listed in library contract section 9, plus the
 pure bounded lyric text decoder described in lyric contract section 8.
