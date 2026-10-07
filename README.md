@@ -81,7 +81,7 @@ ctest --test-dir build --output-on-failure
 
 The default POC configuration uses pinned FluidSynth and miniaudio dependencies
 (and downloads a pinned test SoundFont when audio POC tests are enabled). For
-the nine hardware-free core test suites, use:
+the ten hardware-free core test suites, use:
 
 ```powershell
 cmake -S . -B build-parser -DOPENHDK_BUILD_AUDIO_POC=OFF -DOPENHDK_BUILD_TESTS=ON -DOPENHDK_FETCH_TEST_FIXTURES=OFF
@@ -91,9 +91,10 @@ ctest --test-dir build-parser --output-on-failure
 
 The lightweight Linux core CI job uses this hardware-free configuration with
 strict compiler warnings and AddressSanitizer/UndefinedBehaviorSanitizer. It
-runs nine suites: SMF parser fixtures, MIDI diagnostics CLI, runtime mixer
+runs ten suites: SMF parser fixtures, MIDI diagnostics CLI, runtime mixer
 console, velocity curves, mixer presets, stereo peak limiting, and song catalog
-identity/transactions, filesystem discovery, and lyric text decoding. It does not
+identity/transactions, filesystem discovery, lyric text decoding, and KAR cue
+extraction. It does not
 install FluidSynth or vcpkg, fetch miniaudio or SoundFonts, access audio
 hardware, build the complete audio application, or claim Linux support for
 the Windows interactive console. The Windows CI job
@@ -111,8 +112,9 @@ KAR lyric
 selection/timing, and a gated NCN24 profile. They are pre-implementation
 contracts. The development tree adds an in-memory catalog, bounded local
 SMF/KAR discovery, content revision checks, and a pure UTF-8/TIS-620 lyric
-text decoder. Metadata extraction, durable storage, lyric selection/timelines,
-and library playback remain unimplemented. Released v0.2.0 does not provide
+text decoder, plus pure KAR selection and immutable cue extraction. Catalog
+metadata, durable storage, the media-clock lyric consumer, and library playback
+remain unimplemented. Released v0.2.0 does not provide
 library or KAR/NCN services.
 
 ## Specification

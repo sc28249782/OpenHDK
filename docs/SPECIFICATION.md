@@ -230,7 +230,9 @@ Leading markers precede their following text; embedded newlines remain between
 text runs. No new clock positions or inferred durations are introduced.
 The development tree implements the logical catalog and bounded SMF/KAR
 discovery/content-token boundary listed in library contract section 9, plus the
-pure bounded lyric text decoder described in lyric contract section 8.
+pure bounded lyric text decoder and KAR selection/immutable cue extractor
+described in lyric contract section 8. The extractor is control-path only;
+consumer, catalog preparation, and audio/CLI integration remain pending.
 Complete library and lyric services
 MUST NOT be described as implemented or released behavior. The v0.2.0 parser,
 playback, MIDI-controller, mixer, and limiter contracts remain unchanged.

@@ -108,15 +108,17 @@ scans never replace buffers owned by active playback.
 A pure allocating control-path text decoder adds explicit UTF-8/TIS-620
 validation and byte-offset failures. It preserves newline/marker bytes; it does
 not build cues or execute display actions. Aggregate lyric budgets and event
-provenance remain the future extractor's responsibility.
-The next KAR extractor will retain an immutable payload and build source-ordered
-text/break operations within one cue per selected nonempty event. A newline
-inside a payload divides display text runs, not event timing. The media-clock
-consumer will emit that cue's entire sequence once when due.
+provenance are enforced by the extractor described below.
+A pure KAR extractor now retains immutable raw/decoded payloads and builds
+source-ordered text/break operations within one cue per selected nonempty,
+non-metadata event. A newline divides display runs, not event timing. It uses
+compiler timestamps/provenance without MIDI dispatch. Published const timelines
+own their storage; Text operations store byte offsets rather than dangling views.
+Selected-payload, cue, title and staging limits apply before publication.
 
-Metadata, root reattachment, durable storage, lyric extraction, and library
-playback preparation remain unimplemented. A final scan check is not an atomic
-filesystem snapshot; future playback preparation must revalidate source tokens.
+The media-clock consumer, catalog metadata, root reattachment, durable storage,
+and library playback preparation remain unimplemented. A final scan check is
+not an atomic filesystem snapshot; future playback preparation must revalidate source tokens.
 Catalog methods are serialized and non-reentrant. Readers share acquired
 immutable snapshots. Lyric timing will reuse compiled media time rather than
 an independent wall clock.

@@ -70,7 +70,8 @@ occurs when a SoundFont or audio device is unavailable.
   scan transactions with synthetic fixtures.
 - [ ] Add root reattachment and source/member metadata before library integration.
 - [ ] Implement KAR extraction, FF 05/identified FF 01 selection, explicit
-  text encoding, and deterministic lyric-consumer tests.
+  text encoding, and deterministic lyric-consumer tests. Pure selection/cue
+  extraction is implemented; the media-clock consumer remains pending.
 - [ ] Close the NCN24 format evidence gate before implementing its bundle
   normalizer; do not claim generic NCN compatibility.
 - [ ] Select and review persistent storage/schema/recovery and backend

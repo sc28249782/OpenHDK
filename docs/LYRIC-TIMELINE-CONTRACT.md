@@ -273,8 +273,35 @@ each scalar is appended, including TIS-to-UTF-8 expansion. These are per-call
 byte bounds, not aggregate cue/metadata accounting or allocator-overhead caps;
 the future extractor must enforce the full staging budget across its results.
 
-Selection, cue construction, metadata, the media-clock consumer, and audio/CLI
-integration remain unimplemented. The NCN evidence gate remains open.
-Sections 1 and 3 specify source-ordered display operations for the next KAR
-extraction slice. The current decoder preserves payload bytes and does not
-construct those operations.
+`lyrics/KarLyricExtractor.hpp` now implements pure selection and immutable
+KAR cue construction from an already validated `SmfTimeline`. It uses FF05
+precedence, named FF01 fallback, and explicit zero-based track restriction.
+NoLyrics is a successful empty timeline. It retains selected raw/decoded
+payloads, source positions, ordered display operations, separate FF01 metadata,
+and the first nonempty @T title without splitting or trimming it. Errors return
+no partial timeline and attach the event position and payload offset when
+available. The supplied timeline identifies the member; library preparation
+must add its locator to diagnostics. Parsing/compilation and their nested
+errors stay with the existing SMF APIs, not this already-compiled input API.
+
+Published results own their storage through `shared_ptr<const KarLyricTimeline>`;
+cue/metadata access returns const spans. Text operations store byte ranges into
+the owned decoded payload, not pointers invalidated by string/vector moves.
+Break offsets identify their source marker/newline in decoded bytes. These
+operation offsets are distinct from decoder error offsets in raw payload bytes.
+
+The extractor enforces aggregate selected-payload bytes (including metadata),
+cue count, extracted-title bytes, and retained staging bounds. Positive lower
+limits support tests; higher limits fail configuration. Logical staging charges
+owned raw and decoded bytes, the additional title copy, and `sizeof` each cue,
+metadata record, and display operation before append. This deliberately counts
+fixed records as well as variable payload. Vector capacity, allocator overhead,
+temporary track-selection flags, and the per-event decoder result are not a
+physical process-memory cap. Metadata records are bounded by staged charges;
+there is no separate arbitrary tag count. Allocation exceptions propagate
+without publishing a partial result. The caller must budget other simultaneously
+retained catalog/lyric payload against the library's total staging ceiling.
+
+The media-clock consumer, catalog metadata integration, and audio/CLI lyric
+integration remain unimplemented. The NCN evidence gate remains open. Released
+v0.2.0 has no KAR/NCN lyric service.

@@ -1,12 +1,12 @@
 # Test coverage and failure diagnostics
 
-The hardware-free configuration registers nine CTest suites: parser fixtures,
+The hardware-free configuration registers ten CTest suites: parser fixtures,
 MIDI diagnostics CLI, runtime mixer console, velocity curves, mixer presets,
 stereo peak limiter, song catalog core, filesystem discovery, and lyric text
-decoding. The audio-enabled test configuration adds FluidSynth headless
-playback, CLI help, and diagnostics error cases, for twelve suites.
+decoding, and KAR lyric extraction. The audio-enabled test configuration adds
+FluidSynth headless playback, CLI help, and diagnostics error cases, for thirteen suites.
 These counts describe the development tree; v0.2.0 has six/nine respectively.
-Linux core CI runs nine hardware-free suites; Windows bootstrap runs all twelve.
+Linux core CI runs ten hardware-free suites; Windows bootstrap runs all thirteen.
 
 ## Planned 0.3.0 acceptance
 
@@ -34,14 +34,20 @@ byte offsets, C0 policy, BOM/combining-mark preservation, no charset fallback,
 invalid configuration, and input/output limits. It preserves CR/LF and marker
 characters; it does not implement lyric selection, display actions, or timing.
 
-The future KAR extraction suite must assert exact ordered operations for all
-embedded-newline and leading-marker vectors in lyric contract section 3,
-including action-only cues and CR/LF split across events. It must also prove
-one cue per nonempty selected event, unchanged compiled timestamps/provenance,
-full decoded/raw payload retention, and once-only emission of all operations
-on equal-position polling. These are planned assertions, not current coverage.
+`kar-lyric-timeline` checks FF05 precedence, ambiguity, explicit track restriction,
+named FF01 qualification, metadata/title separation, and all eight contract
+display vectors. It validates exact compiler timing/provenance (PPQN 3, tempo
+changes, and distinct ticks with equal media times), byte preservation, Thai
+metadata/text, structured offsets, no fallback or partial timeline, ownership
+beyond the source lifetime, and input/cue/title/staging limits. Staging vectors
+include metadata/title and TIS-to-UTF-8 expansion. The suite is synthetic and
+performs no media or filesystem I/O.
 
-Remaining metadata, root reattachment, and selection/timing tests
+The media-clock consumer remains a future slice: once-only whole-cue emission,
+equal-position polling, backward-position rejection, and stop/reset state
+clearing are not covered by the extractor suite.
+
+Remaining catalog metadata, root reattachment, and consumer tests
 must use independently authored fixtures. NCN24 requires a reviewed evidence
 supplement before normalizer implementation. No private song or SoundFont
 is a repository test asset.
