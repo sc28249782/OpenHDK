@@ -34,6 +34,13 @@ byte offsets, C0 policy, BOM/combining-mark preservation, no charset fallback,
 invalid configuration, and input/output limits. It preserves CR/LF and marker
 characters; it does not implement lyric selection, display actions, or timing.
 
+The future KAR extraction suite must assert exact ordered operations for all
+embedded-newline and leading-marker vectors in lyric contract section 3,
+including action-only cues and CR/LF split across events. It must also prove
+one cue per nonempty selected event, unchanged compiled timestamps/provenance,
+full decoded/raw payload retention, and once-only emission of all operations
+on equal-position polling. These are planned assertions, not current coverage.
+
 Remaining metadata, root reattachment, and selection/timing tests
 must use independently authored fixtures. NCN24 requires a reviewed evidence
 supplement before normalizer implementation. No private song or SoundFont
