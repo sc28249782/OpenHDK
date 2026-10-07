@@ -7,13 +7,15 @@ This file records the user-visible scope of each OpenHDK source release.
 - Development library core: opaque song IDs, immutable in-memory catalog
   snapshots, and bounded local SMF/KAR discovery with canonical SMF validation,
   SHA-256 content revisions, per-file diagnostics, and scan rollback.
-  No library CLI, metadata database, KAR/NCN lyrics, or library playback
+  No library CLI, metadata database, KAR/NCN lyric playback, or library playback
   preparation is provided yet. Released v0.2.0 behavior is unchanged.
 
 - Development lyric text core: explicit bounded UTF-8/TIS-620 decoding with
   payload byte-offset failures and no partial result or encoding fallback.
-  Track selection, cues, metadata, media-clock consumption, and audio/CLI lyric
-  integration remain unimplemented.
+  Pure KAR extraction adds FF05/identified FF01 selection, immutable event-timed
+  cues with source-ordered display operations, and retained metadata/title and
+  raw payloads. Media-clock consumption, catalog preparation, and audio/CLI
+  lyric integration remain unimplemented.
 
 ## 0.2.0 - 2026-10-06
 

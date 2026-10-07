@@ -255,8 +255,10 @@ This consistency check is not a filesystem-wide atomic snapshot. Edits after
 an individual final check are still possible; playback preparation MUST reopen
 and verify every source again before using it. This slice provides no prepared
 playback input. Root reattachment, source/member metadata, durable storage,
-KAR/NCN lyrics, and playback preparation remain unimplemented. Native mounted
-filesystem changes are not a hostile-writer sandbox guarantee.
+catalog lyric integration, NCN lyrics, and playback preparation remain
+unimplemented. Pure KAR selection/cue extraction now exists separately under
+lyric contract section 8; discovery does not call it or claim lyric readiness.
+Native mounted filesystem changes are not a hostile-writer sandbox guarantee.
 
 All methods require one serialized control path and must not be reentered from
 control hooks. Only previously acquired immutable snapshots may be shared with
