@@ -242,9 +242,10 @@ playback, MIDI-controller, mixer, and limiter contracts remain unchanged.
 
 Persistent storage selection and the NCN format evidence supplement require
 reviewed designs before their adapters are implemented. Running-backend
-media-position publication has a proposed bounded contract in
-`MEDIA-CLOCK-HANDOFF-CONTRACT.md`; it remains unimplemented and requires review
-and acceptance. No database dependency, new CLI option, Qt UI, or
+media-position publication has an accepted bounded contract in
+`MEDIA-CLOCK-HANDOFF-CONTRACT.md`. Its pure atomic cell and generation counter
+are implemented, while backend integration remains pending. No database
+dependency, new CLI option, Qt UI, or
 legacy database migration is authorized by these documents. Acceptance tests
 and any later support claim MUST close the corresponding gates.
 

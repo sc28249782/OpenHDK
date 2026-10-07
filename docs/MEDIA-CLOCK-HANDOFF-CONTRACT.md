@@ -2,7 +2,8 @@
 
 **Contract ID:** OHK-CLOCK-030
 
-**Status:** Proposed; requires review and acceptance before implementation.
+**Status:** Accepted by PR #41. The pure publication cell is implemented in
+the development tree; backend integration remains pending.
 
 **Target:** OpenHDK 0.3.0. Released v0.2.0 has no backend clock observer or
 karaoke lyric service.
@@ -203,5 +204,15 @@ validation must identify the revision and external assets. Listening may
 confirm ordering and lifecycle behavior; it MUST NOT claim measured device
 latency or presentation-clock synchronization.
 
-No runtime implementation may claim this contract until it is reviewed and
-accepted.
+## 10. Current implementation boundary
+
+`audio/MediaClockPublication.hpp` implements the fixed atomic publication cell,
+bounded one-attempt read, permanent sequence-exhaustion latch, and monotonic
+generation counter. A test-only seam injects counter boundaries and an action
+between the odd sequence store and payload publication. The production publish
+path has no hook, allocation, lock, retry, I/O, or logging.
+
+The cell does not yet publish from `FluidSynthBackend`, acknowledge a generation
+from compiled playback, or drive `LyricMediaConsumer`. The remaining lifecycle,
+failed-block commit, and real headless-render tests in section 9 must pass when
+that adapter is implemented.

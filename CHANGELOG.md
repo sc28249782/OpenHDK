@@ -16,7 +16,9 @@ This file records the user-visible scope of each OpenHDK source release.
   cues with source-ordered display operations, and retained metadata/title and
   raw payloads. A pure media-clock consumer emits whole cues once, retains an
   owning observed prefix, rejects backward positions, and clears traversal on
-  reset/stop. Catalog preparation, running-backend clock publication, and
+  reset/stop. The accepted backend-clock handoff now has a pure lock-free
+  latest-value cell and monotonic playback-generation counter with bounded
+  reads and explicit exhaustion. Catalog preparation, backend publication, and
   audio/CLI lyric integration remain unimplemented.
 
 ## 0.2.0 - 2026-10-06

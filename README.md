@@ -81,7 +81,7 @@ ctest --test-dir build --output-on-failure
 
 The default POC configuration uses pinned FluidSynth and miniaudio dependencies
 (and downloads a pinned test SoundFont when audio POC tests are enabled). For
-the eleven hardware-free core test suites, use:
+the twelve hardware-free core test suites, use:
 
 ```powershell
 cmake -S . -B build-parser -DOPENHDK_BUILD_AUDIO_POC=OFF -DOPENHDK_BUILD_TESTS=ON -DOPENHDK_FETCH_TEST_FIXTURES=OFF
@@ -91,10 +91,10 @@ ctest --test-dir build-parser --output-on-failure
 
 The lightweight Linux core CI job uses this hardware-free configuration with
 strict compiler warnings and AddressSanitizer/UndefinedBehaviorSanitizer. It
-runs eleven suites: SMF parser fixtures, MIDI diagnostics CLI, runtime mixer
+runs twelve suites: SMF parser fixtures, MIDI diagnostics CLI, runtime mixer
 console, velocity curves, mixer presets, stereo peak limiting, song catalog
 identity/transactions, filesystem discovery, lyric text decoding, KAR cue
-extraction, and media-clock consumption. It does not
+extraction, media-clock consumption, and atomic media-clock publication. It does not
 install FluidSynth or vcpkg, fetch miniaudio or SoundFonts, access audio
 hardware, build the complete audio application, or claim Linux support for
 the Windows interactive console. The Windows CI job
@@ -117,10 +117,10 @@ consumer. Catalog metadata, durable storage, running-backend clock publication,
 and library playback remain unimplemented. Released v0.2.0 does not provide
 library or KAR/NCN services.
 
-The proposed
+The accepted
 [running-backend media-clock handoff](docs/MEDIA-CLOCK-HANDOFF-CONTRACT.md)
-defines the next observation boundary. It requires review and acceptance before
-implementation.
+defines the next observation boundary. Its pure atomic publication cell and
+generation counter are implemented; backend and consumer integration remain.
 
 ## Specification
 
