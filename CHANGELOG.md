@@ -14,8 +14,10 @@ This file records the user-visible scope of each OpenHDK source release.
   payload byte-offset failures and no partial result or encoding fallback.
   Pure KAR extraction adds FF05/identified FF01 selection, immutable event-timed
   cues with source-ordered display operations, and retained metadata/title and
-  raw payloads. Media-clock consumption, catalog preparation, and audio/CLI
-  lyric integration remain unimplemented.
+  raw payloads. A pure media-clock consumer emits whole cues once, retains an
+  owning observed prefix, rejects backward positions, and clears traversal on
+  reset/stop. Catalog preparation, running-backend clock publication, and
+  audio/CLI lyric integration remain unimplemented.
 
 ## 0.2.0 - 2026-10-06
 

@@ -302,6 +302,44 @@ there is no separate arbitrary tag count. Allocation exceptions propagate
 without publishing a partial result. The caller must budget other simultaneously
 retained catalog/lyric payload against the library's total staging ceiling.
 
-The media-clock consumer, catalog metadata integration, and audio/CLI lyric
-integration remain unimplemented. The NCN evidence gate remains open. Released
+The pure media-clock consumer described in section 9 is implemented. Catalog
+metadata integration and audio/CLI lyric integration remain unimplemented. The NCN evidence gate remains open. Released
 v0.2.0 has no KAR/NCN lyric service.
+
+## 9. Current pure media-clock consumer boundary
+
+`lyrics/LyricMediaConsumer.hpp` receives integer media positions from the
+PlaybackSession clock on one serialized control/observation path. It does not
+read wall time or access the backend. `prepare` binds a non-null immutable KAR
+timeline and clears the traversal; a null input fails without changing an
+existing traversal. NoLyrics timelines are valid inputs.
+
+`advance(t)` returns an owning batch of all previously unobserved cues with
+media time at or before `t`. Each whole cue retains its ordered operations;
+cues with equal times preserve their compiled order. The batch owns the source
+timeline and its const spans remain valid while the batch is retained, including
+after consumer stop, replacement, or destruction. The consumer does not copy
+cue payloads or construct a rendered screen.
+
+Current display state is represented by `observed()`, an owning view of the
+emitted cue prefix. A display adapter can replay that prefix's ordered operations.
+Equal-position and paused-clock polls return empty new batches. Later positions
+beyond the final cue retain the same prefix; completion is controlled only by
+PlaybackSession. Consumer errors report Unprepared or BackwardPosition, the
+requested position, and the previous position when available. Rejected calls
+return an empty batch and leave current position and prefix unchanged.
+
+`reset` clears the position and emitted prefix while retaining the bound
+timeline, so a new forward traversal may start at zero. `stop` additionally
+releases the binding; a new session requires `prepare`. Old batches remain
+historical snapshots and do not represent current display state after reset or
+stop. Adapters must use the cleared current state to clear their own display.
+Retaining batches can keep old prepared buffers alive; their lifecycle belongs
+to the observing control path.
+
+The helper is not a concurrent backend publication protocol, a GUI, or an audio
+callback adapter. Shared ownership and serialized method calls do not establish
+real-time-safe cross-thread handoff. Running-backend media-position publication
+still requires a separate reviewed bounded handoff design. Headless tests feed
+actual PlaybackSession frame-derived positions, including pause, completion,
+and stop/reprepare; they do not establish device/GUI lyric synchronization.

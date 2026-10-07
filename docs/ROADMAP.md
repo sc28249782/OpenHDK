@@ -69,9 +69,10 @@ occurs when a SoundFont or audio device is unavailable.
 - [x] Add bounded SMF/KAR discovery, content revision checks, and in-memory
   scan transactions with synthetic fixtures.
 - [ ] Add root reattachment and source/member metadata before library integration.
-- [ ] Implement KAR extraction, FF 05/identified FF 01 selection, explicit
-  text encoding, and deterministic lyric-consumer tests. Pure selection/cue
-  extraction is implemented; the media-clock consumer remains pending.
+- [x] Implement pure KAR extraction, FF 05/identified FF 01 selection, explicit
+  text encoding, and deterministic media-clock lyric-consumer tests.
+  Running-backend publication and audio/CLI lyric integration remain separate
+  unfinished work below.
 - [ ] Close the NCN24 format evidence gate before implementing its bundle
   normalizer; do not claim generic NCN compatibility.
 - [ ] Select and review persistent storage/schema/recovery and backend

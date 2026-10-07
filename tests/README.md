@@ -1,12 +1,13 @@
 # Test coverage and failure diagnostics
 
-The hardware-free configuration registers ten CTest suites: parser fixtures,
+The hardware-free configuration registers eleven CTest suites: parser fixtures,
 MIDI diagnostics CLI, runtime mixer console, velocity curves, mixer presets,
-stereo peak limiter, song catalog core, filesystem discovery, and lyric text
-decoding, and KAR lyric extraction. The audio-enabled test configuration adds
-FluidSynth headless playback, CLI help, and diagnostics error cases, for thirteen suites.
+stereo peak limiter, song catalog core, filesystem discovery, lyric text
+decoding, KAR lyric extraction, and media-clock consumption. The audio-enabled test configuration adds
+FluidSynth headless playback, CLI help, and diagnostics error cases, for fourteen
+suites.
 These counts describe the development tree; v0.2.0 has six/nine respectively.
-Linux core CI runs ten hardware-free suites; Windows bootstrap runs all thirteen.
+Linux core CI runs eleven hardware-free suites; Windows bootstrap runs all fourteen.
 
 ## Planned 0.3.0 acceptance
 
@@ -43,11 +44,15 @@ beyond the source lifetime, and input/cue/title/staging limits. Staging vectors
 include metadata/title and TIS-to-UTF-8 expansion. The suite is synthetic and
 performs no media or filesystem I/O.
 
-The media-clock consumer remains a future slice: once-only whole-cue emission,
-equal-position polling, backward-position rejection, and stop/reset state
-clearing are not covered by the extractor suite.
+`lyric-media-consumer` checks inclusive due batches, equal-time order, once-only
+whole-cue operation emission, equal-position polls, backward-call rollback,
+reset/stop/reprepare, NoLyrics, null preparation, and owning batch lifetime.
+Known frame-derived positions from a real PlaybackSession cover pause/resume,
+completion without changing session state, stop/restart, and partition-invariant
+cue order. These hardware-free tests do not establish backend/device/GUI lyric
+synchronization; running-backend clock publication still needs its own contract.
 
-Remaining catalog metadata, root reattachment, and consumer tests
+Remaining catalog metadata, root reattachment, and library integration tests
 must use independently authored fixtures. NCN24 requires a reviewed evidence
 supplement before normalizer implementation. No private song or SoundFont
 is a repository test asset.
