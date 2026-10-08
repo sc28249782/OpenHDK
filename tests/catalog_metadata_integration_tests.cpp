@@ -208,10 +208,12 @@ int main() {
   OPENHDK_FAIL_IF(29, bounded.scan(budgetRoot, payload).error->code != DiscoveryError::LimitExceeded || bounded.snapshot() != boundedBefore);
   payload.catalog.stagedLocatorBytes = 35U; // Two current/staged copies + five incoming.
   OPENHDK_FAIL_IF(30, !bounded.scan(budgetRoot, payload).succeeded());
-  PreparationOptions prepBudget; prepBudget.stagedBytes = 10U;
+  PreparationOptions prepBudget;
+  // 5-byte snapshot + 5-byte error reserve + two 1-byte display copies.
+  prepBudget.stagedBytes = 12U;
   const auto budgetSnapshot = bounded.snapshot();
   OPENHDK_FAIL_IF(31, !bounded.prepare(budgetSnapshot, budgetSnapshot->songs[0].id, prepBudget).succeeded());
-  prepBudget.stagedBytes = 9U;
+  prepBudget.stagedBytes = 11U;
   OPENHDK_FAIL_IF(32, bounded.prepare(budgetSnapshot, budgetSnapshot->songs[0].id, prepBudget).error->code != PreparationErrorCode::LimitExceeded);
   // Readable-invalid canonical input retains its only token; complete invalidation clears title.
   write(budgetDir.path / "a.mid", {1U});

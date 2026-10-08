@@ -14,8 +14,7 @@
 
 namespace OpenHDK {
 
-// Pure control-path values only. Registration, catalog transactions, extraction
-// and display resolution must validate/use these in later integration slices.
+// Pure control-path values only; no filesystem, synth or rendering type.
 enum class LibrarySourceMode { SmfKar };
 struct LyricSelectionPolicy {
   LyricTextEncoding encoding = LyricTextEncoding::Utf8;
@@ -145,6 +144,32 @@ struct CatalogUserOverrides {
   std::optional<MetadataText> title = std::nullopt;
   std::optional<MetadataText> artist = std::nullopt;
   bool operator==(const CatalogUserOverrides&) const = default;
+};
+
+// Borrowed inputs need only live through the serialized replacement call.
+// Absence clears that field; this always replaces the complete record.
+struct CatalogOverrideRequest {
+  std::optional<std::string_view> title = std::nullopt;
+  std::optional<std::string_view> artist = std::nullopt;
+};
+struct CatalogMetadataLimits {
+  std::size_t textBytes = MetadataText::kMaxBytes;
+  std::size_t stagedBytes = 64U * 1024U * 1024U;
+};
+enum class CatalogMetadataErrorCode {
+  InvalidConfiguration, NotFound, InvalidText, LimitExceeded, StorageFailure, RevisionExhausted
+};
+enum class CatalogMetadataField { None, Title, Artist };
+struct CatalogMetadataError {
+  CatalogMetadataErrorCode code;
+  CatalogMetadataField field = CatalogMetadataField::None;
+  std::optional<std::size_t> byteOffset = std::nullopt;
+};
+enum class CatalogOverrideStatus { Updated, Unchanged };
+struct CatalogOverrideResult {
+  std::optional<CatalogOverrideStatus> status;
+  std::optional<CatalogMetadataError> error;
+  bool succeeded() const noexcept { return status.has_value() && !error; }
 };
 
 // A ledger over a caller's existing catalog payload allowance, not a second

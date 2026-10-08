@@ -65,14 +65,16 @@ public:
   // Fresh extraction under effectivePolicy(), distinct from song().metadata,
   // whose selection reflects the root policy recorded in catalogSnapshot().
   const CatalogSourceMetadata& sourceMetadata() const noexcept { return *metadata_; }
+  const CatalogDisplayMetadata& displayMetadata() const noexcept { return *display_; }
 private:
   friend class SongPreparation;
   PreparedSong(std::shared_ptr<const CatalogSnapshot> snapshot, std::size_t index,
                SmfTimelineCompileResult compiled, std::shared_ptr<const KarLyricTimeline> lyrics,
                PreparationOptions options, LyricSelectionPolicy effectivePolicy,
-               std::shared_ptr<const CatalogSourceMetadata> metadata)
+               std::shared_ptr<const CatalogSourceMetadata> metadata,
+               std::shared_ptr<const CatalogDisplayMetadata> display)
       : snapshot_(std::move(snapshot)), index_(index), compiled_(std::move(compiled)),
-        lyrics_(std::move(lyrics)), options_(options), effectivePolicy_(effectivePolicy), metadata_(std::move(metadata)) {}
+        lyrics_(std::move(lyrics)), options_(options), effectivePolicy_(effectivePolicy), metadata_(std::move(metadata)), display_(std::move(display)) {}
   std::shared_ptr<const CatalogSnapshot> snapshot_;
   std::size_t index_;
   SmfTimelineCompileResult compiled_;
@@ -80,6 +82,7 @@ private:
   PreparationOptions options_;
   LyricSelectionPolicy effectivePolicy_;
   std::shared_ptr<const CatalogSourceMetadata> metadata_;
+  std::shared_ptr<const CatalogDisplayMetadata> display_;
 };
 struct SongPreparationResult {
   std::shared_ptr<const PreparedSong> prepared;
@@ -109,12 +112,7 @@ private:
       if(song.state!=CatalogState::Ready || !song.sourceRevision())
         return fail(PreparationErrorCode::NotReady);
       auto budget = *MetadataPayloadBudget::create(options.stagedBytes);
-      std::set<const CatalogSourceMetadata*> chargedMetadata;
-      for (const auto& retained : snapshot->songs) {
-        if (!budget.charge(retained.locator().size())
-            || !chargeSourceMetadata(budget, retained.metadata, chargedMetadata))
-          return fail(PreparationErrorCode::LimitExceeded);
-      }
+      if (!chargeCatalogPayload(budget, *snapshot)) return fail(PreparationErrorCode::LimitExceeded);
       // Reserve a possible error locator copy while extraction is still live.
       if (!budget.charge(song.locator().size())) return fail(PreparationErrorCode::LimitExceeded);
       if(cancelled()) return fail(PreparationErrorCode::Cancelled);
@@ -165,6 +163,11 @@ private:
             ? PreparationErrorCode::LimitExceeded : PreparationErrorCode::InvalidConfiguration);
         result.error->lyricError = *metadata.error; return result;
       }
+      const auto display = resolveCatalogDisplay(song.locator(), metadata.metadata.get(), song.overrides.get(),
+          MetadataText::kMaxBytes, budget);
+      if (!display.succeeded()) return fail(display.error->code == CatalogMetadataErrorCode::StorageFailure
+          ? PreparationErrorCode::StorageFailure : display.error->code == CatalogMetadataErrorCode::LimitExceeded
+          ? PreparationErrorCode::LimitExceeded : PreparationErrorCode::InvalidConfiguration);
       if(control.checkpoint) control.checkpoint(PreparationCheckpoint::AfterExtraction);
       if(cancelled()) return fail(PreparationErrorCode::Cancelled);
       operation=PreparationOperation::Verify;
@@ -178,7 +181,7 @@ private:
       if(cancelled()) return fail(PreparationErrorCode::Cancelled);
       operation=PreparationOperation::Publish;
       auto prepared=std::shared_ptr<const PreparedSong>(new PreparedSong(
-          snapshot,index,std::move(*compiled),lyrics.timeline(),options,effectivePolicy,metadata.metadata));
+          snapshot,index,std::move(*compiled),lyrics.timeline(),options,effectivePolicy,metadata.metadata,display.display));
       return {std::move(prepared),{}};
     } catch(const std::bad_alloc&) { return fail(PreparationErrorCode::StorageFailure); }
       catch(const std::filesystem::filesystem_error&) { return fail(PreparationErrorCode::SourceUnreadable); }

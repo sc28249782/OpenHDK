@@ -69,10 +69,11 @@ v0.2.0 behavior.
 | **Root attachment generation** | A positive per-root directory-binding revision defined in OHK-ROOT-030. Changed binding increments it without reuse; scans do not. It differs from catalog revision, content tokens and playback generation. |
 | **Root lyric policy** | An immutable per-root source mode, text encoding and optional track selection accepted in OHK-META-030. Registration retains it; preparation inherits it unless a complete per-call selection override is supplied. |
 | **Source metadata** | Verified source-derived text and compact lyric summary with member revision/policy/event provenance. It is separate from user overrides and filename fallback. |
-| **User metadata override** | An explicit catalog-only title or artist value accepted in OHK-META-030; it changes display resolution, not source bytes or playback identity. |
+| **User metadata override** | An explicit catalog-only title or artist value accepted in OHK-META-030; it changes display resolution, not source bytes or playback identity. A serialized request replaces the complete title/artist record; absence clears and empty text fails. |
 | **PreparedSong** | An immutable single-song SMF/KAR preparation result retaining catalog identity/source revision, the acquired snapshot, MIDI/lyric timelines, requested options, effective lyric policy and freshly extracted source metadata. It does not start audio or establish NCN support. |
 | **source key** | A registered RootId and normalized relative primary-MIDI locator. |
 | **catalog snapshot** | An immutable reader view of one committed catalog revision. |
+| **Display metadata** | Owning resolved title/artist text with UserOverride, SourceTitle or FilenameFallback origin. Prepared display uses effective extraction and acquired overrides; it does not populate source title. |
 | **lyric cue** | A timed text fragment or display action retaining source order and media time. It does not imply a syllable or grapheme. |
 | **NCN24** | The proposed narrow MIDI/LYR/CUR profile, with a format-evidence gate before implementation. It is not all NCN dialects. |
 | **playback generation** | A nonzero identity for one admitted compiled-playback attempt. It prevents an observer from mixing positions and lyrics across attempts. |

@@ -308,8 +308,8 @@ retained catalog/lyric payload against the library's total staging ceiling.
 
 The pure media-clock consumer described in section 9 is implemented. Compact
 catalog metadata and root-policy scan/preparation integration are implemented
-under OHK-META-030; override/display transactions and audio/CLI lyric
-orchestration remain unimplemented. The NCN evidence gate remains open. Released
+under OHK-META-030, including user override/display transactions. Audio/CLI
+lyric orchestration remains unimplemented. The NCN evidence gate remains open. Released
 v0.2.0 has no KAR/NCN lyric service.
 
 ## 9. Current pure media-clock consumer boundary

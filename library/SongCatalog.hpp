@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
 
-#include "library/SourceMetadataExtraction.hpp"
+#include "library/CatalogDisplay.hpp"
 #include <algorithm>
 #include <compare>
 #include <cstdint>
@@ -58,6 +58,7 @@ struct CatalogSong {
   SourceMemberDescriptor member;
   CatalogState state;
   std::shared_ptr<const CatalogSourceMetadata> metadata = nullptr;
+  std::shared_ptr<const CatalogUserOverrides> overrides = nullptr;
   const std::string& locator() const noexcept { return member.locator; }
   const std::optional<SourceRevision>& sourceRevision() const noexcept { return member.revision; }
 };
@@ -75,6 +76,21 @@ struct CatalogSnapshot {
   std::shared_ptr<const unsigned char> origin_;
   friend class SongCatalog;
 };
+
+// All coexisting locator copies are charged; shared source/override records are
+// counted once by object identity. No additional metadata allowance is granted.
+inline bool chargeCatalogPayload(MetadataPayloadBudget& budget, const CatalogSnapshot& snapshot,
+                                 unsigned locatorCopies = 1U) {
+  std::set<const CatalogSourceMetadata*> metadata;
+  std::set<const CatalogUserOverrides*> overrides;
+  for (const auto& song : snapshot.songs) {
+    for (unsigned i = 0U; i < locatorCopies; ++i)
+      if (!budget.charge(song.locator().size())) return false;
+    if (!chargeSourceMetadata(budget, song.metadata, metadata)
+        || !chargeUserOverrides(budget, song.overrides, overrides)) return false;
+  }
+  return true;
+}
 
 inline bool catalogByteLess(std::string_view a, std::string_view b) noexcept {
   return std::lexicographical_compare(a.begin(), a.end(), b.begin(), b.end(),
@@ -147,6 +163,8 @@ class SongCatalog {
     if (nextRoot_ == std::numeric_limits<std::uint64_t>::max()) return std::nullopt;
     const RootId root(nextRoot_);
     if (snapshot_->revision == std::numeric_limits<std::uint64_t>::max()) return std::nullopt;
+    auto budget = *MetadataPayloadBudget::create();
+    if (!chargeCatalogPayload(budget, *snapshot_, 2U)) return std::nullopt;
     auto staged = std::make_shared<CatalogSnapshot>(*snapshot_);
     staged->roots.push_back({root, 1U, policy});
     ++staged->revision;
@@ -169,10 +187,12 @@ class SongCatalog {
         candidates.size() > limits.candidates) return CatalogError::LimitExceeded;
     auto budget = *MetadataPayloadBudget::create(limits.stagedLocatorBytes);
     std::set<const CatalogSourceMetadata*> chargedMetadata;
+    std::set<const CatalogUserOverrides*> chargedOverrides;
     for (const auto& song : snapshot_->songs) {
       // Current and staged snapshot own locator copies; metadata is shared.
       if (!budget.charge(song.locator().size()) || !budget.charge(song.locator().size())
-          || !chargeSourceMetadata(budget, song.metadata, chargedMetadata)) return CatalogError::LimitExceeded;
+          || !chargeSourceMetadata(budget, song.metadata, chargedMetadata)
+          || !chargeUserOverrides(budget, song.overrides, chargedOverrides)) return CatalogError::LimitExceeded;
     }
     for (const auto& candidate : candidates) {
       if (!isCatalogLocator(candidate.locator)) return CatalogError::InvalidLocator;
@@ -263,12 +283,8 @@ class SongCatalog {
         })) return CatalogError::AmbiguousPath;
     if (snapshot_->revision == std::numeric_limits<std::uint64_t>::max()) return CatalogError::IdExhausted;
     auto budget = *MetadataPayloadBudget::create();
-    std::set<const CatalogSourceMetadata*> charged;
-    if (!budget.charge(locator.size())) return CatalogError::LimitExceeded;
-    for (const auto& existing : snapshot_->songs) {
-      if (!budget.charge(existing.locator().size()) || !budget.charge(existing.locator().size())
-          || !chargeSourceMetadata(budget, existing.metadata, charged)) return CatalogError::LimitExceeded;
-    }
+    if (!budget.charge(locator.size()) || !chargeCatalogPayload(budget, *snapshot_, 2U))
+      return CatalogError::LimitExceeded;
     auto staged = std::make_shared<CatalogSnapshot>(*snapshot_);
     auto& song = staged->songs[static_cast<std::size_t>(found - snapshot_->songs.begin())];
     song.root = root;
@@ -287,6 +303,8 @@ class SongCatalog {
         [&](const auto& song) { return song.id == id; });
     if (found == snapshot_->songs.end()) return CatalogError::NotFound;
     if (snapshot_->revision == std::numeric_limits<std::uint64_t>::max()) return CatalogError::IdExhausted;
+    auto budget = *MetadataPayloadBudget::create();
+    if (!chargeCatalogPayload(budget, *snapshot_, 2U)) return CatalogError::LimitExceeded;
     auto staged = std::make_shared<CatalogSnapshot>(*snapshot_);
     staged->songs.erase(staged->songs.begin() + (found - snapshot_->songs.begin()));
     ++staged->revision;
@@ -294,10 +312,85 @@ class SongCatalog {
     return CatalogError::None;
   }
 
+  // Complete record replacement on the serialized control path. All errors are
+  // nonallocating structured values; no source/root/lyric operation occurs here.
+  CatalogOverrideResult replaceUserOverrides(SongId id, CatalogOverrideRequest request,
+                                            CatalogMetadataLimits limits = {}) {
+    const auto fail = [](CatalogMetadataErrorCode code, CatalogMetadataField field = CatalogMetadataField::None,
+                         std::optional<std::size_t> offset = std::nullopt) {
+      return CatalogOverrideResult{{}, CatalogMetadataError{code, field, offset}};
+    };
+    if (!validCatalogMetadataLimits(limits)) return fail(CatalogMetadataErrorCode::InvalidConfiguration);
+    const auto found = std::find_if(snapshot_->songs.begin(), snapshot_->songs.end(),
+        [&](const auto& song) { return song.id == id; });
+    if (found == snapshot_->songs.end()) return fail(CatalogMetadataErrorCode::NotFound);
+    for (auto [text, field] : {std::pair{request.title, CatalogMetadataField::Title},
+                             std::pair{request.artist, CatalogMetadataField::Artist}}) {
+      if (text && text->empty()) return fail(CatalogMetadataErrorCode::InvalidText, field, 0U);
+      if (text && text->size() > limits.textBytes)
+        return fail(CatalogMetadataErrorCode::LimitExceeded, field, limits.textBytes);
+    }
+    const auto equal = [](const std::optional<MetadataText>& old, std::optional<std::string_view> value) {
+      return old.has_value() == value.has_value() && (!old || old->bytes() == *value);
+    };
+    const CatalogUserOverrides empty;
+    const auto& previous = found->overrides ? *found->overrides : empty;
+    // Equal bytes are already validated. No allocation/publication/revision is
+    // needed, including when the revision counter is exhausted.
+    if (equal(previous.title, request.title) && equal(previous.artist, request.artist))
+      return {CatalogOverrideStatus::Unchanged, {}};
+    if (snapshot_->revision == std::numeric_limits<std::uint64_t>::max())
+      return fail(CatalogMetadataErrorCode::RevisionExhausted);
+    try {
+      auto budget = *MetadataPayloadBudget::create(limits.stagedBytes);
+      if (!chargeCatalogPayload(budget, *snapshot_, 2U)) return fail(CatalogMetadataErrorCode::LimitExceeded);
+      // Reserve both validation/retained copies per requested field before growth.
+      auto peak = budget;
+      for (auto text : {request.title, request.artist}) {
+        if (text && (!peak.charge(text->size()) || !peak.charge(text->size())))
+          return fail(CatalogMetadataErrorCode::LimitExceeded);
+      }
+      auto record = std::make_shared<CatalogUserOverrides>();
+      for (auto [text, field] : {std::pair{request.title, CatalogMetadataField::Title},
+                               std::pair{request.artist, CatalogMetadataField::Artist}}) {
+        if (!text) continue;
+        const auto value = MetadataText::create(*text, limits.textBytes);
+        if (!value.succeeded()) return fail(CatalogMetadataErrorCode::InvalidText, field, value.error()->byteOffset);
+        (field == CatalogMetadataField::Title ? record->title : record->artist) = *value.text();
+      }
+      auto staged = std::make_shared<CatalogSnapshot>(*snapshot_);
+      auto& song = staged->songs[static_cast<std::size_t>(found - snapshot_->songs.begin())];
+      song.overrides = request.title || request.artist ? std::move(record) : nullptr;
+      ++staged->revision;
+      std::shared_ptr<const CatalogSnapshot> publication = std::move(staged);
+      snapshot_.swap(publication); // Single noexcept publication after all allocations.
+      return {CatalogOverrideStatus::Updated, {}};
+    } catch (const std::bad_alloc&) { return fail(CatalogMetadataErrorCode::StorageFailure); }
+  }
+
+  CatalogDisplayResult display(std::shared_ptr<const CatalogSnapshot> snapshot, SongId id,
+                               CatalogMetadataLimits limits = {}) const {
+    const auto fail = [](CatalogMetadataErrorCode code) {
+      return CatalogDisplayResult{nullptr, CatalogMetadataError{code, CatalogMetadataField::None, {}}};
+    };
+    if (!snapshot || !ownsSnapshot(*snapshot) || !validCatalogMetadataLimits(limits))
+      return fail(CatalogMetadataErrorCode::InvalidConfiguration);
+    const auto found = std::find_if(snapshot->songs.begin(), snapshot->songs.end(),
+        [&](const auto& song) { return song.id == id; });
+    if (found == snapshot->songs.end()) return fail(CatalogMetadataErrorCode::NotFound);
+    try {
+      auto budget = *MetadataPayloadBudget::create(limits.stagedBytes);
+      if (!chargeCatalogPayload(budget, *snapshot)) return fail(CatalogMetadataErrorCode::LimitExceeded);
+      return resolveCatalogDisplay(found->locator(), found->metadata.get(), found->overrides.get(),
+                                   limits.textBytes, budget);
+    } catch (const std::bad_alloc&) { return fail(CatalogMetadataErrorCode::StorageFailure); }
+  }
+
  private:
   friend class SongDiscovery;
 #ifdef OPENHDK_ENABLE_TEST_SEAMS
   friend struct RootReattachmentTestAccess;
+  friend struct CatalogMetadataTransactionTestAccess;
 #endif
   bool knownRoot(RootId root) const noexcept {
     return std::any_of(snapshot_->roots.begin(), snapshot_->roots.end(),
@@ -306,6 +399,8 @@ class SongCatalog {
   // Discovery stages its path mapping before calling this helper. Neither
   // staging step publishes. The serialized writer commits with noexcept swaps.
   std::shared_ptr<const CatalogSnapshot> stageRootReattachment(RootId root) const {
+    auto budget = *MetadataPayloadBudget::create();
+    if (!chargeCatalogPayload(budget, *snapshot_, 2U)) return nullptr;
     auto staged = std::make_shared<CatalogSnapshot>(*snapshot_);
     const auto found = std::find_if(staged->roots.begin(), staged->roots.end(),
         [&](const auto& item) { return item.id == root; });

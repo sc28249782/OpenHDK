@@ -1,7 +1,7 @@
 # Catalog metadata and root lyric policy contract
 
 **Contract ID:** OHK-META-030
-**Status:** Accepted planning contract (PR #50); model and scan/preparation integration implemented; override/display pending.
+**Status:** Accepted planning contract (PR #50); model, scan/preparation, and override/display transactions implemented.
 **Target:** 0.3.0; not part of released OpenHDK v0.2.0.
 
 This contract supplements [OHK-LIB-030](KARAOKE-LIBRARY-CONTRACT.md),
@@ -10,7 +10,7 @@ This contract supplements [OHK-LIB-030](KARAOKE-LIBRARY-CONTRACT.md),
 [SPECIFICATION.md](SPECIFICATION.md) remains the authority for implemented
 behavior. Obligations below describe the accepted target. Discovery validates canonical SMF and selected lyrics under its immutable root
 policy. Preparation inherits that policy or takes a complete one-call override.
-Source/member metadata is integrated; override/display transactions remain pending.
+Source/member metadata, user overrides, and display resolution are integrated.
 
 ## 1. Scope and data separation
 
@@ -194,8 +194,8 @@ Minimum independent fixtures:
 - prepared metadata differs from catalog when selection is overridden, retaining
   exact source provenance and old user overrides after later mutations.
 
-PR #50 accepted this contract. Review scan/preparation integration and
-override/display transactions in subsequent slices. Hardware-free tests and both CI
+PR #50 accepted this contract. The development tree implements scan/preparation integration and
+override/display transactions in reviewed slices. Hardware-free tests and both CI
 jobs are required; NCN evidence, storage, application/CLI orchestration and manual
 Windows device/lyric validation remain separate gates. No released behavior changes are authorized by the implementation boundary below.
 
@@ -226,7 +226,7 @@ Title provenance carries historical revision evidence; only the primary member
 is authoritative for current source content. Value copies own their strings.
 
 The pure `catalog-metadata-core` suite remains separate from integration coverage.
-The development tree has 17 hardware-free / 20 audio-enabled suites. Released
+The development tree has 18 hardware-free / 21 audio-enabled suites. Released
 v0.2.0 remains unchanged. Section 9 records the current integration boundary.
 
 
@@ -288,6 +288,69 @@ The original snapshot and both timelines remain owned. Per-call selection does
 not mutate catalog metadata or the root policy. Already-prepared metadata is
 unchanged by later scans or reattachment.
 
-User override transactions, display resolution, durable storage, NCN evidence,
-application/CLI orchestration and manual Windows device/lyric validation remain
-pending. This slice adds no audio operation, CLI grammar, version or dependency.
+User overrides and display resolution are implemented as recorded in section 10.
+Durable storage, NCN evidence, application/CLI orchestration and manual Windows
+device/lyric validation remain pending. This slice adds no audio operation, CLI grammar, version or dependency.
+
+
+## 10. Current override and display transaction boundary
+
+`SongCatalog::replaceUserOverrides` and its `SongDiscovery` wrapper take a
+SongId, `CatalogOverrideRequest`, and `CatalogMetadataLimits`. Requests borrow
+optional UTF-8 views for the duration of the serialized call. They replace the
+whole record; absent clears that field, while present empty fails. Text remains
+strict UTF-8 with the decoder's C0 policy. No trim, normalization, artist guess,
+media-file write, or lyric/audio operation occurs.
+
+CatalogSong stores optional shared const `CatalogUserOverrides`. The transaction
+validates configuration and field bounds, then checks for an exact no-op before
+allocating. Identical validated bytes retain the same snapshot and revision,
+including at revision exhaustion. An actual change stages both fields and the
+catalog copy, increments revision once, and publishes via one noexcept swap.
+Unknown IDs, invalid text, limits, allocation failure and revision exhaustion
+return structured `CatalogMetadataError` values with field/byte offset where
+applicable, without partial publication. Serialized readers acquire snapshots;
+this does not authorize concurrent calls on the catalog writer itself.
+
+Rescan, relocation, root reattachment and invalidation preserve the shared
+user record. Removal discards it; later discovery creates a different SongId
+without overrides. Source/member tokens, attachment generations and lyric
+selection are independent of override edits. Historical snapshots retain the
+old record; Invalid/Missing entries may still display overrides without becoming
+playable.
+
+`display(acquiredSnapshot, SongId, limits)` validates lineage and resolves an
+owning immutable `CatalogDisplayMetadata`, without filesystem work. Title order
+is user override, selected source title, then full filename stem; artist is user
+artist or absent because no source-artist convention is accepted. Display fields
+carry UserOverride, SourceTitle or FilenameFallback origin. SourceTitle retains
+exact revision/policy/event provenance. Fallback never populates source metadata.
+Only the last extension is removed: `Live.Set.kar` becomes `Live.Set`; a leading
+dot without a later dot is part of the filename (`.mid` stays `.mid`). The resolver
+preserves UTF-8 spelling and performs no rendering/escaping or display layout.
+
+Preparation materializes `PreparedSong::displayMetadata()` from freshly extracted
+effective source metadata plus overrides in the acquired catalog snapshot. This
+is distinct from catalog `display`, whose source selection is the root policy.
+Already-prepared display/source/override values survive later edits, rescans,
+reattachment, and owner destruction. No display lookup revalidates source bytes;
+preparation retains its separate Ready/revision/containment gates.
+
+Each field has a default 4,096-byte ceiling. Smaller positive limits are valid;
+zero or larger limits are InvalidConfiguration. `stagedBytes` draws on the same
+bounded 64 MiB variable-payload allowance. Shared source and override records
+are charged once by object identity; separately owned equal records cost twice.
+Transaction staging charges two locator copies, retained shared text, and two
+validation/output copies per requested field before growth. Display lookup
+charges one retained catalog locator copy and shared text, then reserves two
+copies per materialized field. Preparation includes the acquired catalog,
+error-locator reserve, live extraction and fresh metadata before display charges.
+Failed charges do not poison shared-record credit. Identical no-ops need no
+staging allowance because no text/snapshot copy is created.
+
+The existing scan/relocation/reattachment/add/remove payload checks include user
+records. Historical snapshots held externally can extend object lifetimes; the
+per-operation allowance is not a cap on all externally retained snapshots,
+allocator overhead, or total process memory. Canonical SMF parse and extractor
+record bounds remain separate. Storage, NCN evidence, application/CLI orchestration
+and manual device/lyric validation remain pending. Released v0.2.0 is unchanged.

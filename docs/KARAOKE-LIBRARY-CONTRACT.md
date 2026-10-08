@@ -309,7 +309,9 @@ the immutable prepared buffers, and hostile-writer guarantees are not claimed.
 Local root reattachment is implemented under OHK-ROOT-030. Source/member
 metadata and root lyric policies are connected under OHK-META-030. Discovery
 reuses KAR extraction before Ready and retains only compact metadata, not a
-cue/search cache. User override/display transactions, durable storage, NCN
+cue/search cache. Atomic user title/artist replacement and owning display
+resolution are implemented under OHK-META-030, including prepared effective
+source context and acquired overrides. Durable storage, NCN
 lyrics and application playback orchestration remain unimplemented.
 Native mounted filesystem changes are not a hostile-writer sandbox guarantee.
 

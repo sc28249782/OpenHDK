@@ -179,5 +179,7 @@ self-alias coverage depends on a filesystem exposing distinct equivalent
 canonical paths; the implementation rejects such equivalence when detected.
 Root policies and compact source metadata are integrated under OHK-META-030.
 Reattachment preserves policy while clearing current metadata/revisions;
-prepared and historical snapshots retain their ownership. Override/display
-transactions, NCN, persistence and CLI/audio orchestration remain separate work.
+prepared and historical snapshots retain their ownership. Shared user title/artist
+override records survive reattachment; prepared display retains its acquired
+values under OHK-META-030. NCN, persistence and CLI/audio orchestration remain
+separate work.

@@ -259,8 +259,14 @@ selected lyric validation under the root policy; NoLyrics remains successful.
 Preparation inherits the acquired root policy or uses a complete one-call
 selection override after lineage/attachment checks, while retaining fresh
 source metadata separately from catalog metadata. Invalid sources cannot be
-rescued by a one-call override. User override/display transactions remain
-pending. These changes do not alter standalone SMF diagnostics or playback CLI
+rescued by a one-call override. User title/artist records are replaced atomically
+on the serialized control path; empty text fails, absence clears, and identical
+records publish no revision. Errors MUST retain the old snapshot. Rescans,
+relocation and reattachment preserve overrides; removal discards them.
+Display resolves user title, source title, then filename fallback, with explicit
+origin. Artist is user override or absent. Prepared display MUST use fresh
+effective source metadata and the acquired overrides, remaining immutable after
+later catalog changes. These changes do not alter standalone SMF diagnostics or playback CLI
 behavior and are not part of released v0.2.0.
 
 Persistent storage selection and the NCN format evidence supplement require

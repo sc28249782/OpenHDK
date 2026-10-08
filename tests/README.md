@@ -1,16 +1,16 @@
 # Test coverage and failure diagnostics
 
-The hardware-free configuration registers seventeen CTest suites: parser fixtures,
+The hardware-free configuration registers eighteen CTest suites: parser fixtures,
 MIDI diagnostics CLI, runtime mixer console, velocity curves, mixer presets,
 stereo peak limiter, song catalog core, filesystem discovery, lyric text
 decoding, KAR lyric extraction, media-clock consumption, media-clock
 publication, generation-bound lyric observation, single-song preparation,
 root reattachment, pure catalog metadata/policy models, and catalog metadata
-scan/preparation integration.
+scan/preparation integration, and override/display transactions.
 The audio-enabled test configuration adds FluidSynth headless
-playback, CLI help, and diagnostics error cases, for twenty suites.
+playback, CLI help, and diagnostics error cases, for twenty-one suites.
 These counts describe the development tree; v0.2.0 has six/nine respectively.
-Linux core CI runs seventeen hardware-free suites; Windows bootstrap runs all twenty.
+Linux core CI runs eighteen hardware-free suites; Windows bootstrap runs all twenty-one.
 
 ## Planned 0.3.0 acceptance
 
@@ -65,7 +65,7 @@ explicit stop, restart, legacy unavailable state, and shutdown. Deterministic
 mid-block failure injection checks that failure retains the previous committed
 position.
 
-Remaining override/display and library integration tests must use independently
+Remaining application/library integration tests must use independently
 authored fixtures. The `root-reattachment` suite covers the accepted
 [OHK-ROOT-030 boundary](../docs/ROOT-REATTACHMENT-CONTRACT.md): move/rescan,
 invalidation of every catalog state, same-path no-op, initial/late cancellation,
@@ -162,8 +162,8 @@ changing its retained catalog identity. No audio start is part of preparation.
 
 Native symlink setup may be unavailable on Windows; that fixture runs when the
 OS permits creation. Existing discovery coverage retains the native path checks.
-Root policy and compact metadata integration are covered below. User
-metadata override/display transactions, NCN members, persistent storage and
+Root policy, compact metadata and override/display integration are covered below.
+NCN members, persistent storage and
 application playback lifecycle remain separate acceptance work.
 
 Preparation lineage regression checks use two distinct libraries with equal
@@ -194,4 +194,13 @@ rollback, and source/metadata coexistence limits. Title fixtures cover 4096/4097
 bytes; no real media asset or audio operation is used. Hooks are deterministic
 fault injection, not exhaustive allocator coverage. Updated pure catalog boundary
 fixtures account for retained/staged locators, including Missing entries.
-Override/display transactions and their fixtures remain pending.
+`catalog-override-display` covers 57 checks for complete title/artist replacement,
+explicit clear, no-op, strict UTF-8/C0 validation, exact byte limits, filename
+fallback/provenance, retained source and override contexts, revision exhaustion,
+rescan/relocation/reattachment/removal, prepared effective-selection display,
+owner destruction, and shared payload bounds. It sweeps real allocation-failure
+points in isolated replacement/display calls; this is not a process-wide memory
+limit or exhaustive coverage of all library allocators. The standalone target
+uses `OPENHDK_ENABLE_TEST_SEAMS=1` only for private revision exhaustion setup.
+A test-only global allocator is disarmed before assertions and fixture cleanup.
+Existing preparation budget fixtures now reserve materialized display text too.
