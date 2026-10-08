@@ -128,6 +128,10 @@ changes. PreparedSong retains catalog identity and its original snapshot;
 rescans never replace its buffers. Preparation does not start or replace audio.
 Catalog metadata, root reattachment, durable storage, NCN preparation, and
 application lyric orchestration remain unimplemented. The
+[root reattachment proposal](ROOT-REATTACHMENT-CONTRACT.md) separates root
+attachment generations from catalog and playback revisions. It proposes
+invalidating current entries and rejecting stale-root preparation while keeping
+already-prepared buffers intact; this gate is not implemented yet. The
 [media-clock handoff contract](MEDIA-CLOCK-HANDOFF-CONTRACT.md) defines a fixed
 atomic latest-value cell, playback generations, and successful-block commit
 rules. The backend publishes committed block positions, terminal state, and

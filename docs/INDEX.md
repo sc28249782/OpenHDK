@@ -23,8 +23,9 @@ continue to apply independently of feature plans.
 | [PLAYBACK-SESSION-CONTRACT](PLAYBACK-SESSION-CONTRACT.md) | Frame clock, state transitions, dispatch, and completion. |
 | [MIDI-CHANNEL-CONTROLLERS](MIDI-CHANNEL-CONTROLLERS.md) | Source controllers, runtime gain, resets, and diagnostics interpretation. |
 | [MIXER-DYNAMICS-CONTRACT](MIXER-DYNAMICS-CONTRACT.md) | Implemented velocity curves, presets, and peak limiter. |
-| [KARAOKE-LIBRARY-CONTRACT](KARAOKE-LIBRARY-CONTRACT.md) | Accepted 0.3.0 contract; catalog/discovery slice implemented, storage/preparation gated. |
-| [LYRIC-TIMELINE-CONTRACT](LYRIC-TIMELINE-CONTRACT.md) | Accepted KAR/media timing contract; decoder, cue extraction, and pure consumer implemented; backend/NCN24 gated. |
+| [KARAOKE-LIBRARY-CONTRACT](KARAOKE-LIBRARY-CONTRACT.md) | Accepted 0.3.0 contract; catalog/discovery/preparation slices implemented, full services gated. |
+| [ROOT-REATTACHMENT-CONTRACT](ROOT-REATTACHMENT-CONTRACT.md) | Proposed root attachment generations, transaction, and stale-snapshot rules; review before implementation. |
+| [LYRIC-TIMELINE-CONTRACT](LYRIC-TIMELINE-CONTRACT.md) | Accepted KAR/media timing contract; extraction/consumer and backend observation implemented; application/NCN24 gated. |
 | [MEDIA-CLOCK-HANDOFF-CONTRACT](MEDIA-CLOCK-HANDOFF-CONTRACT.md) | Accepted backend-clock handoff; FluidSynth publication implemented, generation-bound observer implemented; application integration pending. |
 | [POC-RUNBOOK](POC-RUNBOOK.md) | Windows build, diagnostics, playback, and console operations. |
 | [Test README](../tests/README.md) | Test scope and failure diagnostics. |
@@ -65,11 +66,13 @@ The next planned milestone is 0.3.0 karaoke library work. Implementation uses th
 [lyric timeline contract](LYRIC-TIMELINE-CONTRACT.md). They specify identity,
 discovery, database ownership, malformed-input behavior, and synthetic fixture
 requirements. Persistent storage selection and NCN24 format evidence remain
-explicit pre-implementation gates. Running-backend publication has a
+explicit pre-implementation gates. Running-backend publication has an
 [accepted handoff contract](MEDIA-CLOCK-HANDOFF-CONTRACT.md). The FluidSynth
 adapter publishes it and a serialized observer binds the acknowledged
 generation. Single-song preparation binds catalog identity and verifies source
-revisions; application orchestration remains pending. Preserve the
+revisions; application orchestration remains pending. Review the
+[root reattachment proposal](ROOT-REATTACHMENT-CONTRACT.md) before adding root
+mutation or attachment-generation checks. Preserve the
 canonical SMF and mixer contracts unless a compatibility change is accepted.
 
 This review does not establish KAR/NCN support or select a UI framework. Later

@@ -64,8 +64,12 @@ mid-block failure injection checks that failure retains the previous committed
 position.
 
 Remaining catalog metadata, root reattachment, and library integration tests
-must use independently authored fixtures. NCN24 requires a reviewed evidence
-supplement before normalizer implementation. No private song or SoundFont
+must use independently authored fixtures. The proposed
+[OHK-ROOT-030 acceptance cases](../docs/ROOT-REATTACHMENT-CONTRACT.md) cover
+root-move/rescan, transactional rollback, attachment counter exhaustion,
+stale-snapshot rejection and prepared-buffer retention. These are requirements
+for a future implementation, not current test coverage. NCN24 requires a
+reviewed evidence supplement before normalizer implementation. No private song or SoundFont
 is a repository test asset.
 
 ## Failure diagnostics

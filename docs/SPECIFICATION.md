@@ -244,6 +244,11 @@ Complete library and lyric services
 MUST NOT be described as implemented or released behavior. The v0.2.0 parser,
 playback, MIDI-controller, mixer, and limiter contracts remain unchanged.
 
+[ROOT-REATTACHMENT-CONTRACT.md](ROOT-REATTACHMENT-CONTRACT.md) proposes
+per-root attachment generations and transactional reattachment. It is pending
+acceptance and implementation; current preparation has no attachment-generation
+gate. It adds no released behavior or CLI operation.
+
 Persistent storage selection and the NCN format evidence supplement require
 reviewed designs before their adapters are implemented. Running-backend
 media-position publication has an accepted bounded contract in

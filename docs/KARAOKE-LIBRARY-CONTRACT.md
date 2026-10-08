@@ -72,6 +72,9 @@ relocation validates the new key, retains SongId, and fails atomically if the
 new key already belongs to another entry. It does not rename the media file.
 Reattaching a root to a new absolute directory preserves RootId and relative
 keys only after explicit user selection and validation.
+The [root reattachment proposal](ROOT-REATTACHMENT-CONTRACT.md) specifies
+per-root attachment generations, transactional invalidation, and stale-snapshot
+preparation rules for review before that slice is implemented.
 
 ## 3. Deterministic discovery
 
