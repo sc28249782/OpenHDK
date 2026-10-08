@@ -3,7 +3,8 @@
 **Contract ID:** OHK-CLOCK-030
 
 **Status:** Accepted by PR #41. The publication cell and FluidSynth adapter are
-implemented in the development tree; lyric-consumer binding remains pending.
+implemented in the development tree, with a serialized generation-bound
+lyric observer. Library/application integration remains pending.
 
 **Target:** OpenHDK 0.3.0. Released v0.2.0 has no backend clock observer or
 karaoke lyric service.
@@ -223,4 +224,31 @@ A distant-End-of-Track fixture commits one block, then a private test seam
 requests more frames than FluidSynth accepts. The resulting failure record
 retains the prior committed time and reports the fixed RenderFailed code.
 
-The backend does not yet drive `LyricMediaConsumer`.
+`lyrics/LyricClockObserver.hpp` applies the section 8 table on a serialized
+control path. `bind(timeline, acknowledgedStart)` accepts a non-null timeline
+and a nonzero successful start acknowledgement. One observer belongs to one
+backend object's lifetime; the caller must use the acknowledgement returned
+by that same backend. A snapshot cannot establish a binding. Library
+preparation must still prove song/source/lyric identity.
+
+The observer remembers its last acknowledged generation across `stop()` and
+rejects reused or older acknowledgements without disturbing an existing
+binding. Replacing the backend object requires a new observer. `poll` accepts
+one read result, never retries, and returns Held for Unstable or Preparing.
+Playing, reserved Paused, and Finished advance through committed time and
+return owning due batches. Terminal failure/stop/unavailable, wrong source,
+or generation mismatch clear the binding. Exhausted clears and returns an
+explicit observation-error status. Malformed snapshots or backward committed
+time also clear and report a fixed status rather than retaining unsafe state.
+The observed prefix remains after Finished; historical batches survive clear.
+
+The controller must call observer `stop()` BEFORE any backend stop,
+replacement, or shutdown request, including when clock reads are unstable.
+This helper does not perform those backend actions itself. Shared ownership
+operations run only on the serialized control path, never in the callback.
+
+Hardware-free coverage uses synthetic KAR cues, actual publication-cell reads,
+and PlaybackSession times. The headless FluidSynth smoke test binds the
+acknowledged generation and observes start, first block, and finish through
+the public backend clock, then clears before replacement. Library preparation,
+application/CLI orchestration, and manual device/lyric validation remain open.

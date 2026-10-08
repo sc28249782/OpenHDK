@@ -121,13 +121,16 @@ owning immutable due batches. Its emitted cue prefix represents current display
 state; equal-time polling emits no repeat cues, and reset/stop clears the prefix.
 It does not construct UI state or publish clocks from the running backend.
 
-Catalog metadata, root reattachment, durable storage, lyric-consumer binding,
-and library playback preparation remain unimplemented. The
+Catalog metadata, root reattachment, durable storage, application lyric
+orchestration, and library playback preparation remain unimplemented. The
 [media-clock handoff contract](MEDIA-CLOCK-HANDOFF-CONTRACT.md) defines a fixed
 atomic latest-value cell, playback generations, and successful-block commit
 rules. The backend publishes committed block positions, terminal state, and
 generation acknowledgments through the implemented cell and counter.
-Lyric-consumer binding remains pending. A final scan check is
+`LyricClockObserver` binds the pure consumer to successful start
+acknowledgements and clears it on generation mismatch or terminal errors.
+The controller owns the observer for one backend lifetime and clears it before
+stop/replacement/shutdown. Application orchestration remains pending. A final scan check is
 not an atomic filesystem snapshot; future playback preparation must revalidate source tokens.
 Catalog methods are serialized and non-reentrant. Readers share acquired
 immutable snapshots. Lyric extraction and the pure consumer reuse compiled/session media time

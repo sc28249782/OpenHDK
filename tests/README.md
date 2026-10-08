@@ -1,13 +1,13 @@
 # Test coverage and failure diagnostics
 
-The hardware-free configuration registers twelve CTest suites: parser fixtures,
+The hardware-free configuration registers thirteen CTest suites: parser fixtures,
 MIDI diagnostics CLI, runtime mixer console, velocity curves, mixer presets,
 stereo peak limiter, song catalog core, filesystem discovery, lyric text
-decoding, KAR lyric extraction, media-clock consumption, and media-clock
-publication. The audio-enabled test configuration adds FluidSynth headless
-playback, CLI help, and diagnostics error cases, for fifteen suites.
+decoding, KAR lyric extraction, media-clock consumption, media-clock
+publication, and generation-bound lyric observation. The audio-enabled test configuration adds FluidSynth headless
+playback, CLI help, and diagnostics error cases, for sixteen suites.
 These counts describe the development tree; v0.2.0 has six/nine respectively.
-Linux core CI runs twelve hardware-free suites; Windows bootstrap runs all fifteen.
+Linux core CI runs thirteen hardware-free suites; Windows bootstrap runs all sixteen.
 
 ## Planned 0.3.0 acceptance
 
@@ -50,8 +50,7 @@ reset/stop/reprepare, NoLyrics, null preparation, and owning batch lifetime.
 Known frame-derived positions from a real PlaybackSession cover pause/resume,
 completion without changing session state, stop/restart, and partition-invariant
 cue order. These hardware-free tests do not establish backend/device/GUI lyric
-synchronization; running-backend clock publication still needs lyric-consumer
-integration. The accepted
+synchronization; application/library orchestration remains pending. The accepted
 [media-clock handoff contract](../docs/MEDIA-CLOCK-HANDOFF-CONTRACT.md) defines
 the required concurrency, lifecycle, failure, and exhaustion tests. Pure-cell
 coverage now checks coherent concurrent snapshots, deterministic unstable
@@ -125,3 +124,17 @@ ctest --test-dir build --output-on-failure
 A failing test must show its condition and source location. A passing test
 keeps its existing exit code of zero. The helper is used only by tests; it is
 not part of the audio callback or the production application.
+
+## Generation-bound lyric observer
+
+`lyric-clock-observer` checks acknowledged binding, rejection without mutation,
+Preparing/Unstable holds, Playing/Paused/Finished progression, equal polls,
+partition-invariant cue indices, terminal and generation/source mismatch clears,
+exhaustion, malformed snapshots, backward time, and historical batch ownership.
+Actual publication-cell reads and PlaybackSession positions feed the adapter;
+NoLyrics remains a valid bound timeline. The Windows headless smoke test also
+observes start/first-block/finish through the public FluidSynth clock.
+
+An observer belongs to one backend lifetime. Controllers must clear it before
+requesting stop, replacement, or shutdown. Tests do not establish SongId/source
+matching, a complete CLI lyric service, or measured device synchronization.
