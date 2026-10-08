@@ -81,7 +81,7 @@ ctest --test-dir build --output-on-failure
 
 The default POC configuration uses pinned FluidSynth and miniaudio dependencies
 (and downloads a pinned test SoundFont when audio POC tests are enabled). For
-the twenty-two hardware-free core test suites, use:
+the twenty-three hardware-free core test suites, use:
 
 ```powershell
 cmake -S . -B build-parser -DOPENHDK_BUILD_AUDIO_POC=OFF -DOPENHDK_BUILD_TESTS=ON -DOPENHDK_FETCH_TEST_FIXTURES=OFF
@@ -91,7 +91,7 @@ ctest --test-dir build-parser --output-on-failure
 
 The lightweight Linux core CI job uses this hardware-free configuration with
 strict compiler warnings and AddressSanitizer/UndefinedBehaviorSanitizer. It
-runs twenty-two suites: catalog checkpoint codec/restore/store protocol, SMF parser fixtures, MIDI
+runs twenty-three suites: catalog checkpoint codec/restore/store protocol, SMF parser fixtures, MIDI
 diagnostics CLI, runtime mixer console, velocity curves, mixer presets, stereo peak limiting, song catalog
 identity/transactions, filesystem discovery, lyric text decoding, KAR cue
 extraction, media-clock consumption, atomic media-clock publication,
@@ -140,14 +140,15 @@ The development tree has a pure bounded schema-1 codec and detached projection
 with independent wire/hash fixtures, plus validated fresh-owner restore. Restored
 roots require explicit attachment and a complete scan; hints grant no source access.
 A detached checkpoint store coordinator has fake-provider protocol tests for
-stale tokens, staged publication and uncertainty recovery. Native storage, live
+stale tokens, staged publication and uncertainty recovery. Native storage acceptance, live
 checkpoint capture and durable library operations remain pending. None of these
 changes are part of released v0.2.0.
 The [accepted native provider plan](docs/NATIVE-CHECKPOINT-PROVIDER-PLAN.md)
 records Linux/ext4 and Windows/NTFS API candidates and required native evidence;
-a Linux ownership/lease primitive is implemented with path and contention tests.
-It has no checkpoint publication or durability support. Native ext4 acceptance
-and Windows synchronization remain pending.
+a Linux ownership lease and experimental checkpoint provider are implemented.
+The provider stages, publishes, synchronizes and reconciles through the detached
+coordinator. [Native ext4 evidence](docs/NATIVE-LINUX-CHECKPOINT-EVIDENCE.md)
+and Windows synchronization remain pending; this is not accepted storage support.
 
 ## Specification
 

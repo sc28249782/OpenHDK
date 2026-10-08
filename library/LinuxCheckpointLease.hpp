@@ -71,6 +71,7 @@ class LinuxCheckpointLease {
     held_=false;path_.clear();name_.clear();lockName_.clear();
   }
  private:
+  friend class LinuxCheckpointProvider;
 #ifdef OPENHDK_ENABLE_TEST_SEAMS
   friend struct LinuxCheckpointLeaseTestAccess;
 #endif
