@@ -1,16 +1,16 @@
-# Catalog metadata and root lyric policy proposal
+# Catalog metadata and root lyric policy contract
 
 **Contract ID:** OHK-META-030
-**Status:** Proposed; requires review and acceptance before implementation.
+**Status:** Accepted planning contract (PR #50); pure model implemented, integration pending.
 **Target:** 0.3.0; not part of released OpenHDK v0.2.0.
 
-This proposal supplements [OHK-LIB-030](KARAOKE-LIBRARY-CONTRACT.md),
+This contract supplements [OHK-LIB-030](KARAOKE-LIBRARY-CONTRACT.md),
 [OHK-LYR-030](LYRIC-TIMELINE-CONTRACT.md), and
 [OHK-ROOT-030](ROOT-REATTACHMENT-CONTRACT.md).
 [SPECIFICATION.md](SPECIFICATION.md) remains the authority for implemented
-behavior. Obligations below describe the proposed target. Current discovery
-validates SMF only; preparation takes explicit per-call KAR options. Neither
-root policy registration nor the catalog metadata below is implemented yet.
+behavior. Obligations below describe the accepted target. Current discovery
+validates SMF only; preparation takes explicit per-call KAR options. Pure policy/metadata value types are implemented; root registration, catalog
+fields, metadata extraction and override transactions remain unimplemented.
 
 ## 1. Scope and data separation
 
@@ -173,7 +173,7 @@ Required structured categories include InvalidConfiguration, NotFound,
 InvalidText, InvalidLyricTrack, LimitExceeded, SourceChanged, Cancelled,
 StorageFailure, and RevisionExhausted. Preserve nested parser/compiler/KAR errors
 and source positions. Define concrete API types in the implementation review;
-this proposal adds no numeric error-code serialization or public CLI grammar.
+this contract adds no numeric error-code serialization or public CLI grammar.
 
 Minimum independent fixtures:
 
@@ -194,9 +194,40 @@ Minimum independent fixtures:
 - prepared metadata differs from catalog when selection is overridden, retaining
   exact source provenance and old user overrides after later mutations.
 
-Review and accept this contract before implementing the model or integration.
-Then review pure bounded metadata/policy types, scan/preparation integration,
-and override/display transactions in slices. Hardware-free tests and both CI
+PR #50 accepted this contract. Review scan/preparation integration and
+override/display transactions in subsequent slices. Hardware-free tests and both CI
 jobs are required; NCN evidence, storage, application/CLI orchestration and manual
-Windows device/lyric validation remain separate gates. No implementation
-checkbox, suite count, version or released behavior changes in this proposal.
+Windows device/lyric validation remain separate gates. No released behavior changes are authorized by the implementation boundary below.
+
+
+## 8. Current pure model boundary
+
+`library/CatalogMetadata.hpp` implements policy values and validators, a compact
+lyric summary validator, primary-member/source-title provenance records,
+separate optional user override fields, nonempty bounded UTF-8 `MetadataText`,
+and a checked `MetadataPayloadBudget` ledger. Policies contain no limits;
+`karOptionsForPolicy` copies caller-provided extraction limits unchanged.
+Track existence is checked by extraction, not by the policy validator.
+
+`MetadataText::create` validates configuration and the byte ceiling before
+allocating. It reuses the strict UTF-8 decoder and C0 policy; empty input fails,
+spaces/BOM/combining bytes are preserved, and invalid input has no partial value.
+Allocation exceptions propagate. The decoder result and retained text copy
+coexist temporarily; integration must charge both, as well as its other owned
+copies. The ledger consumes a caller's remaining existing catalog allowance;
+it does not allocate a second budget or automatically inspect object graphs.
+A failed charge leaves the ledger unchanged and cannot overflow.
+
+Descriptors are control-path value records, not published catalog entries or
+proof of successful extraction. Callers must validate locators and construct
+verified metadata from canonical extraction during the later integration slice.
+There is no source artist field or complete lyric timeline in this compact model.
+Title provenance carries historical revision evidence; only the primary member
+is authoritative for current source content. Value copies own their strings.
+
+No root registration policy, scan readiness change, metadata extraction,
+preparation inheritance, override transaction, or display resolver is connected
+yet. Current SongCatalog/SongDiscovery/PreparedSong behavior is unchanged.
+The development tree has 16 hardware-free / 19 audio-enabled suites. The new
+`catalog-metadata-core` suite tests the pure boundary only; the integration
+fixtures in section 7 remain required. Released v0.2.0 remains unchanged.

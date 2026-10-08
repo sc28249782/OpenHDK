@@ -1,14 +1,14 @@
 # Test coverage and failure diagnostics
 
-The hardware-free configuration registers fifteen CTest suites: parser fixtures,
+The hardware-free configuration registers sixteen CTest suites: parser fixtures,
 MIDI diagnostics CLI, runtime mixer console, velocity curves, mixer presets,
 stereo peak limiter, song catalog core, filesystem discovery, lyric text
 decoding, KAR lyric extraction, media-clock consumption, media-clock
-publication, generation-bound lyric observation, single-song preparation, and root reattachment.
+publication, generation-bound lyric observation, single-song preparation, root reattachment, and pure catalog metadata/policy models.
 The audio-enabled test configuration adds FluidSynth headless
-playback, CLI help, and diagnostics error cases, for eighteen suites.
+playback, CLI help, and diagnostics error cases, for nineteen suites.
 These counts describe the development tree; v0.2.0 has six/nine respectively.
-Linux core CI runs fifteen hardware-free suites; Windows bootstrap runs all eighteen.
+Linux core CI runs sixteen hardware-free suites; Windows bootstrap runs all nineteen.
 
 ## Planned 0.3.0 acceptance
 
@@ -169,10 +169,18 @@ fail at Resolve without invoking preparation hooks; old same-library snapshots
 still prepare after a rescan. A retained snapshot from a destroyed owner cannot
 be adopted by a new owner. This is a lineage check, not snapshot tamper detection.
 
-## Proposed metadata and root-policy coverage
+## Catalog metadata and root-policy coverage
 
-[OHK-META-030](../docs/CATALOG-METADATA-POLICY-CONTRACT.md) specifies future
-fixtures for registration validation, inherited/overridden selection, source
-metadata provenance, member-token authority, invalidation, user overrides and
-staging budgets. These requirements are not current test coverage. The existing
-15 core / 18 audio-enabled suite counts remain unchanged.
+[OHK-META-030](../docs/CATALOG-METADATA-POLICY-CONTRACT.md) is accepted.
+`catalog-metadata-core` checks default/explicit/unknown policy values,
+unchanged extraction limits, source-dependent track validation boundaries,
+compact summary consistency, exact UTF-8 preservation, independent malformed
+vectors and offsets, C0 controls, empty-versus-absent semantics, 4096-byte and
+multibyte boundaries, owning override/provenance copies, and checked budget
+charges at/beyond the ceiling (including SIZE_MAX and coexisting copies).
+It uses no filesystem, synth, private seam, or media asset.
+
+Registration validation before I/O, inherited/overridden preparation,
+canonical metadata extraction, member-token authority in catalog entries,
+invalidation, override/display transactions and aggregate staging remain future
+integration coverage. Pure value validation does not claim those guarantees.
