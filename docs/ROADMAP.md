@@ -113,6 +113,11 @@ hardware-free tests; no BASS-family API or asset enters the repository.
   mute/solo/gain/pan, and a directed bus-routing graph before implementation.
 - Add configurable buses incrementally, beginning with a small deterministic
   graph rather than a fixed legacy stream count.
+- Specify a versioned Mixer Profile with bounded validation, resource identity,
+  migration, and transactional load behavior. Keep it distinct from v0.2
+  flags-only presets; enable fields only after their feature contracts exist.
+- Specify a separate master-gain stage before master DSP/limiting, including
+  migration from the existing synth gain without applying gain twice.
 - Preserve the real-time callback boundary while applying mixer changes.
 
 Exit gate: graph validity, routing, mute/solo semantics, and state changes have
@@ -131,6 +136,9 @@ deterministic regression coverage; Windows output is manually validated.
 ## 0.7.0 — audio routing
 
 - Add bus-to-output-channel routing for one multi-channel audio endpoint.
+- Keep PCM buses/endpoints distinct from MIDI destinations in the routing
+  model. External MIDI output remains deferred until note ownership,
+  timing, device identity, fallback, and route-change cleanup are specified.
 - Define channel-layout, endpoint-capability, and safe-fallback behavior.
 - Defer multiple physical audio devices until a separate clock-domain,
   buffering, resampling, and drift policy is accepted.
@@ -140,6 +148,8 @@ deterministic regression coverage; Windows output is manually validated.
 - Select a UI framework only after the mixer and routing contracts are stable.
 - Add mixer strips, meters, faders, group/bus routing, and System/Dark/Light
   themes through design tokens rather than copied UI code.
+- Show named bus destinations on mixer strips without requiring a dialog;
+  expose master volume and route/fallback state with accessible labels.
 - Consider a mixer-only companion mode only after the required MIDI/IPC input
   contract has been designed separately.
 
@@ -159,6 +169,9 @@ file I/O, allocation, parsing, or UI work.
 ## Later work
 
 - HNK3 authoring/container design.
-- Physical MIDI hardware regression rig.
+- Explicit opt-in drum-tuning playback policy with PreserveSource as the
+  proposed default; specify RPN/NRPN state and destination scope before code.
+- Physical MIDI hardware regression rig, including busy/disconnected devices,
+  same-device selection, reconnection, and note cleanup on route changes.
 - External MIDI input and mixer-sidecar mode.
 - Cross-platform work after Windows behaviour is stable.

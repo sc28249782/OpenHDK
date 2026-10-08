@@ -139,6 +139,17 @@ Persistent storage needs a selected/reviewed adapter. NCN24 normalization needs
 its evidence supplement before implementation. The public library model must
 not expose Qt, SQL, BASS, or FluidSynth types.
 
+## Future mixer model boundaries
+
+The [mixer reference](MIXER-REFERENCE.md) records planning lessons from Buai
+Music Mixer. Future MIDI destinations must be typed separately from PCM buses
+and audio endpoints; an external MIDI route bypasses the PCM mixer/limiter.
+A versioned Mixer Profile is a future whole-configuration model, separate from
+implemented flags-only mixer presets. Master gain and limiting need distinct
+stages when buses are added. Drum-tuning filters require an explicit playback
+policy that preserves source events and defines destination scope. These are
+planning boundaries, not implemented features or accepted detailed contracts.
+
 ## Deferred layers
 
 Multi-SoundFont layers and mappings, instrument grouping, bus routing, effects,

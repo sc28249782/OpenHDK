@@ -313,7 +313,8 @@ committed unless their redistribution rights are verified.
 
 The following require separate designs and acceptance before they may be
 claimed as supported: multi-SoundFont libraries and mappings, instrument
-classification, mixer groups and bus routing, output routing, karaoke lyrics
+classification, mixer groups and bus routing, versioned whole-system Mixer
+Profiles, drum-tuning compatibility policies, output routing, karaoke lyrics
 and timelines, song library/database, UI, physical or external MIDI, external
 effects/plugins, cross-platform guarantees, and any permissive parser
 compatibility mode.
