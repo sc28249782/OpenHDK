@@ -89,6 +89,11 @@ occurs when a SoundFont or audio device is unavailable.
   storage and application lyric orchestration remain open. A serialized observer
   binds lyrics to acknowledged generations. Single-song SMF/KAR preparation
   verifies catalog identity/source tokens; application integration is still needed.
+  The [persistence proposal](CATALOG-PERSISTENCE-CONTRACT.md) defines schema-1
+  checkpoints, fresh-owner restore, explicit reattachment and save/recovery.
+  Review it before codec/restore/fake-provider/native-provider slices. Native
+  durability and durable-first mutation wiring remain separate acceptance gates;
+  this proposed document does not complete the storage checkbox.
 - [ ] Integrate library preparation and lyric observation without changing
   released MIDI, mixer, or limiter semantics; validate Windows playback.
 - Research staged runtime layout and installers separately; this proposal

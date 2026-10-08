@@ -25,6 +25,7 @@ continue to apply independently of feature plans.
 | [MIXER-DYNAMICS-CONTRACT](MIXER-DYNAMICS-CONTRACT.md) | Implemented velocity curves, presets, and peak limiter. |
 | [KARAOKE-LIBRARY-CONTRACT](KARAOKE-LIBRARY-CONTRACT.md) | Accepted 0.3.0 contract; catalog/discovery/preparation slices implemented, full services gated. |
 | [CATALOG-METADATA-POLICY-CONTRACT](CATALOG-METADATA-POLICY-CONTRACT.md) | Accepted member/metadata and root-policy contract; models, scan/preparation and override/display transactions implemented. |
+| [CATALOG-PERSISTENCE-CONTRACT](CATALOG-PERSISTENCE-CONTRACT.md) | Proposed schema-1 checkpoint, fresh-owner restore, save/recovery and native-provider evidence gates; unimplemented. |
 | [ROOT-REATTACHMENT-CONTRACT](ROOT-REATTACHMENT-CONTRACT.md) | Accepted attachment-generation/transaction rules; local SMF/KAR reattachment implemented, CLI/storage gated. |
 | [LYRIC-TIMELINE-CONTRACT](LYRIC-TIMELINE-CONTRACT.md) | Accepted KAR/media timing contract; extraction/consumer and backend observation implemented; application/NCN24 gated. |
 | [MEDIA-CLOCK-HANDOFF-CONTRACT](MEDIA-CLOCK-HANDOFF-CONTRACT.md) | Accepted backend-clock handoff; FluidSynth publication implemented, generation-bound observer implemented; application integration pending. |
@@ -76,7 +77,8 @@ revisions; application orchestration remains pending. Local reattachment follows
 [accepted metadata/root policy contract](CATALOG-METADATA-POLICY-CONTRACT.md)
 is connected to root registration, canonical metadata extraction and policy
 inheritance, atomic user override records and owning display resolution.
-Review storage and NCN evidence contracts before their adapters; storage, NCN
+Review the [persistence proposal](CATALOG-PERSISTENCE-CONTRACT.md) and NCN
+evidence before their adapters; storage, NCN
 and application integration remain gated.
 Preserve the
 canonical SMF and mixer contracts unless a compatibility change is accepted.
