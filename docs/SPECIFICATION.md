@@ -270,8 +270,15 @@ later catalog changes. These changes do not alter standalone SMF diagnostics or 
 behavior and are not part of released v0.2.0.
 
 Persistent storage selection and the NCN format evidence supplement require
-reviewed designs before their adapters are implemented. Running-backend
-media-position publication has an accepted bounded contract in
+reviewed designs before their adapters are implemented.
+[CATALOG-PERSISTENCE-CONTRACT.md](CATALOG-PERSISTENCE-CONTRACT.md) proposes a
+bounded binary checkpoint, ID/counter-preserving fresh restore, unattached roots
+and an explicit commit/recovery protocol. It remains proposed and unimplemented.
+No checkpoint, autosave, migration or durable library service is provided today.
+Its native provider and durable-first mutation gates require separate evidence;
+this proposal does not approve a dependency or change released v0.2.0 behavior.
+
+Running-backend media-position publication has an accepted bounded contract in
 `MEDIA-CLOCK-HANDOFF-CONTRACT.md`. Its pure atomic cell and generation counter
 are implemented and the FluidSynth adapter publishes committed compiled
 positions, acknowledged generations, finish, failure, and explicit stop state.

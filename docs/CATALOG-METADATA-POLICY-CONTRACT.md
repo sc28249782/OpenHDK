@@ -354,3 +354,15 @@ per-operation allowance is not a cap on all externally retained snapshots,
 allocator overhead, or total process memory. Canonical SMF parse and extractor
 record bounds remain separate. Storage, NCN evidence, application/CLI orchestration
 and manual device/lyric validation remain pending. Released v0.2.0 is unchanged.
+
+
+## 11. Proposed persistence boundary
+
+[OHK-STORE-030](CATALOG-PERSISTENCE-CONTRACT.md) proposes preserving explicit
+user overrides, identity/allocator history and root policies in a bounded
+checkpoint. It deliberately omits source-derived metadata, validation authority
+and materialized display strings. A restored fresh owner would rebuild source
+metadata only after explicit root attachment and complete scanning. Existing
+in-process snapshots/prepared display retain their original ownership. The
+storage proposal requires acceptance and implementation; current override/display
+support does not claim persistence or authorize automatic legacy DB migration.

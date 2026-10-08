@@ -74,6 +74,11 @@ v0.2.0 behavior.
 | **source key** | A registered RootId and normalized relative primary-MIDI locator. |
 | **catalog snapshot** | An immutable reader view of one committed catalog revision. |
 | **Display metadata** | Owning resolved title/artist text with UserOverride, SourceTitle or FilenameFallback origin. Prepared display uses effective extraction and acquired overrides; it does not populate source title. |
+| **Catalog checkpoint** | Proposed complete persistent identity/root-policy/user-override projection under OHK-STORE-030. It does not persist Ready authority, source metadata, timelines or playback state. |
+| **Store sequence** | Proposed positive uint64 counter for actual checkpoint publications. It is separate from catalog revision, RootId attachment generation and backend playback generation. |
+| **Store commit token** | Proposed acknowledged store sequence plus the schema-defined final digest used to reject stale updates. It is not an authentication credential. |
+| **CommitUncertain** | Proposed outcome after publication begins when the committed disk state or required synchronization cannot be confirmed. The store refuses writes until explicit validated reconciliation. |
+| **Restored owner** | Proposed fresh catalog/discovery instance retaining saved IDs/counters/overrides with a new runtime lineage and no active root bindings. Explicit attachment and rescan precede Ready. |
 | **lyric cue** | A timed text fragment or display action retaining source order and media time. It does not imply a syllable or grapheme. |
 | **NCN24** | The proposed narrow MIDI/LYR/CUR profile, with a format-evidence gate before implementation. It is not all NCN dialects. |
 | **playback generation** | A nonzero identity for one admitted compiled-playback attempt. It prevents an observer from mixing positions and lyrics across attempts. |

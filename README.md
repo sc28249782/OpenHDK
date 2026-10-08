@@ -134,6 +134,11 @@ consumer binding has a serialized control-path observer. Single-song SMF/KAR
 preparation verifies the recorded source revision and owns
 both timelines; application/CLI integration remains pending.
 
+[The persistence proposal](docs/CATALOG-PERSISTENCE-CONTRACT.md) defines a bounded
+whole-catalog checkpoint, fresh-owner restore and explicit root reattachment.
+It requires review before codec/provider implementation; storage is not available
+in the development tree or released v0.2.0.
+
 ## Specification
 
 The normative contract for this implemented playback baseline is

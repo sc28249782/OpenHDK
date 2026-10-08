@@ -157,6 +157,14 @@ and dependency/license review require a separate reviewed change before the
 persistent adapter is implemented. No SQLite/Qt dependency is approved here.
 An existing HandyKaraoke database MUST NOT be opened for automatic migration.
 
+[OHK-STORE-030](CATALOG-PERSISTENCE-CONTRACT.md) proposes a bounded binary
+whole-catalog checkpoint as the first adapter, without a third-party database.
+Its schema, fresh-owner restore and commit/uncertainty rules require review.
+Explicit checkpoint save would acknowledge only its captured revision; it would
+not make earlier in-memory mutations automatically durable. Full persistent
+mutation integration must still stage changes, commit storage, then publish
+memory, preserving the rollback obligations above. No storage code exists yet.
+
 ## 6. Playback preparation
 
 Resolve a song by SongId from a snapshot. Ready is necessary but not sufficient:
@@ -313,6 +321,7 @@ cue/search cache. Atomic user title/artist replacement and owning display
 resolution are implemented under OHK-META-030, including prepared effective
 source context and acquired overrides. Durable storage, NCN
 lyrics and application playback orchestration remain unimplemented.
+The checkpoint/restore proposal in OHK-STORE-030 does not close those gates.
 Native mounted filesystem changes are not a hostile-writer sandbox guarantee.
 
 All methods require one serialized control path and must not be reentered from

@@ -204,3 +204,16 @@ limit or exhaustive coverage of all library allocators. The standalone target
 uses `OPENHDK_ENABLE_TEST_SEAMS=1` only for private revision exhaustion setup.
 A test-only global allocator is disarmed before assertions and fixture cleanup.
 Existing preparation budget fixtures now reserve materialized display text too.
+
+
+## Proposed persistence acceptance
+
+[OHK-STORE-030](../docs/CATALOG-PERSISTENCE-CONTRACT.md) defines future tests
+for independent schema/hash vectors, corruption/version/bounds rejection,
+allocator history, fresh-owner lineage, unattached roots and overrides, stale
+save tokens, locking, allocation/cancellation rollback, uncertain publication,
+explicit reconciliation and native process-interruption recovery. Provider tests
+must distinguish file synchronization from namespace/durability acknowledgment.
+Windows behavior requires Windows fixtures. Fake failure tests do not prove
+physical power-loss survival. No persistence suite or runtime support exists yet;
+this proposal leaves the current eighteen/twenty-one counts unchanged.
