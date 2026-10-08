@@ -321,7 +321,8 @@ cue/search cache. Atomic user title/artist replacement and owning display
 resolution are implemented under OHK-META-030, including prepared effective
 source context and acquired overrides. Durable storage, NCN
 lyrics and application playback orchestration remain unimplemented.
-The checkpoint/restore proposal in OHK-STORE-030 does not close those gates.
+The accepted OHK-STORE-030 has a pure detached codec; it does not close restore,
+native storage or durable-first wiring gates.
 Native mounted filesystem changes are not a hostile-writer sandbox guarantee.
 
 All methods require one serialized control path and must not be reentered from

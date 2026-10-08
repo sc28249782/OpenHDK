@@ -52,12 +52,13 @@ configured SoundFont that is missing or cannot be loaded continues to produce
 the corresponding structured recoverable backend error.
 
 
-## Proposed catalog storage boundary
+## Accepted catalog storage boundary
 
-[OHK-STORE-030](CATALOG-PERSISTENCE-CONTRACT.md) proposes a binary checkpoint
-codec plus native operating-system file/lock APIs. It is unaccepted and
-unimplemented. It introduces no package, linking change or redistributed asset.
-SQLite remains deferred; this proposal does not approve SQLite, Qt SQL or a
+[OHK-STORE-030](CATALOG-PERSISTENCE-CONTRACT.md) accepts a binary checkpoint
+codec plus future native operating-system file/lock APIs. The pure codec reuses
+the existing SHA-256 and text validators; restore/native stores remain pending.
+It introduces no package, linking change or redistributed asset.
+SQLite remains deferred; this contract does not approve SQLite, Qt SQL or a
 legacy database format. A later engine or copied-code choice must record the
 exact pin, source, license, notices and update/test plan before implementation.
 Native providers still require reviewed API/failure behavior and platform tests.

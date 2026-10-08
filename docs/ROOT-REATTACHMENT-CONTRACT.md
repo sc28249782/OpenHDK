@@ -41,12 +41,12 @@ within the same library and do not establish cross-library identity. A future
 storage adapter requires its own reviewed restore rules; no token or database
 format is selected here.
 
-The [persistence proposal](CATALOG-PERSISTENCE-CONTRACT.md) defines a future
-fresh-owner restore with no active directory bindings. It preserves stored
+The [accepted persistence contract](CATALOG-PERSISTENCE-CONTRACT.md) defines
+a future fresh-owner restore with no active directory bindings. It preserves stored
 generation history and treats the first explicit attachment, including a saved
 hint path, as a changed binding. The same-path no-op below requires an existing
-active binding. These restore rules are proposed; the current discovery owner
-still registers existing directories and has no restore API.
+active binding. These accepted restore rules await implementation beyond the pure
+codec; the current discovery owner still registers existing directories and has no restore API.
 
 ## 3. Directory validation and no-op requests
 

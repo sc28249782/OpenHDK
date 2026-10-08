@@ -163,7 +163,7 @@ Catalog methods are serialized and non-reentrant. Readers share acquired
 immutable snapshots. Lyric extraction and the pure consumer reuse compiled/session media time
 rather than an independent wall clock.
 
-The proposed [catalog persistence contract](CATALOG-PERSISTENCE-CONTRACT.md)
+The accepted [catalog persistence contract](CATALOG-PERSISTENCE-CONTRACT.md)
 keeps a bounded checkpoint codec and native store provider on the control path.
 The checkpoint projection retains IDs, allocator history, root policy/generation
 and user overrides; it imports no Ready authority, timeline or runtime lineage.
@@ -172,7 +172,9 @@ require explicit reattachment and a complete scan. Store sequence and catalog
 revision are separate. Explicit checkpoint success applies only to the captured
 revision; durable mutation wiring must commit storage before memory publication.
 CommitUncertain blocks further writes until explicit validated reconciliation.
-The proposal is unaccepted and unimplemented. It approves no database package
+The pure schema-1 codec and detached projection are implemented with complete
+validation and one operation-wide coexistence ledger. Live projection adapters,
+restore owners and native stores remain pending. It approves no database package
 and adds no callback-visible file, lock, decode, or recovery operation.
 
 The audio callback owns no filesystem, database, text-decoding, or UI work.
