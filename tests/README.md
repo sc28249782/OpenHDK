@@ -1,13 +1,14 @@
 # Test coverage and failure diagnostics
 
-The hardware-free configuration registers thirteen CTest suites: parser fixtures,
+The hardware-free configuration registers fourteen CTest suites: parser fixtures,
 MIDI diagnostics CLI, runtime mixer console, velocity curves, mixer presets,
 stereo peak limiter, song catalog core, filesystem discovery, lyric text
 decoding, KAR lyric extraction, media-clock consumption, media-clock
-publication, and generation-bound lyric observation. The audio-enabled test configuration adds FluidSynth headless
-playback, CLI help, and diagnostics error cases, for sixteen suites.
+publication, generation-bound lyric observation, and single-song preparation.
+The audio-enabled test configuration adds FluidSynth headless
+playback, CLI help, and diagnostics error cases, for seventeen suites.
 These counts describe the development tree; v0.2.0 has six/nine respectively.
-Linux core CI runs thirteen hardware-free suites; Windows bootstrap runs all sixteen.
+Linux core CI runs fourteen hardware-free suites; Windows bootstrap runs all seventeen.
 
 ## Planned 0.3.0 acceptance
 
@@ -138,3 +139,18 @@ observes start/first-block/finish through the public FluidSynth clock.
 An observer belongs to one backend lifetime. Controllers must clear it before
 requesting stop, replacement, or shutdown. Tests do not establish SongId/source
 matching, a complete CLI lyric service, or measured device synchronization.
+
+## Single-song preparation
+
+`song-preparation` uses temporary, synthetic SMF/KAR files. It covers SongId
+lookup, Ready/token admission, source-size limits, unchanged-size/mtime edits,
+rescan identity stability, changed/deleted/symlink-substituted sources,
+cancellation, nested parser/compiler/KAR errors, explicit TIS-620 selection,
+lyric limits, and NoLyrics. Prepared inputs survive rescan and owner destruction.
+A prepared lyric timeline is fed into the generation-bound observer without
+changing its retained catalog identity. No audio start is part of preparation.
+
+Native symlink setup may be unavailable on Windows; that fixture runs when the
+OS permits creation. Existing discovery coverage retains the native path checks.
+Root-registered lyric policies, NCN members, metadata indexing, persistent
+storage, and application playback lifecycle remain separate acceptance work.

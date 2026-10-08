@@ -344,6 +344,7 @@ has a separate [accepted bounded handoff design](MEDIA-CLOCK-HANDOFF-CONTRACT.md
 The FluidSynth adapter publishes committed render positions and lifecycle
 records. `LyricClockObserver` binds this consumer to an acknowledged generation
 and applies the handoff observer table on the serialized control path. Library
-preparation and application orchestration remain pending. Headless tests feed
+preparation now verifies one SMF/KAR source and owns both timelines;
+application orchestration remains pending. Headless tests feed
 actual PlaybackSession frame-derived positions, including pause, completion,
 and stop/reprepare; they do not establish device/GUI lyric synchronization.

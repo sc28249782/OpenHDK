@@ -121,8 +121,13 @@ owning immutable due batches. Its emitted cue prefix represents current display
 state; equal-time polling emits no repeat cues, and reset/stop clears the prefix.
 It does not construct UI state or publish clocks from the running backend.
 
-Catalog metadata, root reattachment, durable storage, application lyric
-orchestration, and library playback preparation remain unimplemented. The
+`SongDiscovery::prepare` resolves one Ready SongId from an acquired snapshot,
+checks containment and its SHA-256/byte-count token, and builds immutable MIDI
+and explicit-policy KAR timelines. A final reread detects preparation-time
+changes. PreparedSong retains catalog identity and its original snapshot;
+rescans never replace its buffers. Preparation does not start or replace audio.
+Catalog metadata, root reattachment, durable storage, NCN preparation, and
+application lyric orchestration remain unimplemented. The
 [media-clock handoff contract](MEDIA-CLOCK-HANDOFF-CONTRACT.md) defines a fixed
 atomic latest-value cell, playback generations, and successful-block commit
 rules. The backend publishes committed block positions, terminal state, and

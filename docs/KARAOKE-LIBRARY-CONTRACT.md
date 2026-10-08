@@ -253,10 +253,40 @@ and the initial candidate count once enumeration succeeds.
 
 This consistency check is not a filesystem-wide atomic snapshot. Edits after
 an individual final check are still possible; playback preparation MUST reopen
-and verify every source again before using it. This slice provides no prepared
-playback input. Root reattachment, source/member metadata, durable storage,
-catalog lyric integration, NCN lyrics, and playback preparation remain
-unimplemented. Pure KAR selection/cue extraction now exists separately under
+and verify every source again before using it.
+
+`SongDiscovery::prepare(snapshot, SongId, options)` now resolves a selected
+Ready primary SMF/KAR source with a recorded token from an acquired snapshot.
+It reopens through the same no-follow reader, checks the exact revision,
+compiles canonical MIDI, extracts KAR lyrics with explicit per-call encoding
+and track options, and rereads the source token before publishing. This
+supports one primary source, not NCN bundles. Discovery still validates SMF
+only; Ready does not imply that lyric extraction will succeed.
+
+`library/SongPreparation.hpp` returns an immutable PreparedSong that retains
+its original catalog snapshot, identity/locator/revision, compiled MIDI,
+extracted lyrics (including NoLyrics), and selected preparation options.
+No backend start, stop, replacement, or observer binding occurs in preparation.
+A caller supplies snapshots acquired from that same SongDiscovery instance;
+opaque IDs are not portable between library instances. Allocation failures,
+cancellation, content changes, and validation failures return no prepared
+result and do not change the catalog or previously prepared inputs. Nested
+parser, compiler, and KAR errors retain their codes and positions.
+
+SMF bytes are separately bounded at 64 MiB (lower limits are accepted). KAR
+source/cue/title/staging limits retain the extractor's existing bounds. Only
+one song is prepared per call; acquired catalog snapshots are shared rather
+than cloned into a staged scan. Temporary parser storage and the initial read
+buffer are released before the final reread. The compiled event storage and
+bounded lyric result remain owned by the prepared song. Control-path hooks
+AfterRead/AfterExtraction support deterministic mutation/cancellation tests.
+The reread is not an atomic filesystem transaction: later edits do not change
+the immutable prepared buffers, and hostile-writer guarantees are not claimed.
+
+Root reattachment, complete source/member metadata, root-registered lyric
+policies, durable storage, catalog lyric indexing, NCN lyrics, and application
+playback orchestration remain unimplemented. Pure KAR selection/cue extraction
+exists separately under
 lyric contract section 8; discovery does not call it or claim lyric readiness.
 Native mounted filesystem changes are not a hostile-writer sandbox guarantee.
 

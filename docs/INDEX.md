@@ -68,7 +68,8 @@ requirements. Persistent storage selection and NCN24 format evidence remain
 explicit pre-implementation gates. Running-backend publication has a
 [accepted handoff contract](MEDIA-CLOCK-HANDOFF-CONTRACT.md). The FluidSynth
 adapter publishes it and a serialized observer binds the acknowledged
-generation; library/application orchestration remains pending. Preserve the
+generation. Single-song preparation binds catalog identity and verifies source
+revisions; application orchestration remains pending. Preserve the
 canonical SMF and mixer contracts unless a compatibility change is accepted.
 
 This review does not establish KAR/NCN support or select a UI framework. Later
