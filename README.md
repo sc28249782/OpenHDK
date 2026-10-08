@@ -120,7 +120,8 @@ library or KAR/NCN services.
 The accepted
 [running-backend media-clock handoff](docs/MEDIA-CLOCK-HANDOFF-CONTRACT.md)
 defines the next observation boundary. Its pure atomic publication cell and
-generation counter are implemented; backend and consumer integration remain.
+generation counter are connected to compiled FluidSynth playback; lyric
+consumer binding remains.
 
 ## Specification
 

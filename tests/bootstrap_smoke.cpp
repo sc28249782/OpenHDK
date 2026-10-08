@@ -13,6 +13,14 @@
 #include <limits>
 #include <thread>
 #include <vector>
+namespace OpenHDK {
+struct FluidSynthBackendTestAccess {
+  [[nodiscard]] static bool renderFrames(FluidSynthBackend& backend, float* samples,
+                                         std::size_t frames) noexcept {
+    return backend.renderFramesForTesting(samples, frames);
+  }
+};
+}
 namespace {
 bool isLimitedPcm(std::span<const float> samples) {
   constexpr float ceilingTolerance = 1.0e-6F;
@@ -40,7 +48,30 @@ int main() {
   OPENHDK_FAIL_IF(16, !parsedMidi.file());
   const auto compiledTimeline = OpenHDK::SmfTimelineCompiler::compile(*parsedMidi.file());
   OPENHDK_FAIL_IF(17, !compiledTimeline.timeline());
+  constexpr std::array<std::uint8_t, 29> distantEndMidi{
+    'M','T','h','d',0,0,0,6,0,0,0,1,1,0xE0,
+    'M','T','r','k',0,0,0,7,0xFF,0xFF,0xFF,0x7F,0xFF,0x2F,0};
+  const auto distantEndParsed = OpenHDK::SmfParser::parse(distantEndMidi);
+  OPENHDK_FAIL_IF(69, !distantEndParsed.file());
+  const auto distantEndTimeline = OpenHDK::SmfTimelineCompiler::compile(*distantEndParsed.file());
+  OPENHDK_FAIL_IF(70, !distantEndTimeline.timeline());
   OpenHDK::FluidSynthBackend backend; OpenHDK::AudioBackendStatus status;
+  const auto initialClock = backend.mediaClock();
+  OPENHDK_FAIL_IF(61, initialClock.status != OpenHDK::MediaClockReadStatus::Snapshot
+                      || !initialClock.snapshot.has_value()
+                      || initialClock.snapshot->generation != 0U
+                      || initialClock.snapshot->source != OpenHDK::MediaClockSource::None
+                      || initialClock.snapshot->phase != OpenHDK::MediaClockPhase::Unavailable);
+  OpenHDK::AudioBackendPlaybackStart rejectedStart{999U};
+  OPENHDK_FAIL_IF(67, backend.playCompiledTimeline(*compiledTimeline.timeline(), rejectedStart, status)
+                      || rejectedStart.generation != 0U);
+  const auto rejectedClock = backend.mediaClock();
+  OPENHDK_FAIL_IF(68, rejectedClock.status != OpenHDK::MediaClockReadStatus::Snapshot
+                      || !rejectedClock.snapshot.has_value()
+                      || rejectedClock.snapshot->revision != initialClock.snapshot->revision
+                      || rejectedClock.snapshot->generation != 0U
+                      || rejectedClock.snapshot->source != OpenHDK::MediaClockSource::None
+                      || rejectedClock.snapshot->phase != OpenHDK::MediaClockPhase::Unavailable);
   std::vector<std::string> presetNames{"unchanged"};
   OPENHDK_FAIL_IF(48, backend.saveRuntimeMixerPreset("Default", status)
                       || backend.recallRuntimeMixerPreset("Default", status)
@@ -88,11 +119,26 @@ int main() {
       || backend.setRuntimeChannelGain(0U, std::numeric_limits<float>::infinity(), status)
       || backend.setRuntimeChannelMuted(16U, true, status)
       || backend.setRuntimeChannelSoloed(16U, true, status));
-  OPENHDK_FAIL_IF(18, !backend.playCompiledTimeline(*compiledTimeline.timeline(), status) || !backend.isPlaying());
+  OpenHDK::AudioBackendPlaybackStart firstStart;
+  OPENHDK_FAIL_IF(18, !backend.playCompiledTimeline(*compiledTimeline.timeline(), firstStart, status)
+                      || !backend.isPlaying() || firstStart.generation == 0U);
+  const auto firstStartClock = backend.mediaClock();
+  OPENHDK_FAIL_IF(62, firstStartClock.status != OpenHDK::MediaClockReadStatus::Snapshot
+                      || !firstStartClock.snapshot.has_value()
+                      || firstStartClock.snapshot->generation != firstStart.generation
+                      || firstStartClock.snapshot->mediaMicroseconds != 0U
+                      || firstStartClock.snapshot->source != OpenHDK::MediaClockSource::CompiledTimeline
+                      || firstStartClock.snapshot->phase != OpenHDK::MediaClockPhase::Playing);
   OPENHDK_FAIL_IF(19, backend.playMidiFile(midi, status) || status.error != OpenHDK::AudioBackendError::MidiPlaybackFailed);
   std::array<float, 256> compiledPcm{};
   OPENHDK_FAIL_IF(24, !backend.setRuntimeChannelMuted(0U, true, status));
   OPENHDK_FAIL_IF(27, !backend.renderStereo(compiledPcm, status));
+  const auto firstBlockClock = backend.mediaClock();
+  OPENHDK_FAIL_IF(63, firstBlockClock.status != OpenHDK::MediaClockReadStatus::Snapshot
+                      || !firstBlockClock.snapshot.has_value()
+                      || firstBlockClock.snapshot->generation != firstStart.generation
+                      || firstBlockClock.snapshot->mediaMicroseconds == 0U
+                      || firstBlockClock.snapshot->phase != OpenHDK::MediaClockPhase::Playing);
   OPENHDK_FAIL_IF(36, !isLimitedPcm(compiledPcm));
   constexpr float runtimeMuteSilenceThreshold = 1.0e-6F;
   OPENHDK_FAIL_IF(28, std::any_of(compiledPcm.begin(), compiledPcm.end(), [runtimeMuteSilenceThreshold](float sample) {
@@ -104,7 +150,50 @@ int main() {
     OPENHDK_FAIL_IF(36, !isLimitedPcm(compiledPcm));
   }
   OPENHDK_FAIL_IF(21, backend.isPlaying());
-  OPENHDK_FAIL_IF(30, !backend.playCompiledTimeline(*compiledTimeline.timeline(), status) || !backend.isPlaying());
+  const auto firstFinishedClock = backend.mediaClock();
+  OPENHDK_FAIL_IF(64, firstFinishedClock.status != OpenHDK::MediaClockReadStatus::Snapshot
+                      || !firstFinishedClock.snapshot.has_value()
+                      || firstFinishedClock.snapshot->generation != firstStart.generation
+                      || firstFinishedClock.snapshot->mediaMicroseconds < 500000U
+                      || firstFinishedClock.snapshot->phase != OpenHDK::MediaClockPhase::Finished);
+  OpenHDK::AudioBackendPlaybackStart failedRenderStart;
+  OPENHDK_FAIL_IF(71, !backend.playCompiledTimeline(*distantEndTimeline.timeline(),
+                                                    failedRenderStart, status)
+                      || !backend.renderStereo(compiledPcm, status));
+  const auto beforeFailedRender = backend.mediaClock();
+  OPENHDK_FAIL_IF(72, beforeFailedRender.status != OpenHDK::MediaClockReadStatus::Snapshot
+                      || !beforeFailedRender.snapshot.has_value()
+                      || beforeFailedRender.snapshot->generation != failedRenderStart.generation
+                      || beforeFailedRender.snapshot->mediaMicroseconds == 0U
+                      || beforeFailedRender.snapshot->phase != OpenHDK::MediaClockPhase::Playing
+                      || OpenHDK::FluidSynthBackendTestAccess::renderFrames(
+                          backend, compiledPcm.data(),
+                          static_cast<std::size_t>(std::numeric_limits<int>::max()) + 1U));
+  const auto failedRenderClock = backend.mediaClock();
+  OPENHDK_FAIL_IF(73, backend.isPlaying()
+                      || failedRenderClock.status != OpenHDK::MediaClockReadStatus::Snapshot
+                      || !failedRenderClock.snapshot.has_value()
+                      || failedRenderClock.snapshot->generation != failedRenderStart.generation
+                      || failedRenderClock.snapshot->mediaMicroseconds
+                          != beforeFailedRender.snapshot->mediaMicroseconds
+                      || failedRenderClock.snapshot->phase != OpenHDK::MediaClockPhase::Failed
+                      || failedRenderClock.snapshot->failure != OpenHDK::MediaClockFailure::RenderFailed);
+  OpenHDK::AudioBackendPlaybackStart stoppedStart;
+  OPENHDK_FAIL_IF(74, !backend.playCompiledTimeline(*distantEndTimeline.timeline(),
+                                                    stoppedStart, status)
+                      || !backend.stopPlayback(status) || backend.isPlaying());
+  const auto stoppedClock = backend.mediaClock();
+  OPENHDK_FAIL_IF(75, stoppedClock.status != OpenHDK::MediaClockReadStatus::Snapshot
+                      || !stoppedClock.snapshot.has_value()
+                      || stoppedClock.snapshot->generation != stoppedStart.generation
+                      || stoppedClock.snapshot->mediaMicroseconds != 0U
+                      || stoppedClock.snapshot->source != OpenHDK::MediaClockSource::CompiledTimeline
+                      || stoppedClock.snapshot->phase != OpenHDK::MediaClockPhase::Stopped
+                      || stoppedClock.snapshot->failure != OpenHDK::MediaClockFailure::None);
+  OpenHDK::AudioBackendPlaybackStart secondStart;
+  OPENHDK_FAIL_IF(30, !backend.playCompiledTimeline(*compiledTimeline.timeline(), secondStart, status)
+                      || !backend.isPlaying()
+                      || secondStart.generation <= stoppedStart.generation);
   bool compiledHeard{};
   for (std::size_t block = 0U; block < 1024U && backend.isPlaying(); ++block) {
     OPENHDK_FAIL_IF(20, !backend.renderStereo(compiledPcm, status));
@@ -115,6 +204,13 @@ int main() {
   OPENHDK_FAIL_IF(26, !backend.resetRuntimeMixer(status));
   OPENHDK_FAIL_IF(49, !backend.saveRuntimeMixerPreset("Default", status));
   OPENHDK_FAIL_IF(4, !backend.playMidiFile(midi, status));
+  const auto legacyClock = backend.mediaClock();
+  OPENHDK_FAIL_IF(65, legacyClock.status != OpenHDK::MediaClockReadStatus::Snapshot
+                      || !legacyClock.snapshot.has_value()
+                      || legacyClock.snapshot->generation != 0U
+                      || legacyClock.snapshot->mediaMicroseconds != 0U
+                      || legacyClock.snapshot->source != OpenHDK::MediaClockSource::LegacyPlayer
+                      || legacyClock.snapshot->phase != OpenHDK::MediaClockPhase::Unavailable);
   OPENHDK_FAIL_IF(25, backend.setRuntimeChannelMuted(0U, true, status)
       || status.error != OpenHDK::AudioBackendError::MidiPlaybackFailed);
   OPENHDK_FAIL_IF(50, backend.recallRuntimeMixerPreset("Default", status)
@@ -129,7 +225,9 @@ int main() {
     OPENHDK_FAIL_IF(37, !isLimitedPcm(legacyPcm));
   }
   OPENHDK_FAIL_IF(32, !heardLegacy || backend.isPlaying());
-  OPENHDK_FAIL_IF(33, !backend.playCompiledTimeline(*compiledTimeline.timeline(), status) || !backend.isPlaying());
+  OpenHDK::AudioBackendPlaybackStart thirdStart;
+  OPENHDK_FAIL_IF(33, !backend.playCompiledTimeline(*compiledTimeline.timeline(), thirdStart, status)
+                      || !backend.isPlaying() || thirdStart.generation <= secondStart.generation);
   for (std::size_t block = 0U; block < 1024U && backend.isPlaying(); ++block) {
     OPENHDK_FAIL_IF(34, !backend.renderStereo(compiledPcm, status));
     OPENHDK_FAIL_IF(36, !isLimitedPcm(compiledPcm));
@@ -233,6 +331,13 @@ int main() {
                       || !backend.listRuntimeMixerPresets(presetNames, status)
                       || presetNames != std::vector<std::string>{"Audible", "Default"});
   backend.shutdown(); std::filesystem::remove(midi);
+  const auto shutdownClock = backend.mediaClock();
+  OPENHDK_FAIL_IF(66, shutdownClock.status != OpenHDK::MediaClockReadStatus::Snapshot
+                      || !shutdownClock.snapshot.has_value()
+                      || shutdownClock.snapshot->generation != 0U
+                      || shutdownClock.snapshot->mediaMicroseconds != 0U
+                      || shutdownClock.snapshot->source != OpenHDK::MediaClockSource::None
+                      || shutdownClock.snapshot->phase != OpenHDK::MediaClockPhase::Unavailable);
   OPENHDK_FAIL_IF(35, !completedCompiledAfterLegacy);
   return 0;
 }

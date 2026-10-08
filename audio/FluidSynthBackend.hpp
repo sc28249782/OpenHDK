@@ -4,6 +4,7 @@
 #include "audio/AudioBackend.hpp"
 #include <memory>
 namespace OpenHDK {
+struct FluidSynthBackendTestAccess;
 class FluidSynthBackend final : public AudioBackend {
 public:
   FluidSynthBackend();
@@ -13,7 +14,9 @@ public:
   [[nodiscard]] AudioBackendInfo info() const noexcept override;
   bool initialize(const AudioBackendConfig&, AudioBackendStatus&) override;
   bool playMidiFile(const std::filesystem::path&, AudioBackendStatus&) override;
-  bool playCompiledTimeline(const SmfTimeline&, AudioBackendStatus&) override;
+  using AudioBackend::playCompiledTimeline;
+  bool playCompiledTimeline(const SmfTimeline&, AudioBackendPlaybackStart&, AudioBackendStatus&) override;
+  bool stopPlayback(AudioBackendStatus&) override;
   bool renderStereo(std::span<float>, AudioBackendStatus&) override;
   bool setVolume(float volume, AudioBackendStatus&) override;
   bool setMuted(bool muted, AudioBackendStatus&) override;
@@ -29,8 +32,11 @@ public:
   [[nodiscard]] bool isMuted() const noexcept override;
   [[nodiscard]] bool isPlaying() const noexcept override;
   [[nodiscard]] bool hasActiveDevice() const noexcept override;
+  [[nodiscard]] MediaClockReadResult mediaClock() const noexcept override;
   void shutdown() noexcept override;
 private:
+  friend struct FluidSynthBackendTestAccess;
+  [[nodiscard]] bool renderFramesForTesting(float* samples, std::size_t frames) noexcept;
   struct Impl;
   std::unique_ptr<Impl> impl_;
 };

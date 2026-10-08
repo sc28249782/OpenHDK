@@ -12,7 +12,9 @@ public:
   [[nodiscard]] OpenHDK::AudioBackendInfo info() const noexcept override { return {}; }
   bool initialize(const OpenHDK::AudioBackendConfig&, OpenHDK::AudioBackendStatus&) override { return false; }
   bool playMidiFile(const std::filesystem::path&, OpenHDK::AudioBackendStatus&) override { return false; }
-  bool playCompiledTimeline(const OpenHDK::SmfTimeline&, OpenHDK::AudioBackendStatus&) override { return false; }
+  bool playCompiledTimeline(const OpenHDK::SmfTimeline&, OpenHDK::AudioBackendPlaybackStart&,
+                            OpenHDK::AudioBackendStatus&) override { return false; }
+  bool stopPlayback(OpenHDK::AudioBackendStatus&) override { return false; }
   bool renderStereo(std::span<float>, OpenHDK::AudioBackendStatus&) override { return false; }
   bool setVolume(float, OpenHDK::AudioBackendStatus&) override { return false; }
   bool setMuted(bool, OpenHDK::AudioBackendStatus&) override { return false; }
@@ -49,6 +51,7 @@ public:
   [[nodiscard]] bool isMuted() const noexcept override { return false; }
   [[nodiscard]] bool isPlaying() const noexcept override { return false; }
   [[nodiscard]] bool hasActiveDevice() const noexcept override { return false; }
+  [[nodiscard]] OpenHDK::MediaClockReadResult mediaClock() const noexcept override { return {}; }
   void shutdown() noexcept override {}
 
   std::size_t lastChannel{};

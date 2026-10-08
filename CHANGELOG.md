@@ -18,8 +18,11 @@ This file records the user-visible scope of each OpenHDK source release.
   owning observed prefix, rejects backward positions, and clears traversal on
   reset/stop. The accepted backend-clock handoff now has a pure lock-free
   latest-value cell and monotonic playback-generation counter with bounded
-  reads and explicit exhaustion. Catalog preparation, backend publication, and
-  audio/CLI lyric integration remain unimplemented.
+  reads and explicit exhaustion. Compiled FluidSynth playback now acknowledges
+  its generation and publishes committed render positions and terminal state;
+  explicit backend stop publishes Stopped, and legacy playback reports that no
+  compiled clock is available. Catalog preparation and audio/CLI lyric-consumer
+  binding remain unimplemented.
 
 ## 0.2.0 - 2026-10-06
 

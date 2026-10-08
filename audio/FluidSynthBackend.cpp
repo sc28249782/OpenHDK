@@ -89,7 +89,7 @@ private:
 };
 }
 struct FluidSynthBackend::Impl {
-  fluid_settings_t* settings{}; fluid_synth_t* synth{}; fluid_player_t* player{}; ma_context context{}; ma_device device{}; PlaybackSession session{}; std::unique_ptr<FluidSynthMidiCommandSink> midiSink{}; MidiRuntimeMixer runtimeMixer{}; MidiChannelGains channelGains{defaultMidiChannelGains()}; float volume{1.0F}; std::uint32_t sampleRate{}; bool muted{}; std::atomic<bool> sessionActive{false}; bool contextInitialized{}; bool deviceInitialized{}; bool initialized{};
+  fluid_settings_t* settings{}; fluid_synth_t* synth{}; fluid_player_t* player{}; ma_context context{}; ma_device device{}; PlaybackSession session{}; std::unique_ptr<FluidSynthMidiCommandSink> midiSink{}; MidiRuntimeMixer runtimeMixer{}; MediaClockPublicationCell mediaClock{}; PlaybackGenerationCounter generations{}; MidiChannelGains channelGains{defaultMidiChannelGains()}; float volume{1.0F}; std::uint32_t sampleRate{}; std::uint64_t activeGeneration{}; std::uint64_t lastCommittedMediaMicroseconds{}; bool muted{}; std::atomic<bool> sessionActive{false}; bool contextInitialized{}; bool deviceInitialized{}; bool initialized{};
   void silenceActiveSounds() {
     if (synth == nullptr) return;
     for (int channel = 0; channel < 16; ++channel) {
@@ -104,9 +104,24 @@ struct FluidSynthBackend::Impl {
     fail(status, AudioBackendError::InvalidConfiguration, "Initialize the audio backend before using mixer presets.");
     return false;
   }
-  void discardSession() {
+  void clearSession() {
     silenceActiveSounds();
     if (session.state() != PlaybackSessionState::Idle) static_cast<void>(session.stop());
+    sessionActive.store(false, std::memory_order_release);
+  }
+  [[nodiscard]] bool publishClock(MediaClockSource source, MediaClockPhase phase,
+                                  MediaClockFailure failure, std::uint64_t generation,
+                                  std::uint64_t mediaMicroseconds) {
+    return mediaClock.publish({generation, mediaMicroseconds, source, phase, failure})
+        == MediaClockPublishStatus::Published;
+  }
+  void failCompiledSession(MediaClockFailure failure) {
+    const auto generation = activeGeneration;
+    const auto mediaMicroseconds = lastCommittedMediaMicroseconds;
+    silenceActiveSounds();
+    if (session.state() != PlaybackSessionState::Idle) static_cast<void>(session.stop());
+    static_cast<void>(publishClock(MediaClockSource::CompiledTimeline, MediaClockPhase::Failed,
+                                   failure, generation, mediaMicroseconds));
     sessionActive.store(false, std::memory_order_release);
   }
   bool eventFrameOffset(const PlaybackSessionRenderResult& renderResult,
@@ -148,7 +163,7 @@ struct FluidSynthBackend::Impl {
       midiSink->synchronizeRuntimeMixer();
       const auto renderResult = session.render(frames);
       if (!renderResult.succeeded()) {
-        discardSession();
+        failCompiledSession(MediaClockFailure::RenderFailed);
         return false;
       }
       const auto events = renderResult.events();
@@ -157,16 +172,20 @@ struct FluidSynthBackend::Impl {
       while (eventIndex < events.size()) {
         std::size_t eventOffset{};
         if (!eventFrameOffset(renderResult, events[eventIndex].timeMicroseconds(), frames, eventOffset)
-            || eventOffset < renderedFrames
-            || !renderSynthFrames(samples + renderedFrames * kChannels, eventOffset - renderedFrames)) {
-          discardSession();
+            || eventOffset < renderedFrames) {
+          failCompiledSession(MediaClockFailure::DispatchFailed);
+          return false;
+        }
+        if (!renderSynthFrames(samples + renderedFrames * kChannels,
+                               eventOffset - renderedFrames)) {
+          failCompiledSession(MediaClockFailure::RenderFailed);
           return false;
         }
         std::size_t dispatchEnd = eventIndex + 1U;
         while (dispatchEnd < events.size()) {
           std::size_t nextOffset{};
           if (!eventFrameOffset(renderResult, events[dispatchEnd].timeMicroseconds(), frames, nextOffset)) {
-            discardSession();
+            failCompiledSession(MediaClockFailure::DispatchFailed);
             return false;
           }
           if (nextOffset != eventOffset) break;
@@ -174,24 +193,36 @@ struct FluidSynthBackend::Impl {
         }
         if (!SmfMidiEventDispatcher::dispatch(events.subspan(eventIndex, dispatchEnd - eventIndex),
                                                *midiSink, velocityCurve)) {
-          discardSession();
+          failCompiledSession(MediaClockFailure::DispatchFailed);
           return false;
         }
         renderedFrames = eventOffset;
         eventIndex = dispatchEnd;
       }
       if (!renderSynthFrames(samples + renderedFrames * kChannels, frames - renderedFrames)) {
-        discardSession();
+        failCompiledSession(MediaClockFailure::RenderFailed);
         return false;
       }
+      lastCommittedMediaMicroseconds = renderResult.blockEndMicroseconds();
       if (session.endOfTimelineReached()) {
         const auto completion = session.completeReleaseTail();
         if (!completion.succeeded()) {
-          discardSession();
+          failCompiledSession(MediaClockFailure::CompletionFailed);
           return false;
         }
         silenceActiveSounds();
+        if (!publishClock(MediaClockSource::CompiledTimeline, MediaClockPhase::Finished,
+                          MediaClockFailure::None, activeGeneration,
+                          lastCommittedMediaMicroseconds)) {
+          clearSession();
+          return false;
+        }
         sessionActive.store(false, std::memory_order_release);
+      } else if (!publishClock(MediaClockSource::CompiledTimeline, MediaClockPhase::Playing,
+                               MediaClockFailure::None, activeGeneration,
+                               lastCommittedMediaMicroseconds)) {
+        clearSession();
+        return false;
       }
       return true;
     }
@@ -208,6 +239,10 @@ FluidSynthBackend::~FluidSynthBackend() { shutdown(); }
 AudioBackendInfo FluidSynthBackend::info() const noexcept { return {"fluidsynth-miniaudio", "FluidSynth + miniaudio", AudioCapability::MidiSynthesis | AudioCapability::DeviceOutput | AudioCapability::Mixing}; }
 bool FluidSynthBackend::initialize(const AudioBackendConfig& config, AudioBackendStatus& status) {
   shutdown();
+  if (impl_->mediaClock.tryRead().status == MediaClockReadStatus::Exhausted) {
+    fail(status, AudioBackendError::PlaybackObservationFailed,
+         "Media-clock publication is exhausted; create a new backend object."); return false;
+  }
   if (!applyMidiVelocityCurve(0U, config.velocityCurve)) { fail(status, AudioBackendError::InvalidConfiguration, "Unknown MIDI velocity curve."); return false; }
   if (config.sampleRate == 0U) { fail(status, AudioBackendError::InvalidConfiguration, "Sample rate must be greater than zero."); return false; }
   if (!isNormalizedVolume(config.volume) || !areNormalizedMidiChannelGains(config.channelGains)) { fail(status, AudioBackendError::InvalidConfiguration, "Volume and every MIDI channel gain must be finite and between 0.0 and 1.0."); return false; }
@@ -250,18 +285,66 @@ bool FluidSynthBackend::playMidiFile(const std::filesystem::path& midi, AudioBac
   if (impl_->sessionActive.load(std::memory_order_acquire)) { fail(status, AudioBackendError::MidiPlaybackFailed, "Compiled timeline playback is active."); return false; }
   if (impl_->channelGains != defaultMidiChannelGains() || !impl_->runtimeMixer.isDefault()) { fail(status, AudioBackendError::MidiPlaybackFailed, "MIDI channel mixing requires compiled timeline playback."); return false; }
   if (!std::filesystem::is_regular_file(midi)) { fail(status, AudioBackendError::MidiFileNotFound, "MIDI file was not found: " + midi.string()); return false; }
+  bool deviceStopped{};
+  if (impl_->deviceInitialized && ma_device_stop(&impl_->device) != MA_SUCCESS) {
+    fail(status, AudioBackendError::AudioDeviceUnavailable,
+         "Audio output device could not stop for legacy MIDI playback."); return false;
+  }
+  deviceStopped = impl_->deviceInitialized;
+  const auto restoreDevice = [&]() noexcept {
+    if (deviceStopped) static_cast<void>(ma_device_start(&impl_->device));
+  };
+  const auto previousClock = impl_->mediaClock.tryRead();
+  if (previousClock.status != MediaClockReadStatus::Snapshot
+      || !previousClock.snapshot.has_value()) {
+    restoreDevice();
+    fail(status, AudioBackendError::PlaybackObservationFailed,
+         previousClock.status == MediaClockReadStatus::Exhausted
+             ? "Media-clock publication is exhausted."
+             : "Media-clock publication was unstable after device stop.");
+    return false;
+  }
   if (impl_->player != nullptr) { delete_fluid_player(impl_->player); impl_->player = nullptr; }
   impl_->player = new_fluid_player(impl_->synth);
   if (impl_->player == nullptr || fluid_player_add(impl_->player, midi.string().c_str()) != FLUID_OK || fluid_player_play(impl_->player) != FLUID_OK) {
     if (impl_->player != nullptr) { delete_fluid_player(impl_->player); impl_->player = nullptr; }
+    restoreDevice();
     fail(status, AudioBackendError::MidiPlaybackFailed, "FluidSynth could not start MIDI playback: " + midi.string()); return false;
+  }
+  if (!impl_->publishClock(MediaClockSource::LegacyPlayer, MediaClockPhase::Unavailable,
+                           MediaClockFailure::None, 0U, 0U)) {
+    delete_fluid_player(impl_->player); impl_->player = nullptr;
+    restoreDevice();
+    fail(status, AudioBackendError::PlaybackObservationFailed,
+         "Media-clock publication is exhausted."); return false;
+  }
+  if (impl_->deviceInitialized && ma_device_start(&impl_->device) != MA_SUCCESS) {
+    delete_fluid_player(impl_->player); impl_->player = nullptr;
+    if (previousClock.status == MediaClockReadStatus::Snapshot
+        && previousClock.snapshot.has_value()) {
+      static_cast<void>(impl_->mediaClock.publish(*previousClock.snapshot));
+    }
+    restoreDevice();
+    fail(status, AudioBackendError::AudioDeviceUnavailable,
+         "Audio output device could not resume after legacy MIDI preparation."); return false;
   }
   ok(status); return true;
 }
-bool FluidSynthBackend::playCompiledTimeline(const SmfTimeline& timeline, AudioBackendStatus& status) {
+bool FluidSynthBackend::playCompiledTimeline(const SmfTimeline& timeline,
+                                             AudioBackendPlaybackStart& start,
+                                             AudioBackendStatus& status) {
+  start = {};
   if (!impl_->initialized || impl_->synth == nullptr) { fail(status, AudioBackendError::InvalidConfiguration, "Initialize the audio backend before compiled timeline playback."); return false; }
   if (impl_->player != nullptr && fluid_player_get_status(impl_->player) == FLUID_PLAYER_PLAYING) {
     fail(status, AudioBackendError::MidiPlaybackFailed, "FluidSynth file-player playback is active."); return false;
+  }
+  if (!impl_->generations.canAdmit()) {
+    fail(status, AudioBackendError::PlaybackObservationFailed,
+         "Playback generation is exhausted."); return false;
+  }
+  if (impl_->mediaClock.tryRead().status == MediaClockReadStatus::Exhausted) {
+    fail(status, AudioBackendError::PlaybackObservationFailed,
+         "Media-clock publication is exhausted."); return false;
   }
   bool deviceStopped{};
   if (impl_->deviceInitialized && ma_device_stop(&impl_->device) != MA_SUCCESS) {
@@ -271,20 +354,105 @@ bool FluidSynthBackend::playCompiledTimeline(const SmfTimeline& timeline, AudioB
   const auto restoreDevice = [&]() noexcept {
     if (deviceStopped) static_cast<void>(ma_device_start(&impl_->device));
   };
+  const auto clockBeforeAdmission = impl_->mediaClock.tryRead();
+  if (clockBeforeAdmission.status != MediaClockReadStatus::Snapshot
+      || !clockBeforeAdmission.snapshot.has_value()) {
+    restoreDevice();
+    fail(status, AudioBackendError::PlaybackObservationFailed,
+         clockBeforeAdmission.status == MediaClockReadStatus::Exhausted
+             ? "Media-clock publication is exhausted."
+             : "Media-clock publication was unstable after device stop.");
+    return false;
+  }
   if (impl_->player != nullptr) { delete_fluid_player(impl_->player); impl_->player = nullptr; }
-  impl_->discardSession();
+  impl_->clearSession();
+  const auto generation = impl_->generations.admit();
+  if (!generation.has_value()) {
+    restoreDevice();
+    fail(status, AudioBackendError::PlaybackObservationFailed,
+         "Playback generation is exhausted."); return false;
+  }
+  impl_->activeGeneration = *generation;
+  impl_->lastCommittedMediaMicroseconds = 0U;
+  if (!impl_->publishClock(MediaClockSource::CompiledTimeline, MediaClockPhase::Preparing,
+                           MediaClockFailure::None, *generation, 0U)) {
+    restoreDevice();
+    fail(status, AudioBackendError::PlaybackObservationFailed,
+         "Media-clock publication is exhausted."); return false;
+  }
   impl_->midiSink->resetChannelVolumes();
   const auto preparation = impl_->session.prepare(timeline, impl_->sampleRate);
   if (!preparation.succeeded() || !impl_->session.play().succeeded()) {
-    impl_->discardSession();
+    impl_->clearSession();
+    static_cast<void>(impl_->publishClock(MediaClockSource::CompiledTimeline,
+                                          MediaClockPhase::Failed,
+                                          MediaClockFailure::PrepareFailed,
+                                          *generation, 0U));
     restoreDevice();
     fail(status, AudioBackendError::InvalidConfiguration, "Compiled timeline could not be prepared for playback."); return false;
   }
+  if (!impl_->publishClock(MediaClockSource::CompiledTimeline, MediaClockPhase::Playing,
+                           MediaClockFailure::None, *generation, 0U)) {
+    impl_->clearSession();
+    restoreDevice();
+    fail(status, AudioBackendError::PlaybackObservationFailed,
+         "Media-clock publication is exhausted."); return false;
+  }
   impl_->sessionActive.store(true, std::memory_order_release);
   if (impl_->deviceInitialized && ma_device_start(&impl_->device) != MA_SUCCESS) {
-    impl_->discardSession();
+    impl_->clearSession();
+    static_cast<void>(impl_->publishClock(MediaClockSource::CompiledTimeline,
+                                          MediaClockPhase::Failed,
+                                          MediaClockFailure::DeviceStartFailed,
+                                          *generation, 0U));
     restoreDevice();
     fail(status, AudioBackendError::AudioDeviceUnavailable, "Audio output device could not resume after timeline preparation."); return false;
+  }
+  start.generation = *generation;
+  ok(status); return true;
+}
+bool FluidSynthBackend::stopPlayback(AudioBackendStatus& status) {
+  if (!impl_->initialized || impl_->synth == nullptr) {
+    fail(status, AudioBackendError::InvalidConfiguration,
+         "Initialize the audio backend before stopping playback."); return false;
+  }
+  bool deviceStopped{};
+  if (impl_->deviceInitialized && ma_device_stop(&impl_->device) != MA_SUCCESS) {
+    fail(status, AudioBackendError::AudioDeviceUnavailable,
+         "Audio output device could not stop for playback shutdown."); return false;
+  }
+  deviceStopped = impl_->deviceInitialized;
+  const auto restoreDevice = [&]() noexcept {
+    if (deviceStopped) static_cast<void>(ma_device_start(&impl_->device));
+  };
+  const auto previousClock = impl_->mediaClock.tryRead();
+  if (previousClock.status != MediaClockReadStatus::Snapshot
+      || !previousClock.snapshot.has_value()) {
+    restoreDevice();
+    fail(status, AudioBackendError::PlaybackObservationFailed,
+         previousClock.status == MediaClockReadStatus::Exhausted
+             ? "Media-clock publication is exhausted."
+             : "Media-clock publication was unstable after device stop.");
+    return false;
+  }
+  if (impl_->player != nullptr) { delete_fluid_player(impl_->player); impl_->player = nullptr; }
+  impl_->clearSession();
+  const bool compiled = previousClock.snapshot->source == MediaClockSource::CompiledTimeline
+      && previousClock.snapshot->generation != 0U;
+  const auto published = compiled
+      ? impl_->publishClock(MediaClockSource::CompiledTimeline, MediaClockPhase::Stopped,
+                            MediaClockFailure::None, previousClock.snapshot->generation, 0U)
+      : impl_->publishClock(MediaClockSource::None, MediaClockPhase::Unavailable,
+                            MediaClockFailure::None, 0U, 0U);
+  impl_->lastCommittedMediaMicroseconds = 0U;
+  if (!published) {
+    restoreDevice();
+    fail(status, AudioBackendError::PlaybackObservationFailed,
+         "Media-clock publication is exhausted."); return false;
+  }
+  if (impl_->deviceInitialized && ma_device_start(&impl_->device) != MA_SUCCESS) {
+    fail(status, AudioBackendError::AudioDeviceUnavailable,
+         "Audio output device could not resume after playback shutdown."); return false;
   }
   ok(status); return true;
 }
@@ -353,15 +521,22 @@ bool FluidSynthBackend::listRuntimeMixerPresets(std::vector<std::string>& names,
 bool FluidSynthBackend::isMuted() const noexcept { return impl_->muted; }
 bool FluidSynthBackend::isPlaying() const noexcept { return impl_->sessionActive.load(std::memory_order_acquire) || (impl_->player != nullptr && fluid_player_get_status(impl_->player) == FLUID_PLAYER_PLAYING); }
 bool FluidSynthBackend::hasActiveDevice() const noexcept { return impl_->deviceInitialized; }
+MediaClockReadResult FluidSynthBackend::mediaClock() const noexcept { return impl_->mediaClock.tryRead(); }
+bool FluidSynthBackend::renderFramesForTesting(float* samples, std::size_t frames) noexcept {
+  return impl_->renderFrames(samples, frames);
+}
 void FluidSynthBackend::shutdown() noexcept {
   if (impl_ == nullptr) return;
   if (impl_->deviceInitialized) { ma_device_uninit(&impl_->device); impl_->deviceInitialized = false; }
-  impl_->discardSession();
+  impl_->clearSession();
   if (impl_->player != nullptr) { delete_fluid_player(impl_->player); impl_->player = nullptr; }
   if (impl_->contextInitialized) { ma_context_uninit(&impl_->context); impl_->contextInitialized = false; }
   impl_->midiSink.reset();
   if (impl_->synth != nullptr) { delete_fluid_synth(impl_->synth); impl_->synth = nullptr; }
   if (impl_->settings != nullptr) { delete_fluid_settings(impl_->settings); impl_->settings = nullptr; }
-  impl_->sampleRate = 0U; impl_->initialized = false;
+  impl_->sampleRate = 0U; impl_->activeGeneration = 0U;
+  impl_->lastCommittedMediaMicroseconds = 0U; impl_->initialized = false;
+  static_cast<void>(impl_->publishClock(MediaClockSource::None, MediaClockPhase::Unavailable,
+                                        MediaClockFailure::None, 0U, 0U));
 }
 } // namespace OpenHDK

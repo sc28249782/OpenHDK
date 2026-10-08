@@ -146,8 +146,12 @@ class PlaybackGenerationCounter {
 public:
     PlaybackGenerationCounter() noexcept = default;
 
+    [[nodiscard]] bool canAdmit() const noexcept {
+        return current_ != std::numeric_limits<std::uint64_t>::max();
+    }
+
     [[nodiscard]] std::optional<std::uint64_t> admit() noexcept {
-        if (current_ == std::numeric_limits<std::uint64_t>::max()) return std::nullopt;
+        if (!canAdmit()) return std::nullopt;
         return ++current_;
     }
 
