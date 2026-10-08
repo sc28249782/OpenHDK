@@ -81,7 +81,7 @@ ctest --test-dir build --output-on-failure
 
 The default POC configuration uses pinned FluidSynth and miniaudio dependencies
 (and downloads a pinned test SoundFont when audio POC tests are enabled). For
-the eighteen hardware-free core test suites, use:
+the nineteen hardware-free core test suites, use:
 
 ```powershell
 cmake -S . -B build-parser -DOPENHDK_BUILD_AUDIO_POC=OFF -DOPENHDK_BUILD_TESTS=ON -DOPENHDK_FETCH_TEST_FIXTURES=OFF
@@ -91,8 +91,8 @@ ctest --test-dir build-parser --output-on-failure
 
 The lightweight Linux core CI job uses this hardware-free configuration with
 strict compiler warnings and AddressSanitizer/UndefinedBehaviorSanitizer. It
-runs eighteen suites: SMF parser fixtures, MIDI diagnostics CLI, runtime mixer
-console, velocity curves, mixer presets, stereo peak limiting, song catalog
+runs nineteen suites: catalog checkpoint codec, SMF parser fixtures, MIDI
+diagnostics CLI, runtime mixer console, velocity curves, mixer presets, stereo peak limiting, song catalog
 identity/transactions, filesystem discovery, lyric text decoding, KAR cue
 extraction, media-clock consumption, atomic media-clock publication,
 generation-bound lyric observation, single-song preparation, root reattachment,
@@ -134,10 +134,11 @@ consumer binding has a serialized control-path observer. Single-song SMF/KAR
 preparation verifies the recorded source revision and owns
 both timelines; application/CLI integration remains pending.
 
-[The persistence proposal](docs/CATALOG-PERSISTENCE-CONTRACT.md) defines a bounded
+[The accepted persistence contract](docs/CATALOG-PERSISTENCE-CONTRACT.md) defines a bounded
 whole-catalog checkpoint, fresh-owner restore and explicit root reattachment.
-It requires review before codec/provider implementation; storage is not available
-in the development tree or released v0.2.0.
+The development tree has a pure bounded schema-1 codec and detached projection
+with independent wire/hash fixtures. Restore, native storage and durable library
+operations remain pending; none are part of released v0.2.0.
 
 ## Specification
 

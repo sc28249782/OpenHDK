@@ -1,19 +1,20 @@
-# Catalog persistence contract proposal
+# Catalog persistence contract
 
 **Contract ID:** OHK-STORE-030
-**Status:** Proposed; requires review and acceptance before implementation.
+**Status:** Accepted by review and merge of PR #54; pure codec implemented, restore/store/provider integration pending.
 **Target:** 0.3.0; not part of released OpenHDK v0.2.0.
 
-This proposal supplements [OHK-LIB-030](KARAOKE-LIBRARY-CONTRACT.md),
+This contract supplements [OHK-LIB-030](KARAOKE-LIBRARY-CONTRACT.md),
 [OHK-ROOT-030](ROOT-REATTACHMENT-CONTRACT.md), and
 [OHK-META-030](CATALOG-METADATA-POLICY-CONTRACT.md).
 [SPECIFICATION.md](SPECIFICATION.md) remains the authority for implemented
-behavior. The types and wire fields below are proposed design obligations.
-There is no storage adapter, codec, restore factory, or new dependency today.
+behavior. The types and wire fields below are accepted design obligations.
+A pure detached projection codec is implemented. There is no storage adapter,
+restore factory, live catalog projection adapter, or new dependency today.
 
 ## 1. Storage selection and scope
 
-Propose one versioned binary checkpoint for the complete catalog identity and
+Use one versioned binary checkpoint for the complete catalog identity and
 user metadata projection. The caller explicitly selects its local path outside
 song roots. `.ohkcat` is the proposed extension, not proof of valid format.
 No automatic home-directory search, legacy database import, SQL execution,
@@ -22,7 +23,7 @@ is introduced. No BASS-family or Qt artifact is permitted.
 
 | Option | Decision for this first adapter | Reason |
 | --- | --- | --- |
-| Bounded binary checkpoint | Propose | Whole-catalog replacement fits the current immutable model; no third-party engine is needed. |
+| Bounded binary checkpoint | Adopt | Whole-catalog replacement fits the current immutable model; no third-party engine is needed. |
 | SQLite C API | Defer | Queries, indexes and incremental persistent transactions are not required for this first slice; a later engine choice needs pins, license and recovery review. |
 | Application-settings dump or legacy DB | Reject | It would mix unrelated runtime settings or import legacy schema assumptions. |
 
@@ -153,7 +154,7 @@ HandyKaraoke databases, are InvalidCheckpoint and MUST remain unchanged.
 
 ## 4. Bounds and independent fixtures
 
-| Bound | Proposed default maximum |
+| Bound | Default maximum |
 | --- | ---: |
 | Total checkpoint bytes, including header/digest | 64 MiB |
 | Roots in a checkpoint | 1,024 |
@@ -404,6 +405,50 @@ Minimum independent acceptance fixtures:
 
 Hardware-free regressions and both CI workflows must pass on exact heads.
 Windows-only native behavior requires Windows tests. The current development
-baseline remains 18 core / 21 audio-enabled suites. This docs-only proposal adds
-no tests or completed checkbox. NCN evidence, application/audio/CLI orchestration,
+baseline is 19 core / 22 audio-enabled suites. The codec adds one pure suite;
+the full storage milestone checkbox remains open. NCN evidence, application/audio/CLI orchestration,
 manual device/lyric validation and full v0.3.0 release acceptance remain open.
+
+
+## 10. Current pure codec boundary
+
+`library/CatalogCheckpointCodec.hpp` implements schema 1 with detached
+`CatalogCheckpointProjection`, `CheckpointRoot` and `CheckpointSong` values.
+Numeric projection IDs cannot construct live RootId/SongId. No snapshot adapter,
+restore owner, filesystem access, save token, lock, recovery or durability claim
+is introduced. Unknown profiles remain rejected; NCN evidence is unchanged.
+
+`encodeCatalogCheckpoint` validates the complete projection and emits roots and
+songs in ascending ID order without changing its input. `decodeCatalogCheckpoint`
+requires that canonical order and validates digest, lengths, padding, identities,
+references, aliases and text before returning a complete owning projection.
+The sequence is wire data only here; the future store must enforce save admission
+and monotonic history. Neither operation imports source authority or runtime
+lineage. A checksum remains corruption evidence, not authentication.
+
+Both operations accept lower positive `CatalogCheckpointLimits` and an optional
+`alreadyOwned` byte charge for other caller-retained payload. Encode charges all
+projection strings plus the complete output wire. Decode charges the entire
+borrowed input wire plus all decoded strings. Both reserve twice the largest
+field's logical byte length for canonical UTF-8 validation temporaries. The
+allowance includes these values together, not independent 64 MiB budgets.
+Caller payload outside these explicit inputs must be supplied as `alreadyOwned`;
+future snapshot adapters must deduplicate shared records by identity. Fixed
+record/view/map descriptors use the root/song count bounds; allocation capacity
+and allocator overhead are not a total process-memory ceiling.
+
+Validation uses the existing strict UTF-8 decoder/C0 policy, locator rules and
+SHA-256 algorithm. Hint validation additionally rejects tab/CR/LF/DEL and never
+opens or normalizes a path. Override whitespace and scalar sequences remain
+exact. Allocations are control-path-only; bad_alloc maps to StorageFailure and
+never returns partial output. Codec errors identify Encode/Decode, field, optional
+record and byte offset. Text offsets are relative to that field's payload;
+wire structural offsets are absolute in the input buffer. Native outcome/error
+fields belong to later store operations, which this slice does not implement.
+
+Independent Python struct/hashlib fixtures define empty, root-only and rich
+Thai/combining-text wire bytes, including allocator gaps, duplicate advisory
+hints and an exhausted generation. Tests also cover malformed wire/projections,
+canonicalization, checksum coverage, exact/beyond bounds, retained input charges
+and allocation-failure sweeps. Later slices still require fresh-owner restore,
+fake-provider protocol tests, native evidence and durable-first wiring.
