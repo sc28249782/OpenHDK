@@ -143,6 +143,9 @@ A detached checkpoint store coordinator has fake-provider protocol tests for
 stale tokens, staged publication and uncertainty recovery. Native storage, live
 checkpoint capture and durable library operations remain pending. None of these
 changes are part of released v0.2.0.
+The [proposed native provider plan](docs/NATIVE-CHECKPOINT-PROVIDER-PLAN.md)
+records Linux/ext4 and Windows/NTFS API candidates and required native evidence;
+it adds no filesystem provider or storage support.
 
 ## Specification
 
