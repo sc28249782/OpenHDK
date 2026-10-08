@@ -79,7 +79,7 @@ the development tree.
 
 ## 3. Deterministic discovery
 
-The [metadata/root-policy proposal](CATALOG-METADATA-POLICY-CONTRACT.md)
+The [accepted metadata/root-policy contract](CATALOG-METADATA-POLICY-CONTRACT.md)
 defines source member authority, source/user/fallback separation, and policy
 inheritance for review before those fields are integrated.
 
@@ -303,8 +303,8 @@ AfterRead/AfterExtraction support deterministic mutation/cancellation tests.
 The reread is not an atomic filesystem transaction: later edits do not change
 the immutable prepared buffers, and hostile-writer guarantees are not claimed.
 
-Local root reattachment is implemented under OHK-ROOT-030. Complete
-source/member metadata, root-registered lyric
+Local root reattachment is implemented under OHK-ROOT-030. Pure bounded metadata/policy values exist under OHK-META-030. Catalog
+source/member metadata integration, root-registered lyric
 policies, durable storage, catalog lyric indexing, NCN lyrics, and application
 playback orchestration remain unimplemented. Pure KAR selection/cue extraction
 exists separately under

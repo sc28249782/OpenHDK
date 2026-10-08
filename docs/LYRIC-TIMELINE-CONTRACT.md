@@ -8,9 +8,10 @@
 below apply to the target implementation accepted in PR #34. Catalog and
 file ownership are specified in
 [KARAOKE-LIBRARY-CONTRACT.md](KARAOKE-LIBRARY-CONTRACT.md).
-The proposed [catalog metadata/root policy contract](CATALOG-METADATA-POLICY-CONTRACT.md)
+The accepted [catalog metadata/root policy contract](CATALOG-METADATA-POLICY-CONTRACT.md)
 defines registration policy, compact source title provenance, and prepare-time
-overrides. It does not change current track selection or decoder rules.
+overrides. Its pure value models are implemented; scan/preparation integration
+remains pending. It does not change current track selection or decoder rules.
 
 ## 1. Immutable lyric timeline
 

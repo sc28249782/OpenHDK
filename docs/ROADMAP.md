@@ -71,10 +71,10 @@ occurs when a SoundFont or audio device is unavailable.
 - [ ] Add root reattachment and source/member metadata before library integration.
   Local SMF/KAR root reattachment is implemented under
   [OHK-ROOT-030](ROOT-REATTACHMENT-CONTRACT.md), including attachment generations,
-  transactional invalidation and stale-root checks. Source/member metadata and
-  root lyric policies remain pending, so this combined item remains open.
-  Review [OHK-META-030](CATALOG-METADATA-POLICY-CONTRACT.md) before adding
-  member metadata, root policy inheritance or metadata-enabled scan readiness.
+  transactional invalidation and stale-root checks. Pure metadata/policy models are implemented under accepted
+  [OHK-META-030](CATALOG-METADATA-POLICY-CONTRACT.md). Catalog metadata
+  extraction, root policy inheritance and override/display transactions remain
+  pending, so this combined item remains open.
 - [x] Implement pure KAR extraction, FF 05/identified FF 01 selection, explicit
   text encoding, and deterministic media-clock lyric-consumer tests.
   Running-backend publication and the generation-bound observer are implemented;
