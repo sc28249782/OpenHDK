@@ -75,9 +75,10 @@ v0.2.0 behavior.
 | **catalog snapshot** | An immutable reader view of one committed catalog revision. |
 | **Display metadata** | Owning resolved title/artist text with UserOverride, SourceTitle or FilenameFallback origin. Prepared display uses effective extraction and acquired overrides; it does not populate source title. |
 | **Catalog checkpoint** | Accepted complete identity/root-policy/user-override checkpoint projection; the pure codec is implemented under OHK-STORE-030. It does not persist Ready authority, source metadata, timelines or playback state. |
-| **Store sequence** | Positive uint64 wire counter for actual checkpoint publications; live store enforcement is pending. It is separate from catalog revision, RootId attachment generation and backend playback generation. |
-| **Store commit token** | Accepted future acknowledged store sequence plus the schema-defined final digest used to reject stale updates. It is not an authentication credential. |
-| **CommitUncertain** | Accepted future outcome after publication begins when the committed disk state or required synchronization cannot be confirmed. The store refuses writes until explicit validated reconciliation. |
+| **Store expectation** | Private store-object-bound ExpectedAbsent or sequence/digest ticket; not proof of live catalog snapshot provenance. |
+| **Store sequence** | Positive uint64 wire counter for actual checkpoint publications; a detached coordinator enforces sequencing with fake-provider tests; native enforcement is pending. It is separate from catalog revision, RootId attachment generation and backend playback generation. |
+| **Store commit token** | Implemented detached-protocol acknowledged store sequence plus the schema-defined final digest used to reject stale updates. It is not an authentication credential. |
+| **CommitUncertain** | Implemented detached-protocol outcome after publication begins when the committed disk state or required synchronization cannot be confirmed. The store refuses writes until explicit validated reconciliation. |
 | **Restored owner** | Implemented fresh catalog/discovery instance retaining saved IDs/counters/overrides with a new runtime lineage and no active root bindings. Explicit attachment and rescan precede Ready. |
 | **lyric cue** | A timed text fragment or display action retaining source order and media time. It does not imply a syllable or grapheme. |
 | **NCN24** | The proposed narrow MIDI/LYR/CUR profile, with a format-evidence gate before implementation. It is not all NCN dialects. |

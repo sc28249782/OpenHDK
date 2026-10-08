@@ -159,7 +159,7 @@ An existing HandyKaraoke database MUST NOT be opened for automatic migration.
 
 [OHK-STORE-030](CATALOG-PERSISTENCE-CONTRACT.md) proposes a bounded binary
 whole-catalog checkpoint as the first adapter, without a third-party database.
-Its schema and fresh-owner restore are implemented; commit/uncertainty providers
+Its schema, fresh-owner restore and detached fake-provider commit protocol are implemented; native commit/uncertainty providers
 and durable-first integration require their separate review/evidence gates.
 Explicit checkpoint save would acknowledge only its captured revision; it would
 not make earlier in-memory mutations automatically durable. Full persistent

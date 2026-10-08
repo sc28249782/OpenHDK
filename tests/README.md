@@ -1,6 +1,6 @@
 # Test coverage and failure diagnostics
 
-The hardware-free configuration registers twenty CTest suites: catalog checkpoint codec/restore,
+The hardware-free configuration registers twenty-one CTest suites: catalog checkpoint codec/restore/store protocol,
 parser fixtures, MIDI diagnostics CLI, runtime mixer console, velocity curves, mixer presets,
 stereo peak limiter, song catalog core, filesystem discovery, lyric text
 decoding, KAR lyric extraction, media-clock consumption, media-clock
@@ -8,9 +8,9 @@ publication, generation-bound lyric observation, single-song preparation,
 root reattachment, pure catalog metadata/policy models, and catalog metadata
 scan/preparation integration, and override/display transactions.
 The audio-enabled test configuration adds FluidSynth headless
-playback, CLI help, and diagnostics error cases, for twenty-three suites.
+playback, CLI help, and diagnostics error cases, for twenty-four suites.
 These counts describe the development tree; v0.2.0 has six/nine respectively.
-Linux core CI runs twenty hardware-free suites; Windows bootstrap runs all twenty-three.
+Linux core CI runs twenty-one hardware-free suites; Windows bootstrap runs all twenty-four.
 
 ## Planned 0.3.0 acceptance
 
@@ -216,7 +216,7 @@ explicit reconciliation and native process-interruption recovery. Provider tests
 must distinguish file synchronization from namespace/durability acknowledgment.
 Windows behavior requires Windows fixtures. Fake failure tests do not prove
 physical power-loss survival. The pure `catalog-checkpoint-codec` suite is now
-registered alongside `catalog-checkpoint-restore` (twenty core / twenty-three
+registered alongside `catalog-checkpoint-restore` (twenty-one core / twenty-four
 audio-enabled); native stores and durable-first wiring remain pending.
 
 The codec suite compares production output with checked-in independent Python
@@ -242,3 +242,20 @@ after staging retains the unbound owner. Owning queries, snapshots, displays,
 prepared songs and cue batches retain their data after owner destruction.
 These source-root filesystem fixtures test explicit attachment/discovery only;
 no test reads/writes a checkpoint file or claims native store durability.
+
+## Detached checkpoint store protocol
+
+`catalog_checkpoint_store_tests.cpp` registers `catalog-checkpoint-store`.
+An in-memory provider simulates leases, directory identity, artifact staging,
+publication outcomes and reconciliation. Tests inject each candidate/prior
+create/write/sync/read failure, compare retained primary bytes, and require no
+success acknowledgment on failure. They cover stale/foreign expectations,
+nonblocking/reentrant ownership, history rollback, sequence exhaustion/no-op,
+cancellation, external edits, uncertainty with old/new primary, missing/corrupt
+primary, explicit reopen, cleanup warnings and exact 191/192-byte empty-create
+coexistence bounds. Allocation-failure sweeps check prepublication rollback;
+blocking allocations at publish tests the acknowledgment path.
+
+These simulations do not prove native OS locking, path capability validation,
+crash recovery or durability. The test adds no filesystem provider and does not
+complete the storage release gate. There are 21 core / 24 audio-enabled suites.

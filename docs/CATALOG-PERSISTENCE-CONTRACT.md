@@ -1,7 +1,7 @@
 # Catalog persistence contract
 
 **Contract ID:** OHK-STORE-030
-**Status:** Accepted by review and merge of PR #54; pure codec and fresh-owner restore implemented; store/provider integration pending.
+**Status:** Accepted by review and merge of PR #54; pure codec, fresh-owner restore and detached fake-provider store protocol implemented; native providers and live wiring pending.
 **Target:** 0.3.0; not part of released OpenHDK v0.2.0.
 
 This contract supplements [OHK-LIB-030](KARAOKE-LIBRARY-CONTRACT.md),
@@ -10,7 +10,7 @@ This contract supplements [OHK-LIB-030](KARAOKE-LIBRARY-CONTRACT.md),
 [SPECIFICATION.md](SPECIFICATION.md) remains the authority for implemented
 behavior. The types and wire fields below are accepted design obligations.
 A pure detached projection codec and fresh-owner restore factory are implemented.
-There is no storage adapter, live checkpoint capture adapter, or new dependency today.
+A detached store coordinator is implemented with fake-provider tests. There is no native storage provider, live checkpoint capture adapter, or new dependency today.
 
 ## 1. Storage selection and scope
 
@@ -405,7 +405,7 @@ Minimum independent acceptance fixtures:
 
 Hardware-free regressions and both CI workflows must pass on exact heads.
 Windows-only native behavior requires Windows tests. The current development
-baseline is 20 core / 23 audio-enabled suites. Codec and restore have separate
+baseline is 21 core / 24 audio-enabled suites. Codec, restore and detached protocol have separate
 hardware-free suites;
 the full storage milestone checkbox remains open. NCN evidence, application/audio/CLI orchestration,
 manual device/lyric validation and full v0.3.0 release acceptance remain open.
@@ -452,7 +452,7 @@ Thai/combining-text wire bytes, including allocator gaps, duplicate advisory
 hints and an exhausted generation. Tests also cover malformed wire/projections,
 canonicalization, checksum coverage, exact/beyond bounds, retained input charges
 and allocation-failure sweeps. Fresh-owner restore is implemented in section 11. Later slices still require
-fake-provider protocol tests, native evidence and durable-first wiring.
+native evidence and durable-first wiring.
 
 
 ## 11. Current fresh-owner restore boundary
@@ -516,3 +516,64 @@ allocation/cancellation failure. Historical snapshots, prepared songs, display
 values, query strings and lyric batches continue to own their original data.
 Native save/lock/recovery providers, durable-first wiring, NCN evidence,
 application orchestration and manual release acceptance remain open.
+
+## 12. Current detached store protocol boundary
+
+`library/CatalogCheckpointStore.hpp` implements a serialized, nonblocking
+coordinator over an abstract `CheckpointStoreProvider`. The hardware-free
+`catalog-checkpoint-store` suite supplies an in-memory namespace provider only.
+There is no shipped filesystem provider or evidence of native lock, rename,
+directory synchronization, crash recovery or power-loss durability.
+
+Open acquires the provider lease, validates the primary if present, and requires
+provider reconciliation before enabling writes. Missing primary is an explicit
+ExpectedAbsent ticket. Tickets retain a private store-object identity; foreign
+store tickets and stale sequence/digest expectations fail before staging.
+This identity is NOT SongDiscovery snapshot provenance. Live capture, matching
+root bindings, same-library admission and durable-first mutations remain slice 5.
+A provider must outlive its coordinator. Calls and queries use a serialized
+control path; recursive operations return Busy without releasing its lease.
+
+Save validates the complete detached projection and retained history, compares
+the current primary token under the lease, and stages canonical candidate bytes
+with the next sequence. Exact projection no-ops exclude only the publication
+sequence and remain valid at sequence exhaustion. Changed projections require a
+newer catalog revision, nondecreasing allocator history, all prior roots, immutable
+root policy and monotonic generations. Changed hints require a newer generation;
+new IDs cannot reuse historical gaps. Song removals and explicit relocations are
+permitted. Schema/digest failures do not authorize repair or fallback.
+
+Candidate and prior-copy artifacts are exclusively created, written, synchronized
+and byte-verified before a final primary/token and directory identity recheck.
+The provider owns native capability validation and must never treat cleanup as
+permission to delete the primary or an unowned file. Cancellation is checked only
+before publication. The result is constructed before publication, and provider
+publication, synchronization, reconciliation and cleanup are nonthrowing and
+allocation-free. Definite precommit failures clean owned stages. Published plus
+confirmed synchronization acknowledges only the captured revision; cleanup failure
+is a separate warning. Cleanup does not revoke an acknowledged save.
+
+Indeterminate publication or post-publication synchronization returns
+CommitUncertain, no success token, retained artifact capabilities and a faulted
+store. No retry/save is admitted until close and validated reopen/reconciliation.
+Close releases the lease, preserving the fault latch and artifacts. Reopen never
+chooses an artifact or prior copy as primary; missing/corrupt primary after an
+uncertain save cannot silently create a fresh checkpoint.
+
+One coexistence ledger charges caller-retained payload, input strings, current
+wire, decoded current strings, candidate projection/wire, and verification reads
+before allocation/growth. Caller alreadyOwned must include separately retained
+open-result or other payload. Count-bounded descriptors/allocator overhead are
+separate; provider backing storage is not a process-memory allowance. Provider
+reads receive the remaining bound and must reject before allocating beyond it.
+This remains logical payload accounting, not a whole-process memory ceiling.
+
+Tests cover stage fault injection, byte verification, cancellation, directory
+replacement, external primary edits, nonblocking ownership/reentry, stale/foreign
+tickets, no-op/exhaustion, history rejection, uncertainty with old/new primary,
+explicit reconciliation, cleanup warnings, exact coexistence bounds and injected
+allocation failures. A publish-time allocation prohibition tests the no-allocation
+acknowledgment path. These tests prove coordinator behavior, not OS semantics.
+NCN evidence, native providers, live capture/durable-first wiring, application
+orchestration and manual Windows acceptance remain open. No storage roadmap
+checkbox is completed by this slice.

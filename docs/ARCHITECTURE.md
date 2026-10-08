@@ -177,6 +177,9 @@ validation and one operation-wide coexistence ledger. A validated restore
 factory creates a fresh SongDiscovery lineage with retained IDs/history/overrides
 and Invalid songs. Roots are inactive; saved hints perform no path I/O. First
 explicit attachment increments generation/revision before complete scanning.
+A detached store coordinator validates history and commit tokens, stages candidate
+and prior copies through an abstract provider, and faults on uncertain publication.
+Fake-provider tests exercise the protocol; store tickets bind only a store object.
 Live checkpoint capture adapters and native stores remain pending. It approves no database package
 and adds no callback-visible file, lock, decode, or recovery operation.
 
