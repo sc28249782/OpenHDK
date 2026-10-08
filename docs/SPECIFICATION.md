@@ -286,7 +286,10 @@ MUST reject stale/foreign store tickets, retain history, acknowledge only confir
 publication, and fault on uncertainty until validated reopen/reconciliation.
 Store tickets do not prove live catalog snapshot provenance. No filesystem store,
 autosave, migration or durable library service is provided today.
-Its native provider and durable-first mutation gates require separate evidence;
+The [proposed native provider plan](NATIVE-CHECKPOINT-PROVIDER-PLAN.md) describes
+API review and native evidence obligations; it implements no storage provider.
+Its Windows synchronization question remains open.
+The native provider and durable-first mutation gates require separate evidence;
 this contract does not approve a dependency or change released v0.2.0 behavior.
 
 Running-backend media-position publication has an accepted bounded contract in

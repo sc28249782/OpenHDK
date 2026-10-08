@@ -323,6 +323,11 @@ external edits or prove freshness against a deliberately restored old file.
 
 ## 8. Native provider evidence and honest limits
 
+The [native provider plan](NATIVE-CHECKPOINT-PROVIDER-PLAN.md) proposes API
+choices and an evidence matrix for slice 4. It requires review before
+implementation. Its Windows synchronization gate remains open; no native
+provider is implemented or accepted by that plan.
+
 An atomic namespace update and a durable acknowledgment are different claims.
 The provider review must identify exact open/lock/publication/flush APIs, handle
 sharing, supported local filesystems and classification of every failure phase.

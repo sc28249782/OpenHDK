@@ -259,3 +259,21 @@ blocking allocations at publish tests the acknowledgment path.
 These simulations do not prove native OS locking, path capability validation,
 crash recovery or durability. The test adds no filesystem provider and does not
 complete the storage release gate. There are 21 core / 24 audio-enabled suites.
+
+## Planned native checkpoint provider evidence
+
+The [proposed native provider plan](../docs/NATIVE-CHECKPOINT-PROVIDER-PLAN.md)
+records an API/fault/interruption matrix and per-platform evidence fields.
+It adds no executable test or passing native result. The baseline remains
+21 core / 24 audio-enabled suites. Fake-provider successes do not prove native
+lock ownership, namespace synchronization or durability.
+
+Future native tests must verify the filesystem used by the test directory and
+record the exact provider/test revision. Test same-provider reuse, independent
+owners in one process and independent subprocesses. For Linux, do not treat
+an inherited flock descriptor as an independent contender. Cut-point tests
+terminate only an owned child after a phase handshake, use finite timeouts,
+and inspect primary/artifacts before harness cleanup. Injected API faults and
+real subprocess interruption must have separate results. Missing NTFS/ext4
+execution remains Pending/Skipped evidence. Windows acknowledgment tests require
+a reviewed synchronization sequence first; they cannot replace that review.
