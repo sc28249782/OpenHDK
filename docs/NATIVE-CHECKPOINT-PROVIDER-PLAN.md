@@ -1,15 +1,14 @@
 # Native checkpoint provider plan
 
 **Plan ID:** OHK-NATIVE-030
-**Status:** Accepted by review and merge of PR #58; Linux ownership primitive implemented; publication/native acceptance and Windows synchronization pending.
+**Status:** Accepted by review and merge of PR #58; Linux lease and experimental provider implemented; native acceptance and Windows synchronization pending.
 **Target:** OHK-STORE-030 slice 4; not part of released v0.2.0.
 **Source review date:** 2026-10-08.
 
 This plan supplements the accepted [persistence contract](CATALOG-PERSISTENCE-CONTRACT.md).
 [SPECIFICATION.md](SPECIFICATION.md) remains the authority for implemented behavior.
-The codec, restore factory, detached coordinator and Linux ownership primitive
-are implemented. Full native
-providers are not implemented or accepted. This document records API candidates,
+The codec, restore factory, detached coordinator, Linux ownership primitive and
+experimental Linux provider are implemented. Native platform acceptance is pending. This document records API candidates,
 required tests and unresolved decisions. It adds no dependency or storage support.
 
 ## 1. Scope and implementation order
@@ -37,7 +36,8 @@ The ownership primitive implements the ownership portion of step 1.
 A completed Linux provider does not approve Windows storage. A platform compile
 or passing hosted CI test does not close a filesystem evidence gate.
 The storage roadmap checkbox remains open. The development tree now has
-22 core / 25 audio-enabled suites; the new lease suite has no publication test.
+23 core / 26 audio-enabled suites; the provider suite adds publication regression
+tests. These do not close native ext4 acceptance.
 
 ## 2. Shared ownership and resource rules
 
@@ -330,6 +330,27 @@ lock release after child exit. Harness cleanup occurs after owners are released.
 
 The suite covers aliases/special files, preserved primary/lock bytes, contention,
 directory/lock replacement, bounds, capacity and reservation cleanup. Native
-ext4 publication and interruption evidence remain Pending, not Passed. Next
-work adds the Linux provider staging/publication sequence and separate evidence;
-no acknowledged native save exists in this slice.
+ext4 publication and interruption evidence remain Pending, not Passed. The experimental provider now implements the Linux staging/publication sequence;
+[separate native evidence](NATIVE-LINUX-CHECKPOINT-EVIDENCE.md) remains pending.
+
+## 10. Experimental Linux provider and regression evidence
+
+`library/LinuxCheckpointProvider.hpp` now implements the provider interface using
+the existing lease. The persistence contract records its finite artifact/I/O
+bounds, combined retention ledger and failure classification. No Windows
+publication sequence, live capture adapter or application wiring is added.
+
+The provider regression target enables test seams only in that target. Filesystem
+bypass permits syscall tests on overlay; it does not replace openat, flock,
+renameat2/renameat or fsync. Separate faults simulate staging, unknown publication,
+post-publication sync, cleanup and reconciliation errors. Short-I/O and injected
+EINTR exercise native read/write loops. Application allocation is prohibited
+from successful rename through acknowledgment in a deterministic test.
+
+Fresh exec children are stopped after CandidateVerified, PriorVerified, rename
+before parent sync, and confirmed acknowledgment. Each point runs twice with
+finite five-second harness waits; only the owned child PID is terminated. Old/new
+primary revision observations are printed. These are process-interruption tests,
+not power-loss tests. Native ext4 acceptance is still Pending. The separate
+evidence document specifies how to run without the filesystem bypass and how
+to bind logs to an exact commit/environment for review.

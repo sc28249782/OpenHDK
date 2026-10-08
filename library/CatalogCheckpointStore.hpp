@@ -40,7 +40,7 @@ struct StoreReadResult { std::optional<CheckpointBytes> bytes; std::optional<Sto
 enum class StorePublication { Published, NotCommitted, Uncertain };
 struct StorePublicationResult { StorePublication outcome; std::optional<StoreProviderError> error; };
 
-// Provider evidence is separate. No native provider is implemented here.
+// Provider evidence is separate from coordinator regression tests.
 // acquire MUST combine nonblocking in-process ownership and native lock/identity
 // validation for the complete provider lifetime. release MUST NOT unlink locks.
 // Artifact capabilities identify only this lease's exclusively created regular
@@ -55,6 +55,7 @@ class CheckpointStoreProvider {
   virtual ~CheckpointStoreProvider() = default;
   virtual std::optional<StoreProviderError> acquire() = 0;
   virtual void release() noexcept = 0;
+  virtual std::size_t retainedBytes() const noexcept {return 0U;}
   virtual std::optional<StoreProviderError> checkDirectory() noexcept = 0;
   virtual StoreReadResult readPrimary(std::size_t limit) = 0;
   virtual StoreArtifactResult createArtifact(StoreArtifactKind kind) = 0;
@@ -186,6 +187,7 @@ class CatalogCheckpointStore {
     bool leased=false;
     try {
       StoreDetail::check(provider_.acquire(),StoreOperation::Open);leased=true;
+      StoreDetail::charge(alreadyOwned,provider_.retainedBytes(),limits.stagedBytes,StoreOperation::Open);
       StoreDetail::check(provider_.checkDirectory(),StoreOperation::Open);
       auto input=readPrimary(limits,alreadyOwned,StoreOperation::Read);
       std::optional<CatalogCheckpointProjection> projection;
@@ -221,6 +223,7 @@ class CatalogCheckpointStore {
     try {
       const auto shape=CheckpointDetail::shape(projection,limits_);
       std::size_t base=alreadyOwned;
+      StoreDetail::charge(base,provider_.retainedBytes(),limits_.stagedBytes,operation);
       StoreDetail::charge(base,shape.strings,limits_.stagedBytes,operation);
       auto peak=base;StoreDetail::charge(peak,shape.largest,limits_.stagedBytes,operation);
       StoreDetail::charge(peak,shape.largest,limits_.stagedBytes,operation);

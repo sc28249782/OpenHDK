@@ -185,7 +185,10 @@ lease/handle ownership and platform publication outside the coordinator. It
 includes a Linux no-follow/flock ownership lease with a bounded process registry.
 That primitive publishes no checkpoint. The plan requires native evidence and a
 reviewed Windows synchronization sequence before
-acknowledged storage support. Live capture adapters and native stores remain pending. It approves no database package
+acknowledged storage support. An experimental Linux provider implements artifact slots, bounded I/O,
+renameat2 no-replace creation, renameat update, file/parent fsync and explicit
+reconciliation. The coordinator includes retained provider bytes in its existing
+ledger. Native ext4 acceptance and live capture adapters remain pending. It approves no database package
 and adds no callback-visible file, lock, decode, or recovery operation.
 
 The audio callback owns no filesystem, database, text-decoding, or UI work.

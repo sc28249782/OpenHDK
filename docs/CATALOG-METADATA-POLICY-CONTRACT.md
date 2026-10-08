@@ -226,7 +226,7 @@ Title provenance carries historical revision evidence; only the primary member
 is authoritative for current source content. Value copies own their strings.
 
 The pure `catalog-metadata-core` suite remains separate from integration coverage.
-The development tree has 22 hardware-free / 25 audio-enabled suites. Released
+The development tree has 23 hardware-free / 26 audio-enabled suites. Released
 v0.2.0 remains unchanged. Section 9 records the current integration boundary.
 
 

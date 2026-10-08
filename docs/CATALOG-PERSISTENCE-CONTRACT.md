@@ -1,7 +1,7 @@
 # Catalog persistence contract
 
 **Contract ID:** OHK-STORE-030
-**Status:** Accepted by review and merge of PR #54; pure codec, fresh-owner restore and detached fake-provider store protocol implemented; native providers and live wiring pending.
+**Status:** Accepted by review and merge of PR #54; pure codec, fresh-owner restore and detached fake-provider store protocol implemented; experimental Linux provider implemented; native acceptance and live wiring pending.
 **Target:** 0.3.0; not part of released OpenHDK v0.2.0.
 
 This contract supplements [OHK-LIB-030](KARAOKE-LIBRARY-CONTRACT.md),
@@ -325,8 +325,8 @@ external edits or prove freshness against a deliberately restored old file.
 
 The [native provider plan](NATIVE-CHECKPOINT-PROVIDER-PLAN.md) proposes API
 choices and an evidence matrix for slice 4, accepted by review/merge of PR #58.
-A Linux ownership lease is implemented; full native providers and publication
-acceptance remain pending. Its Windows synchronization gate remains open.
+A Linux ownership lease and experimental staging/publication provider are
+implemented. Native ext4 acceptance remains [Pending](NATIVE-LINUX-CHECKPOINT-EVIDENCE.md). Its Windows synchronization gate remains open.
 
 An atomic namespace update and a durable acknowledgment are different claims.
 The provider review must identify exact open/lock/publication/flush APIs, handle
@@ -410,7 +410,7 @@ Minimum independent acceptance fixtures:
 
 Hardware-free regressions and both CI workflows must pass on exact heads.
 Windows-only native behavior requires Windows tests. The current development
-baseline is 22 core / 25 audio-enabled suites. Codec, restore and detached protocol have separate
+baseline is 23 core / 26 audio-enabled suites. Codec, restore and detached protocol have separate
 hardware-free suites;
 the full storage milestone checkbox remains open. NCN evidence, application/audio/CLI orchestration,
 manual device/lyric validation and full v0.3.0 release acceptance remain open.
@@ -579,6 +579,35 @@ tickets, no-op/exhaustion, history rejection, uncertainty with old/new primary,
 explicit reconciliation, cleanup warnings, exact coexistence bounds and injected
 allocation failures. A publish-time allocation prohibition tests the no-allocation
 acknowledgment path. These tests prove coordinator behavior, not OS semantics.
-NCN evidence, native providers, live capture/durable-first wiring, application
+NCN evidence, native provider acceptance, live capture/durable-first wiring, application
 orchestration and manual Windows acceptance remain open. No storage roadmap
 checkbox is completed by this slice.
+
+## Experimental Linux provider boundary
+
+`LinuxCheckpointProvider` implements the detached provider interface with two
+fixed artifact slots and lease-bound process-wide, non-reused capability IDs.
+Paths/names use the accepted lease limits. The provider additionally reserves
+the .ohk-stage- primary-name prefix before I/O so stages cannot become another
+participating store's selected primary. Artifacts have 96-byte fixed name
+buffers, at most 32 exclusive-create attempts, and a 64 MiB wire ceiling. Provider
+retained strings plus both fixed name buffers are charged by retainedBytes into
+the coordinator's existing allowance; this is not a second payload budget.
+Native descriptors, allocator/map overhead and stack scratch are not a process
+memory ceiling. At most eight native descriptors coexist during checks/probes.
+
+Acquire probes no-replace rename using only exclusively created artifact entries,
+then synchronizes/cleans those entries. It never probes by replacing primary.
+Staging uses bounded positional I/O, short-I/O/EINTR handling, artifact fsync and
+parent fsync; verification reopens the owned artifact. Update rechecks the last
+read primary's native identity. Create uses RENAME_NOREPLACE with no fallback.
+Known create EEXIST is NotCommitted/StaleCheckpoint; unknown rename returns are
+Uncertain. Post-rename parent sync failure is Uncertain. Reconcile synchronizes
+the validated primary and parent, never promoting an artifact.
+
+Cleanup of a consumed candidate closes its handle and never unlinks primary.
+Identity-mismatched/unconfirmed entries are preserved with an error/warning.
+Failed cleanup can occupy a slot until explicit close/reopen; release preserves
+abandoned entries and never scans suffixes. These are trusted-directory checks,
+not hostile-writer isolation. Native ext4 acceptance, Windows synchronization,
+live capture and durable-first mutations remain outside this implementation.

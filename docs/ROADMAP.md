@@ -98,7 +98,9 @@ occurs when a SoundFont or audio device is unavailable.
   The [accepted native provider plan](NATIVE-CHECKPOINT-PROVIDER-PLAN.md) puts
   Linux ownership/publication tests first and separates Windows API/synchronization
   review from native acceptance. Linux ownership/lease tests are implemented;
-  staging/publication and ext4 acceptance remain pending. The Windows gate stays open.
+  an experimental Linux provider now implements staging/publication/sync/reconciliation.
+  [Native ext4 acceptance](NATIVE-LINUX-CHECKPOINT-EVIDENCE.md) remains pending.
+  The Windows gate stays open.
 - [ ] Integrate library preparation and lyric observation without changing
   released MIDI, mixer, or limiter semantics; validate Windows playback.
 - Research staged runtime layout and installers separately; this proposal
