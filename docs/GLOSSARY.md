@@ -66,6 +66,7 @@ v0.2.0 behavior.
 | Term | Definition |
 | --- | --- |
 | **SongId** | An opaque identity owned by one library, independent of song title, source stem, or content hash. |
+| **Root attachment generation (proposed)** | A per-root, non-reused directory-binding revision proposed in OHK-ROOT-030. It differs from catalog revision, source revision and playback generation; not implemented yet. |
 | **PreparedSong** | An immutable single-song SMF/KAR preparation result retaining catalog identity/source revision, the acquired snapshot, MIDI timeline, lyric timeline, and explicit options. It does not start audio or establish NCN support. |
 | **source key** | A registered RootId and normalized relative primary-MIDI locator. |
 | **catalog snapshot** | An immutable reader view of one committed catalog revision. |
