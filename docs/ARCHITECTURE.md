@@ -180,9 +180,11 @@ explicit attachment increments generation/revision before complete scanning.
 A detached store coordinator validates history and commit tokens, stages candidate
 and prior copies through an abstract provider, and faults on uncertain publication.
 Fake-provider tests exercise the protocol; store tickets bind only a store object.
-The [proposed native provider plan](NATIVE-CHECKPOINT-PROVIDER-PLAN.md) keeps
+The [accepted native provider plan](NATIVE-CHECKPOINT-PROVIDER-PLAN.md) keeps
 lease/handle ownership and platform publication outside the coordinator. It
-requires native evidence and a reviewed Windows synchronization sequence before
+includes a Linux no-follow/flock ownership lease with a bounded process registry.
+That primitive publishes no checkpoint. The plan requires native evidence and a
+reviewed Windows synchronization sequence before
 acknowledged storage support. Live capture adapters and native stores remain pending. It approves no database package
 and adds no callback-visible file, lock, decode, or recovery operation.
 

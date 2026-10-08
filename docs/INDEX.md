@@ -26,7 +26,7 @@ continue to apply independently of feature plans.
 | [KARAOKE-LIBRARY-CONTRACT](KARAOKE-LIBRARY-CONTRACT.md) | Accepted 0.3.0 contract; catalog/discovery/preparation slices implemented, full services gated. |
 | [CATALOG-METADATA-POLICY-CONTRACT](CATALOG-METADATA-POLICY-CONTRACT.md) | Accepted member/metadata and root-policy contract; models, scan/preparation and override/display transactions implemented. |
 | [CATALOG-PERSISTENCE-CONTRACT](CATALOG-PERSISTENCE-CONTRACT.md) | Accepted schema-1 contract with pure codec, fresh-owner restore and fake-provider store protocol implemented; native-provider evidence and live wiring pending. |
-| [NATIVE-CHECKPOINT-PROVIDER-PLAN](NATIVE-CHECKPOINT-PROVIDER-PLAN.md) | Proposed Linux/ext4 and Windows/NTFS API/evidence plan; Windows synchronization gate open, no native implementation or acceptance. |
+| [NATIVE-CHECKPOINT-PROVIDER-PLAN](NATIVE-CHECKPOINT-PROVIDER-PLAN.md) | Accepted API/evidence plan; Linux ownership lease implemented, full providers/native acceptance and Windows synchronization pending. |
 | [ROOT-REATTACHMENT-CONTRACT](ROOT-REATTACHMENT-CONTRACT.md) | Accepted attachment-generation/transaction rules; local SMF/KAR reattachment implemented, CLI/storage gated. |
 | [LYRIC-TIMELINE-CONTRACT](LYRIC-TIMELINE-CONTRACT.md) | Accepted KAR/media timing contract; extraction/consumer and backend observation implemented; application/NCN24 gated. |
 | [MEDIA-CLOCK-HANDOFF-CONTRACT](MEDIA-CLOCK-HANDOFF-CONTRACT.md) | Accepted backend-clock handoff; FluidSynth publication implemented, generation-bound observer implemented; application integration pending. |
@@ -80,7 +80,7 @@ is connected to root registration, canonical metadata extraction and policy
 inheritance, atomic user override records and owning display resolution.
 The [accepted persistence contract](CATALOG-PERSISTENCE-CONTRACT.md) has a pure
 codec, fresh-owner restore and detached fake-provider protocol. Review native-provider slices and NCN evidence before their
-adapters. The [proposed native provider plan](NATIVE-CHECKPOINT-PROVIDER-PLAN.md)
+adapters. The [accepted native provider plan](NATIVE-CHECKPOINT-PROVIDER-PLAN.md)
 separates API review, native fault/interruption evidence and Windows synchronization.
 Storage, NCN and application integration remain gated. Preserve the
 canonical SMF and mixer contracts unless a compatibility change is accepted.

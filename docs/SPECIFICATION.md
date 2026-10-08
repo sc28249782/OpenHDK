@@ -286,8 +286,13 @@ MUST reject stale/foreign store tickets, retain history, acknowledge only confir
 publication, and fault on uncertainty until validated reopen/reconciliation.
 Store tickets do not prove live catalog snapshot provenance. No filesystem store,
 autosave, migration or durable library service is provided today.
-The [proposed native provider plan](NATIVE-CHECKPOINT-PROVIDER-PLAN.md) describes
-API review and native evidence obligations; it implements no storage provider.
+The [accepted native provider plan](NATIVE-CHECKPOINT-PROVIDER-PLAN.md) describes
+API review and native evidence obligations. A Linux ownership lease is implemented
+with bounded validated paths, single-owner admission, stable no-truncate locking,
+and identity rechecks. It MUST NOT publish checkpoints or claim native durability.
+Production admission requires the retained directory mount label to be ext4;
+this eligibility check does not establish native acceptance. Other platforms
+remain unsupported by this primitive. Full storage providers remain pending.
 Its Windows synchronization question remains open.
 The native provider and durable-first mutation gates require separate evidence;
 this contract does not approve a dependency or change released v0.2.0 behavior.
