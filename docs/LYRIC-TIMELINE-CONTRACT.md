@@ -342,7 +342,8 @@ callback adapter. Shared ownership and serialized method calls do not establish
 real-time-safe cross-thread handoff. Running-backend media-position publication
 has a separate [accepted bounded handoff design](MEDIA-CLOCK-HANDOFF-CONTRACT.md).
 The FluidSynth adapter publishes committed render positions and lifecycle
-records. Binding those acknowledged generations to this consumer remains
-pending. Headless tests feed
+records. `LyricClockObserver` binds this consumer to an acknowledged generation
+and applies the handoff observer table on the serialized control path. Library
+preparation and application orchestration remain pending. Headless tests feed
 actual PlaybackSession frame-derived positions, including pause, completion,
 and stop/reprepare; they do not establish device/GUI lyric synchronization.

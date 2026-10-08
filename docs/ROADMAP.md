@@ -79,7 +79,8 @@ occurs when a SoundFont or audio device is unavailable.
   media-position publication before implementing those adapters. The
   [media-clock handoff contract](MEDIA-CLOCK-HANDOFF-CONTRACT.md) is accepted;
   its atomic cell and FluidSynth publication are implemented, while persistent
-  storage and lyric-consumer binding remain open.
+  storage and application lyric orchestration remain open. A serialized observer
+  binds lyrics to acknowledged generations; library preparation is still needed.
 - [ ] Integrate library preparation and lyric observation without changing
   released MIDI, mixer, or limiter semantics; validate Windows playback.
 - Research staged runtime layout and installers separately; this proposal

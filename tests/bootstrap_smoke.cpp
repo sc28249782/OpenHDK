@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 OpenHDK contributors
 #include "TestCheck.hpp"
+#include "lyrics/LyricClockObserver.hpp"
 #include "audio/FluidSynthBackend.hpp"
 #include "audio/SmfParser.hpp"
 #include "audio/SmfTimelineCompiler.hpp"
@@ -129,6 +130,11 @@ int main() {
                       || firstStartClock.snapshot->mediaMicroseconds != 0U
                       || firstStartClock.snapshot->source != OpenHDK::MediaClockSource::CompiledTimeline
                       || firstStartClock.snapshot->phase != OpenHDK::MediaClockPhase::Playing);
+  const auto clockLyrics = OpenHDK::KarLyricExtractor::extract(*compiledTimeline.timeline());
+  OpenHDK::LyricClockObserver clockObserver;
+  OPENHDK_FAIL_IF(76, !clockLyrics.succeeded()
+      || !clockObserver.bind(clockLyrics.timeline(), firstStart)
+      || clockObserver.poll(backend.mediaClock()).status != OpenHDK::LyricClockPollStatus::Advanced);
   OPENHDK_FAIL_IF(19, backend.playMidiFile(midi, status) || status.error != OpenHDK::AudioBackendError::MidiPlaybackFailed);
   std::array<float, 256> compiledPcm{};
   OPENHDK_FAIL_IF(24, !backend.setRuntimeChannelMuted(0U, true, status));
@@ -139,6 +145,9 @@ int main() {
                       || firstBlockClock.snapshot->generation != firstStart.generation
                       || firstBlockClock.snapshot->mediaMicroseconds == 0U
                       || firstBlockClock.snapshot->phase != OpenHDK::MediaClockPhase::Playing);
+  OPENHDK_FAIL_IF(77, clockObserver.poll(backend.mediaClock()).status
+      != OpenHDK::LyricClockPollStatus::Advanced
+      || clockObserver.mediaPositionMicroseconds() != firstBlockClock.snapshot->mediaMicroseconds);
   OPENHDK_FAIL_IF(36, !isLimitedPcm(compiledPcm));
   constexpr float runtimeMuteSilenceThreshold = 1.0e-6F;
   OPENHDK_FAIL_IF(28, std::any_of(compiledPcm.begin(), compiledPcm.end(), [runtimeMuteSilenceThreshold](float sample) {
@@ -156,6 +165,10 @@ int main() {
                       || firstFinishedClock.snapshot->generation != firstStart.generation
                       || firstFinishedClock.snapshot->mediaMicroseconds < 500000U
                       || firstFinishedClock.snapshot->phase != OpenHDK::MediaClockPhase::Finished);
+  OPENHDK_FAIL_IF(78, clockObserver.poll(backend.mediaClock()).status
+      != OpenHDK::LyricClockPollStatus::Advanced
+      || clockObserver.mediaPositionMicroseconds() != firstFinishedClock.snapshot->mediaMicroseconds);
+  clockObserver.stop(); // Clear lyrics BEFORE the replacement request.
   OpenHDK::AudioBackendPlaybackStart failedRenderStart;
   OPENHDK_FAIL_IF(71, !backend.playCompiledTimeline(*distantEndTimeline.timeline(),
                                                     failedRenderStart, status)

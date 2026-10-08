@@ -21,8 +21,10 @@ This file records the user-visible scope of each OpenHDK source release.
   reads and explicit exhaustion. Compiled FluidSynth playback now acknowledges
   its generation and publishes committed render positions and terminal state;
   explicit backend stop publishes Stopped, and legacy playback reports that no
-  compiled clock is available. Catalog preparation and audio/CLI lyric-consumer
-  binding remain unimplemented.
+  compiled clock is available. A serialized lyric observer binds acknowledged
+  generations, advances committed positions, retains finished cues, and clears
+  on mismatch, stop, failure, or exhaustion. Catalog preparation and application/CLI
+  lyric orchestration remain unimplemented.
 
 ## 0.2.0 - 2026-10-06
 
