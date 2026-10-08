@@ -98,6 +98,15 @@ class SongDiscovery {
     catch (const std::filesystem::filesystem_error&) { return reattachmentFailure(DiscoveryError::InvalidRoot); }
   }
 
+  CatalogOverrideResult replaceUserOverrides(SongId id, CatalogOverrideRequest request,
+                                            CatalogMetadataLimits limits = {}) {
+    return catalog_.replaceUserOverrides(id, request, limits);
+  }
+  CatalogDisplayResult display(std::shared_ptr<const CatalogSnapshot> snapshot, SongId id,
+                               CatalogMetadataLimits limits = {}) const {
+    return catalog_.display(std::move(snapshot), id, limits);
+  }
+
   // Reject snapshots with foreign or absent catalog lineage before any I/O.
   // Older snapshots remain usable if source bytes still match.
   SongPreparationResult prepare(std::shared_ptr<const CatalogSnapshot> snapshot,
@@ -189,6 +198,7 @@ class SongDiscovery {
     at(RootReattachmentCheckpoint::AfterValidation);
     at(RootReattachmentCheckpoint::BeforeCatalogStaging);
     auto stagedCatalog = catalog_.stageRootReattachment(root);
+    if (!stagedCatalog) return reattachmentFailure(DiscoveryError::LimitExceeded);
     at(RootReattachmentCheckpoint::BeforeCommit);
     // Hold the original native handle while reopening: its identity cannot be
     // recycled if an external actor deletes/replaces the directory during staging.
@@ -306,10 +316,12 @@ class SongDiscovery {
     const auto policy = rootRecord->policy.lyrics;
     auto budget = *MetadataPayloadBudget::create(limits.catalog.stagedLocatorBytes);
     std::set<const CatalogSourceMetadata*> chargedMetadata;
+    std::set<const CatalogUserOverrides*> chargedOverrides;
     for (const auto& song : captured->songs) {
       // Current + staged locator copies; immutable compact records are shared.
       if (!budget.charge(song.locator().size()) || !budget.charge(song.locator().size())
-          || !chargeSourceMetadata(budget, song.metadata, chargedMetadata))
+          || !chargeSourceMetadata(budget, song.metadata, chargedMetadata)
+          || !chargeUserOverrides(budget, song.overrides, chargedOverrides))
         return {diagnostic(DiscoveryError::LimitExceeded, DiscoveryOperation::Enumerate), 0U, {}};
     }
     // Five incoming copies cover enumeration/candidates, diagnostics, and either

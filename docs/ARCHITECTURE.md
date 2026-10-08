@@ -127,8 +127,8 @@ and KAR timelines under inherited or complete per-call selection policy.
 A final reread detects preparation-time
 changes. PreparedSong retains catalog identity and its original snapshot;
 rescans never replace its buffers. Preparation does not start or replace audio.
-Source metadata is connected to scan and preparation; override/display
-transactions, durable storage, NCN preparation and application lyric
+Source metadata and user override/display transactions are connected to scan
+and preparation. Durable storage, NCN preparation and application lyric
 orchestration remain unimplemented. The
 [root reattachment contract](ROOT-REATTACHMENT-CONTRACT.md) separates root
 attachment generations from catalog and playback revisions. The development
@@ -152,7 +152,13 @@ NoLyrics succeeds. CatalogSong has one primary member and shared const compact
 metadata. PreparedSong retains fresh effective metadata and the acquired root
 context separately. SourceMetadataExtraction reuses canonical KAR results,
 with one existing staged payload allowance and checked coexistence charges.
-Override/display transactions remain pending.
+User title/artist replacement stages one immutable shared record and publishes
+both fields with one catalog revision. CatalogDisplay resolves owning title and
+artist values with explicit origin, separate from source metadata. PreparedSong
+materializes display using effective extraction plus acquired snapshot overrides.
+Shared records are credited once under the existing payload allowance; validation
+and display copies are reserved before allocation. These control-path operations
+perform no audio action or filesystem write.
 Catalog methods are serialized and non-reentrant. Readers share acquired
 immutable snapshots. Lyric extraction and the pure consumer reuse compiled/session media time
 rather than an independent wall clock.

@@ -81,7 +81,7 @@ ctest --test-dir build --output-on-failure
 
 The default POC configuration uses pinned FluidSynth and miniaudio dependencies
 (and downloads a pinned test SoundFont when audio POC tests are enabled). For
-the seventeen hardware-free core test suites, use:
+the eighteen hardware-free core test suites, use:
 
 ```powershell
 cmake -S . -B build-parser -DOPENHDK_BUILD_AUDIO_POC=OFF -DOPENHDK_BUILD_TESTS=ON -DOPENHDK_FETCH_TEST_FIXTURES=OFF
@@ -91,13 +91,13 @@ ctest --test-dir build-parser --output-on-failure
 
 The lightweight Linux core CI job uses this hardware-free configuration with
 strict compiler warnings and AddressSanitizer/UndefinedBehaviorSanitizer. It
-runs seventeen suites: SMF parser fixtures, MIDI diagnostics CLI, runtime mixer
+runs eighteen suites: SMF parser fixtures, MIDI diagnostics CLI, runtime mixer
 console, velocity curves, mixer presets, stereo peak limiting, song catalog
 identity/transactions, filesystem discovery, lyric text decoding, KAR cue
 extraction, media-clock consumption, atomic media-clock publication,
 generation-bound lyric observation, single-song preparation, root reattachment,
 pure catalog metadata/policy models, and catalog metadata scan/preparation
-integration. It does not
+integration, and user override/display transactions. It does not
 install FluidSynth or vcpkg, fetch miniaudio or SoundFonts, access audio
 hardware, build the complete audio application, or claim Linux support for
 the Windows interactive console. The Windows CI job
@@ -119,8 +119,10 @@ text decoder, pure KAR selection/immutable cue extraction, and a pure media-cloc
 consumer. Catalog metadata and immutable root policies are connected to
 scan/preparation under [OHK-META-030](docs/CATALOG-METADATA-POLICY-CONTRACT.md).
 Ready includes selected lyric validation; preparation inherits the root policy
-or uses a complete per-call override. User override/display transactions,
-durable storage and library playback orchestration remain unimplemented.
+or uses a complete per-call override. Atomic user title/artist replacement and
+owning display resolution are implemented. Prepared display uses fresh effective
+source metadata and the acquired snapshot's overrides. Durable storage and
+library playback orchestration remain unimplemented.
 Released v0.2.0 does not provide
 library or KAR/NCN services.
 

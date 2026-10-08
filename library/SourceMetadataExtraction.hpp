@@ -18,6 +18,19 @@ inline bool chargeSourceMetadata(MetadataPayloadBudget& budget,
   charged.insert(metadata.get()); // Allocation failure leaves budget unchanged.
   return budget.charge(bytes);
 }
+// Override records are also immutable shared storage. A failed charge must not
+// insert the pointer into the deduplication set or consume partial credit.
+inline bool chargeUserOverrides(MetadataPayloadBudget& budget,
+    const std::shared_ptr<const CatalogUserOverrides>& overrides,
+    std::set<const CatalogUserOverrides*>& charged) {
+  if (!overrides || charged.contains(overrides.get())) return true;
+  auto staged = budget;
+  if ((overrides->title && !staged.charge(overrides->title->bytes().size()))
+      || (overrides->artist && !staged.charge(overrides->artist->bytes().size()))) return false;
+  charged.insert(overrides.get());
+  budget = staged;
+  return true;
+}
 inline bool chargeLyricPayload(MetadataPayloadBudget& budget, const KarLyricTimeline& lyrics) noexcept {
   for (const auto& cue : lyrics.cues()) {
     if (!budget.charge(cue.raw.size()) || !budget.charge(cue.decoded.size())) return false;
