@@ -281,7 +281,11 @@ IDs/counters/policies/overrides under a new lineage, invalidate every song and
 leave roots unattached. Hints MUST NOT trigger source access. Explicit first
 attachment MUST increment generation/revision and require a complete scan.
 Exhausted counters MUST NOT wrap; old owners/prepared values remain unchanged.
-No filesystem store, autosave, migration or durable library service is provided today.
+A detached checkpoint coordinator is implemented with fake-provider tests. It
+MUST reject stale/foreign store tickets, retain history, acknowledge only confirmed
+publication, and fault on uncertainty until validated reopen/reconciliation.
+Store tickets do not prove live catalog snapshot provenance. No filesystem store,
+autosave, migration or durable library service is provided today.
 Its native provider and durable-first mutation gates require separate evidence;
 this contract does not approve a dependency or change released v0.2.0 behavior.
 

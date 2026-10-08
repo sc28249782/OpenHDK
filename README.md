@@ -81,7 +81,7 @@ ctest --test-dir build --output-on-failure
 
 The default POC configuration uses pinned FluidSynth and miniaudio dependencies
 (and downloads a pinned test SoundFont when audio POC tests are enabled). For
-the twenty hardware-free core test suites, use:
+the twenty-one hardware-free core test suites, use:
 
 ```powershell
 cmake -S . -B build-parser -DOPENHDK_BUILD_AUDIO_POC=OFF -DOPENHDK_BUILD_TESTS=ON -DOPENHDK_FETCH_TEST_FIXTURES=OFF
@@ -91,7 +91,7 @@ ctest --test-dir build-parser --output-on-failure
 
 The lightweight Linux core CI job uses this hardware-free configuration with
 strict compiler warnings and AddressSanitizer/UndefinedBehaviorSanitizer. It
-runs twenty suites: catalog checkpoint codec/restore, SMF parser fixtures, MIDI
+runs twenty-one suites: catalog checkpoint codec/restore/store protocol, SMF parser fixtures, MIDI
 diagnostics CLI, runtime mixer console, velocity curves, mixer presets, stereo peak limiting, song catalog
 identity/transactions, filesystem discovery, lyric text decoding, KAR cue
 extraction, media-clock consumption, atomic media-clock publication,
@@ -139,7 +139,9 @@ whole-catalog checkpoint, fresh-owner restore and explicit root reattachment.
 The development tree has a pure bounded schema-1 codec and detached projection
 with independent wire/hash fixtures, plus validated fresh-owner restore. Restored
 roots require explicit attachment and a complete scan; hints grant no source access.
-Native storage and durable library operations remain pending. None of these
+A detached checkpoint store coordinator has fake-provider protocol tests for
+stale tokens, staged publication and uncertainty recovery. Native storage, live
+checkpoint capture and durable library operations remain pending. None of these
 changes are part of released v0.2.0.
 
 ## Specification

@@ -92,9 +92,9 @@ occurs when a SoundFont or audio device is unavailable.
   The [accepted persistence contract](CATALOG-PERSISTENCE-CONTRACT.md) defines schema-1
   checkpoints, fresh-owner restore, explicit reattachment and save/recovery.
   The pure schema-1 codec and fresh-owner restore are implemented;
-  fake-provider/native-provider slices remain pending. Native
+  the detached coordinator has fake-provider protocol tests. Native providers,
   durability and durable-first mutation wiring remain separate acceptance gates;
-  codec/restore alone do not complete the storage checkbox.
+  codec/restore/protocol alone do not complete the storage checkbox.
 - [ ] Integrate library preparation and lyric observation without changing
   released MIDI, mixer, or limiter semantics; validate Windows playback.
 - Research staged runtime layout and installers separately; this proposal
