@@ -27,8 +27,8 @@ int main() {
   const auto first = catalog.snapshot();
   const auto a = first->songs[0].id;
   const auto z = first->songs[1].id;
-  OPENHDK_FAIL_IF(7, first->revision != 1U || first->songs[0].locator != "a.mid" || a == z);
-  OPENHDK_FAIL_IF(8, empty->revision != 0U || !empty->songs.empty());
+  OPENHDK_FAIL_IF(7, first->revision != empty->revision + 1U || first->songs[0].locator != "a.mid" || a == z);
+  OPENHDK_FAIL_IF(8, empty->revision != 2U || !empty->songs.empty());
   OPENHDK_FAIL_IF(9, catalog.commitScan(root, {{"a.mid", CatalogState::Invalid}, {"z.mid"}}, true) != CatalogError::None);
   OPENHDK_FAIL_IF(10, catalog.snapshot()->songs[0].id != a || catalog.snapshot()->songs[0].state != CatalogState::Invalid);
   OPENHDK_FAIL_IF(11, first->songs[0].state != CatalogState::Ready);

@@ -126,12 +126,13 @@ checks containment and its SHA-256/byte-count token, and builds immutable MIDI
 and explicit-policy KAR timelines. A final reread detects preparation-time
 changes. PreparedSong retains catalog identity and its original snapshot;
 rescans never replace its buffers. Preparation does not start or replace audio.
-Catalog metadata, root reattachment, durable storage, NCN preparation, and
+Catalog metadata, durable storage, NCN preparation, and
 application lyric orchestration remain unimplemented. The
-[root reattachment proposal](ROOT-REATTACHMENT-CONTRACT.md) separates root
-attachment generations from catalog and playback revisions. It proposes
-invalidating current entries and rejecting stale-root preparation while keeping
-already-prepared buffers intact; this gate is not implemented yet. The
+[root reattachment contract](ROOT-REATTACHMENT-CONTRACT.md) separates root
+attachment generations from catalog and playback revisions. The development
+tree stages the new path and invalidated catalog together, verifies native
+directory identity, then commits with non-throwing swaps. Preparation rejects
+stale-root snapshots while already-prepared buffers remain owned. The
 [media-clock handoff contract](MEDIA-CLOCK-HANDOFF-CONTRACT.md) defines a fixed
 atomic latest-value cell, playback generations, and successful-block commit
 rules. The backend publishes committed block positions, terminal state, and

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
 #include "library/SongPreparation.hpp"
+#include "library/DirectoryIdentity.hpp"
 #include "audio/SmfTimelineCompiler.hpp"
 #include <functional>
 #include <new>
@@ -8,15 +9,29 @@
 namespace OpenHDK {
 enum class DiscoveryError {
   InvalidRoot, AmbiguousPath, SourceUnreadable, SourceChanged, InvalidSmf,
-  LimitExceeded, Cancelled, StorageFailure
+  LimitExceeded, Cancelled, StorageFailure, RevisionExhausted
 };
-enum class DiscoveryOperation { RegisterRoot, Enumerate, Read, Validate, Publish };
+enum class DiscoveryOperation { RegisterRoot, Enumerate, Read, Validate, Publish, ReattachRoot };
 struct DiscoveryDiagnostic {
   DiscoveryError code;
   DiscoveryOperation operation;
   std::string locator;
   std::optional<SmfParseError> parseError = std::nullopt;
   std::optional<SmfTimelineError> timelineError = std::nullopt;
+  std::string_view message() const noexcept {
+    switch (code) {
+      case DiscoveryError::InvalidRoot: return "The registered root or selected directory is invalid.";
+      case DiscoveryError::AmbiguousPath: return "The selected path overlaps or aliases a registered source.";
+      case DiscoveryError::SourceUnreadable: return "A source could not be read.";
+      case DiscoveryError::SourceChanged: return "The source or directory changed during validation.";
+      case DiscoveryError::InvalidSmf: return "The source is not a valid canonical SMF.";
+      case DiscoveryError::LimitExceeded: return "A configured library limit was exceeded.";
+      case DiscoveryError::Cancelled: return "The library operation was cancelled.";
+      case DiscoveryError::StorageFailure: return "Library staging could not allocate storage.";
+      case DiscoveryError::RevisionExhausted: return "A root attachment or catalog revision counter is exhausted.";
+    }
+    return "The library operation failed.";
+  }
 };
 struct DiscoveryResult {
   std::optional<DiscoveryDiagnostic> error;
@@ -40,6 +55,19 @@ struct RootRegistration {
   std::optional<DiscoveryDiagnostic> error;
 };
 
+enum class RootReattachmentStatus { Updated, Unchanged };
+struct RootReattachmentResult {
+  std::optional<RootReattachmentStatus> status;
+  std::optional<DiscoveryDiagnostic> error;
+  bool succeeded() const noexcept { return status.has_value() && !error; }
+};
+enum class RootReattachmentCheckpoint { AfterValidation, BeforeCatalogStaging, BeforeCommit };
+struct RootReattachmentControl {
+  // Serialized control-path hooks. No re-entry into this library is permitted.
+  std::function<bool()> cancelled;
+  std::function<void(RootReattachmentCheckpoint)> checkpoint;
+};
+
 class SongDiscovery {
  public:
   std::shared_ptr<const CatalogSnapshot> snapshot() const noexcept { return catalog_.snapshot(); }
@@ -57,6 +85,13 @@ class SongDiscovery {
     catch (const std::filesystem::filesystem_error&) { return {diagnostic(DiscoveryError::SourceUnreadable, operation), 0U, {}}; }
   }
 
+  RootReattachmentResult reattachRoot(RootId root, const std::filesystem::path& path,
+      const RootReattachmentControl& control = {}) {
+    try { return reattachRootImpl(root, path, control); }
+    catch (const std::bad_alloc&) { return reattachmentFailure(DiscoveryError::StorageFailure); }
+    catch (const std::filesystem::filesystem_error&) { return reattachmentFailure(DiscoveryError::InvalidRoot); }
+  }
+
   // Reject snapshots with foreign or absent catalog lineage before any I/O.
   // Older snapshots remain usable if source bytes still match.
   SongPreparationResult prepare(std::shared_ptr<const CatalogSnapshot> snapshot,
@@ -72,11 +107,96 @@ class SongDiscovery {
     const auto root=std::find_if(roots_.begin(),roots_.end(),
         [&](const auto& item) { return item.id==song->root; });
     if(root==roots_.end()) return failure(PreparationErrorCode::InvalidRoot);
+    const auto captured = std::find_if(snapshot->roots.begin(), snapshot->roots.end(),
+        [&](const auto& item) { return item.id == song->root; });
+    const auto current = catalog_.snapshot();
+    const auto binding = std::find_if(current->roots.begin(), current->roots.end(),
+        [&](const auto& item) { return item.id == song->root; });
+    if (captured == snapshot->roots.end() || binding == current->roots.end() ||
+        captured->attachmentGeneration != binding->attachmentGeneration)
+      return failure(PreparationErrorCode::SourceChanged);
     return SongPreparation::prepare(root->path,snapshot,
         static_cast<std::size_t>(song-snapshot->songs.begin()),options,control);
   }
 
  private:
+#ifdef OPENHDK_ENABLE_TEST_SEAMS
+  friend struct RootReattachmentTestAccess;
+#endif
+  static RootReattachmentResult reattachmentFailure(DiscoveryError code) {
+    return {{}, diagnostic(code, DiscoveryOperation::ReattachRoot)};
+  }
+  std::optional<DiscoveryError> validateReattachmentTarget(RootId root,
+      const std::filesystem::path& canonical) const {
+    namespace fs = std::filesystem;
+#ifdef _WIN32
+    if (LibraryFilesystem::windowsNetworkPath(LibraryFilesystem::utf8(canonical)))
+      return DiscoveryError::InvalidRoot;
+#endif
+    for (const auto& entry : roots_) {
+      if (entry.id != root && (LibraryFilesystem::contains(entry.path, canonical) ||
+          LibraryFilesystem::contains(canonical, entry.path))) return DiscoveryError::AmbiguousPath;
+      std::error_code ec;
+      const bool present = fs::exists(entry.path, ec);
+      if (ec) return DiscoveryError::InvalidRoot;
+      if (present && entry.path != canonical) {
+        const bool equivalent = fs::equivalent(entry.path, canonical, ec);
+        if (ec) return DiscoveryError::InvalidRoot;
+        if (equivalent) return DiscoveryError::AmbiguousPath;
+      }
+    }
+    return {};
+  }
+  RootReattachmentResult reattachRootImpl(RootId root, const std::filesystem::path& path,
+      const RootReattachmentControl& control) {
+    namespace fs = std::filesystem;
+    const auto found = std::find_if(roots_.begin(), roots_.end(),
+        [&](const auto& item) { return item.id == root; });
+    if (found == roots_.end()) return reattachmentFailure(DiscoveryError::InvalidRoot);
+    const auto isCancelled = [&] { return control.cancelled && control.cancelled(); };
+    const auto at = [&](RootReattachmentCheckpoint point) {
+      if (control.checkpoint) control.checkpoint(point);
+    };
+    if (isCancelled()) return reattachmentFailure(DiscoveryError::Cancelled);
+#ifdef _WIN32
+    if (LibraryFilesystem::windowsNetworkPath(LibraryFilesystem::utf8(path)))
+      return reattachmentFailure(DiscoveryError::InvalidRoot);
+#endif
+    std::error_code ec;
+    auto target = fs::canonical(path, ec);
+    if (ec || !fs::is_directory(target, ec) || ec)
+      return reattachmentFailure(DiscoveryError::InvalidRoot);
+    if (auto error = validateReattachmentTarget(root, target)) return reattachmentFailure(*error);
+    LibraryFilesystem::DirectoryHandle original(target);
+    if (!original.identity()) return reattachmentFailure(DiscoveryError::InvalidRoot);
+    if (target == found->path) return {RootReattachmentStatus::Unchanged, {}};
+    const auto current = catalog_.snapshot();
+    const auto binding = std::find_if(current->roots.begin(), current->roots.end(),
+        [&](const auto& item) { return item.id == root; });
+    if (binding == current->roots.end()) return reattachmentFailure(DiscoveryError::InvalidRoot);
+    if (binding->attachmentGeneration == std::numeric_limits<std::uint64_t>::max() ||
+        current->revision == std::numeric_limits<std::uint64_t>::max())
+      return reattachmentFailure(DiscoveryError::RevisionExhausted);
+    at(RootReattachmentCheckpoint::AfterValidation);
+    at(RootReattachmentCheckpoint::BeforeCatalogStaging);
+    auto stagedCatalog = catalog_.stageRootReattachment(root);
+    at(RootReattachmentCheckpoint::BeforeCommit);
+    // Hold the original native handle while reopening: its identity cannot be
+    // recycled if an external actor deletes/replaces the directory during staging.
+    const auto verified = fs::canonical(target, ec);
+    if (ec || verified != target) return reattachmentFailure(DiscoveryError::SourceChanged);
+    LibraryFilesystem::DirectoryHandle final(target);
+    if (!final.identity() || final.identity() != original.identity())
+      return reattachmentFailure(DiscoveryError::SourceChanged);
+    if (auto error = validateReattachmentTarget(root, target)) return reattachmentFailure(*error);
+    if (isCancelled()) return reattachmentFailure(DiscoveryError::Cancelled);
+    // All allocation, hooks and I/O precede these two non-throwing mutations.
+    static_assert(noexcept(found->path.swap(target)));
+    found->path.swap(target);
+    catalog_.snapshot_.swap(stagedCatalog);
+    return {RootReattachmentStatus::Updated, {}};
+  }
+
   RootRegistration registerRootImpl(const std::filesystem::path& path) {
     namespace fs = std::filesystem;
     std::error_code ec;

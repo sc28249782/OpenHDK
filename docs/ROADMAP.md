@@ -69,8 +69,10 @@ occurs when a SoundFont or audio device is unavailable.
 - [x] Add bounded SMF/KAR discovery, content revision checks, and in-memory
   scan transactions with synthetic fixtures.
 - [ ] Add root reattachment and source/member metadata before library integration.
-  Review [OHK-ROOT-030](ROOT-REATTACHMENT-CONTRACT.md) before implementing
-  attachment generations, transactional invalidation, and stale-root checks.
+  Local SMF/KAR root reattachment is implemented under
+  [OHK-ROOT-030](ROOT-REATTACHMENT-CONTRACT.md), including attachment generations,
+  transactional invalidation and stale-root checks. Source/member metadata and
+  root lyric policies remain pending, so this combined item remains open.
 - [x] Implement pure KAR extraction, FF 05/identified FF 01 selection, explicit
   text encoding, and deterministic media-clock lyric-consumer tests.
   Running-backend publication and the generation-bound observer are implemented;
