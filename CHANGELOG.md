@@ -9,7 +9,10 @@ This file records the user-visible scope of each OpenHDK source release.
   SHA-256 content revisions, per-file diagnostics, and scan rollback.
   Single-song SMF/KAR preparation rechecks source revisions and owns immutable
   MIDI/lyric inputs with catalog identity. Preparation rejects foreign or
-  unowned catalog snapshots before filesystem access. No library CLI, metadata database,
+  unowned catalog snapshots before filesystem access. Local root reattachment
+  stages mapping/catalog invalidation, retains song IDs, and rejects stale root
+  attachment generations before preparation I/O. Already-prepared MIDI/lyrics
+  remain owned; root reattachment makes no backend call. No library CLI, metadata database,
   NCN preparation, or application-level lyric playback is provided yet. Released v0.2.0 behavior is unchanged.
 
 - Development lyric text core: explicit bounded UTF-8/TIS-620 decoding with

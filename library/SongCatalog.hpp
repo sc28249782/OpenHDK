@@ -57,9 +57,14 @@ struct CatalogSong {
   CatalogState state;
   std::optional<SourceRevision> sourceRevision = std::nullopt;
 };
+struct CatalogRoot {
+  RootId id;
+  std::uint64_t attachmentGeneration = 1U;
+};
 struct CatalogSnapshot {
   std::uint64_t revision = 0U;
   std::vector<CatalogSong> songs;
+  std::vector<CatalogRoot> roots;
  private:
   // Lifetime identity, not a path/content key or a persistent identifier.
   std::shared_ptr<const unsigned char> origin_;
@@ -135,7 +140,11 @@ class SongCatalog {
   std::optional<RootId> addRoot() {
     if (nextRoot_ == std::numeric_limits<std::uint64_t>::max()) return std::nullopt;
     const RootId root(nextRoot_);
-    roots_.push_back(root);
+    if (snapshot_->revision == std::numeric_limits<std::uint64_t>::max()) return std::nullopt;
+    auto staged = std::make_shared<CatalogSnapshot>(*snapshot_);
+    staged->roots.push_back({root, 1U});
+    ++staged->revision;
+    snapshot_ = std::move(staged);
     ++nextRoot_;
     return root;
   }
@@ -256,10 +265,30 @@ class SongCatalog {
   }
 
  private:
+  friend class SongDiscovery;
+#ifdef OPENHDK_ENABLE_TEST_SEAMS
+  friend struct RootReattachmentTestAccess;
+#endif
   bool knownRoot(RootId root) const noexcept {
-    return std::find(roots_.begin(), roots_.end(), root) != roots_.end();
+    return std::any_of(snapshot_->roots.begin(), snapshot_->roots.end(),
+        [&](const auto& item) { return item.id == root; });
   }
-  std::vector<RootId> roots_;
+  // Discovery stages its path mapping before calling this helper. Neither
+  // staging step publishes. The serialized writer commits with noexcept swaps.
+  std::shared_ptr<const CatalogSnapshot> stageRootReattachment(RootId root) const {
+    auto staged = std::make_shared<CatalogSnapshot>(*snapshot_);
+    const auto found = std::find_if(staged->roots.begin(), staged->roots.end(),
+        [&](const auto& item) { return item.id == root; });
+    ++found->attachmentGeneration; // Caller has checked both counter bounds.
+    ++staged->revision;
+    for (auto& song : staged->songs) {
+      if (song.root == root) {
+        song.state = CatalogState::Invalid;
+        song.sourceRevision.reset();
+      }
+    }
+    return staged;
+  }
   std::uint64_t nextRoot_ = 1U;
   std::uint64_t nextSong_ = 1U;
   std::shared_ptr<const CatalogSnapshot> snapshot_;

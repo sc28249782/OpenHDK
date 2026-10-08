@@ -1,14 +1,14 @@
 # Test coverage and failure diagnostics
 
-The hardware-free configuration registers fourteen CTest suites: parser fixtures,
+The hardware-free configuration registers fifteen CTest suites: parser fixtures,
 MIDI diagnostics CLI, runtime mixer console, velocity curves, mixer presets,
 stereo peak limiter, song catalog core, filesystem discovery, lyric text
 decoding, KAR lyric extraction, media-clock consumption, media-clock
-publication, generation-bound lyric observation, and single-song preparation.
+publication, generation-bound lyric observation, single-song preparation, and root reattachment.
 The audio-enabled test configuration adds FluidSynth headless
-playback, CLI help, and diagnostics error cases, for seventeen suites.
+playback, CLI help, and diagnostics error cases, for eighteen suites.
 These counts describe the development tree; v0.2.0 has six/nine respectively.
-Linux core CI runs fourteen hardware-free suites; Windows bootstrap runs all seventeen.
+Linux core CI runs fifteen hardware-free suites; Windows bootstrap runs all eighteen.
 
 ## Planned 0.3.0 acceptance
 
@@ -63,13 +63,17 @@ explicit stop, restart, legacy unavailable state, and shutdown. Deterministic
 mid-block failure injection checks that failure retains the previous committed
 position.
 
-Remaining catalog metadata, root reattachment, and library integration tests
-must use independently authored fixtures. The proposed
-[OHK-ROOT-030 acceptance cases](../docs/ROOT-REATTACHMENT-CONTRACT.md) cover
-root-move/rescan, transactional rollback, attachment counter exhaustion,
-stale-snapshot rejection and prepared-buffer retention. These are requirements
-for a future implementation, not current test coverage. NCN24 requires a
-reviewed evidence supplement before normalizer implementation. No private song or SoundFont
+Remaining catalog metadata and library integration tests must use independently
+authored fixtures. The `root-reattachment` suite covers the accepted
+[OHK-ROOT-030 boundary](../docs/ROOT-REATTACHMENT-CONTRACT.md): move/rescan,
+invalidation of every catalog state, same-path no-op, initial/late cancellation,
+injected bad_alloc rollback, native-directory replacement/disappearance,
+attachment/catalog exhaustion, stale/foreign snapshot rejection, unrelated-root
+preservation, and retained prepared buffers/batches. Its target-local test seams
+are not enabled in production. Windows UNC rejection runs on Windows; source
+symlink fixtures report a skip if the OS denies link creation. Observable
+self-alias cases require filesystem support and are not claimed as current
+fixture coverage. NCN24 requires a reviewed evidence supplement before normalizer implementation. No private song or SoundFont
 is a repository test asset.
 
 ## Failure diagnostics

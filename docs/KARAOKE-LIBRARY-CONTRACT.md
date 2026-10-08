@@ -72,9 +72,10 @@ relocation validates the new key, retains SongId, and fails atomically if the
 new key already belongs to another entry. It does not rename the media file.
 Reattaching a root to a new absolute directory preserves RootId and relative
 keys only after explicit user selection and validation.
-The [root reattachment proposal](ROOT-REATTACHMENT-CONTRACT.md) specifies
-per-root attachment generations, transactional invalidation, and stale-snapshot
-preparation rules for review before that slice is implemented.
+The accepted [root reattachment contract](ROOT-REATTACHMENT-CONTRACT.md)
+specifies per-root attachment generations, transactional invalidation, and
+stale-snapshot preparation rules. Local SMF/KAR reattachment is implemented in
+the development tree.
 
 ## 3. Deterministic discovery
 
@@ -274,7 +275,11 @@ Preparation MUST reject a null snapshot or one with absent/foreign catalog
 lineage as InvalidConfiguration at Resolve, before root lookup or filesystem
 access. Each catalog retains a private lifetime token in every snapshot; later
 commits and snapshot copies retain that token. Old snapshots from the same
-instance remain eligible for source revalidation. Tokens are not serialized or
+instance remain eligible for source revalidation when the selected root
+attachment generation still matches. Missing or mismatched attachment data
+returns SourceChanged at Resolve before source I/O, even with identical bytes
+at the new location. Registration publishes RootId/generation records into
+snapshots. Tokens are not serialized or
 derived from paths/content, and a retained token cannot be reused by a later
 catalog object. This checks catalog lineage, not integrity of caller-modified
 snapshot copies; callers still use immutable acquired snapshots. Opaque IDs
@@ -294,7 +299,8 @@ AfterRead/AfterExtraction support deterministic mutation/cancellation tests.
 The reread is not an atomic filesystem transaction: later edits do not change
 the immutable prepared buffers, and hostile-writer guarantees are not claimed.
 
-Root reattachment, complete source/member metadata, root-registered lyric
+Local root reattachment is implemented under OHK-ROOT-030. Complete
+source/member metadata, root-registered lyric
 policies, durable storage, catalog lyric indexing, NCN lyrics, and application
 playback orchestration remain unimplemented. Pure KAR selection/cue extraction
 exists separately under

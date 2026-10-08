@@ -1,13 +1,13 @@
-# Root reattachment contract proposal
+# Root reattachment contract
 
 **Contract ID:** OHK-ROOT-030
-**Status:** Proposed; requires review and acceptance before implementation.
+**Status:** Accepted planning contract (PR #48); local SMF/KAR reattachment implemented in the development tree.
 **Target:** 0.3.0; not part of released OpenHDK v0.2.0.
 
-This proposal supplements [OHK-LIB-030](KARAOKE-LIBRARY-CONTRACT.md).
+This contract supplements [OHK-LIB-030](KARAOKE-LIBRARY-CONTRACT.md).
 [SPECIFICATION.md](SPECIFICATION.md) remains the authority for implemented
-behavior. MUST and MUST NOT below apply to the proposed target, not to a claim
-that root reattachment is available today.
+behavior. MUST and MUST NOT below define the target implementation obligations.
+Development-tree support does not extend the released v0.2.0 baseline.
 
 ## 1. Scope
 
@@ -143,9 +143,39 @@ Minimum independently authored tests:
 - PreparedSong and retained lyric batch survive reattachment and owner teardown;
 - source symlink/reparse escape remains rejected by the existing reader.
 
-Before implementation, review this proposal and resolve its transaction and
-stale-snapshot rules. Hardware-free fixtures and both CI jobs are required for
-the implementation slice; Windows-only path behavior needs Windows coverage.
-No test count, roadmap completion checkbox, or v0.3.0 support claim changes in
-this proposal. NCN evidence, persistence, metadata/indexing, application/CLI
-orchestration, and manual device/lyric validation remain open gates.
+Hardware-free fixtures and both CI jobs are required for the implementation
+slice; Windows-only path behavior needs Windows coverage. NCN evidence,
+persistence, metadata/indexing, application/CLI orchestration, and manual
+device/lyric validation remain open gates before a v0.3.0 support claim.
+
+## 7. Current implementation boundary
+
+`SongDiscovery::reattachRoot` implements Updated/Unchanged results and structured
+ReattachRoot diagnostics. Catalog snapshots retain RootId/attachment-generation
+records. Registration publishes a root record and one new catalog revision;
+complete scans retain attachment generations. A changed binding stages one
+invalidated snapshot and swaps the selected path and catalog pointer without
+allocation or callbacks during commit.
+
+`DirectoryHandle` retains native directory identity through staging and final
+verification. POSIX uses device/inode; Windows uses volume serial/file index.
+The Windows handle permits read/write/delete sharing so external replacement
+can be observed rather than blocked by the observation handle. Source reads
+still use their separate no-follow containment reader. Neither probe is a
+filesystem transaction or a guarantee against later external edits.
+
+Preparation enforces catalog lineage first and then rejects missing/mismatched
+root attachment generations at Resolve. PreparedSong buffers and owning lyric
+batches retain their prior snapshots. This does not authenticate caller-modified
+snapshot copies or individual library-local IDs.
+
+The standalone `root-reattachment` suite exposes private counter/catalog seams
+only through its target-local OPENHDK_ENABLE_TEST_SEAMS definition. Production
+has no counter reset or test descriptor injection API. Checkpoint hooks inject
+cancellation, directory replacement/disappearance, and bad_alloc exceptions
+before commit; these do not claim exhaustive allocator fault coverage. Native
+source-symlink coverage runs where the OS permits fixture creation. Observable
+self-alias coverage depends on a filesystem exposing distinct equivalent
+canonical paths; the implementation rejects such equivalence when detected.
+Source/member metadata, root lyric policies, NCN, persistence, and CLI/audio
+orchestration remain separate work.
