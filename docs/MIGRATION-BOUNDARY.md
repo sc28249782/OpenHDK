@@ -25,7 +25,7 @@ the upstream repository/commit/path, original notice, modifications, and tests.
 
 OpenHDK MAY study another project to identify user-facing capabilities and to
 compare product behavior. A feature reference is not source-port permission.
-`docs/MIXER-REFERENCE.md` records the current HandyMixer comparison and the
+`docs/MIXER-REFERENCE.md` records the pinned Buai Music Mixer (formerly HandyMixer) comparison and the
 adopt, redesign, defer, or reject decision for each capability.
 
 Code, build files, UI assets, dependency wrappers, and API patterns that are
