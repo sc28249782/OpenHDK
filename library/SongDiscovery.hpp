@@ -57,14 +57,15 @@ class SongDiscovery {
     catch (const std::filesystem::filesystem_error&) { return {diagnostic(DiscoveryError::SourceUnreadable, operation), 0U, {}}; }
   }
 
-  // Use a previously acquired snapshot from THIS library, not a fabricated or
-  // foreign catalog. Older snapshots remain usable if source bytes still match.
+  // Reject snapshots with foreign or absent catalog lineage before any I/O.
+  // Older snapshots remain usable if source bytes still match.
   SongPreparationResult prepare(std::shared_ptr<const CatalogSnapshot> snapshot,
       SongId id, PreparationOptions options = {}, const PreparationControl& control = {}) const {
     const auto failure=[](PreparationErrorCode code) {
       return SongPreparationResult{nullptr,PreparationError{code,PreparationOperation::Resolve,{},{},{},{}}};
     };
-    if(!snapshot) return failure(PreparationErrorCode::InvalidConfiguration);
+    if(!snapshot || !catalog_.ownsSnapshot(*snapshot))
+      return failure(PreparationErrorCode::InvalidConfiguration);
     const auto song=std::find_if(snapshot->songs.begin(),snapshot->songs.end(),
         [&](const auto& item) { return item.id==id; });
     if(song==snapshot->songs.end()) return failure(PreparationErrorCode::NotFound);

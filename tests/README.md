@@ -154,3 +154,9 @@ Native symlink setup may be unavailable on Windows; that fixture runs when the
 OS permits creation. Existing discovery coverage retains the native path checks.
 Root-registered lyric policies, NCN members, metadata indexing, persistent
 storage, and application playback lifecycle remain separate acceptance work.
+
+Preparation lineage regression checks use two distinct libraries with equal
+local RootId/SongId, locators, and source bytes. Foreign and unowned snapshots
+fail at Resolve without invoking preparation hooks; old same-library snapshots
+still prepare after a rescan. A retained snapshot from a destroyed owner cannot
+be adopted by a new owner. This is a lineage check, not snapshot tamper detection.

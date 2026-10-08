@@ -267,8 +267,16 @@ only; Ready does not imply that lyric extraction will succeed.
 its original catalog snapshot, identity/locator/revision, compiled MIDI,
 extracted lyrics (including NoLyrics), and selected preparation options.
 No backend start, stop, replacement, or observer binding occurs in preparation.
-A caller supplies snapshots acquired from that same SongDiscovery instance;
-opaque IDs are not portable between library instances. Allocation failures,
+Preparation MUST reject a null snapshot or one with absent/foreign catalog
+lineage as InvalidConfiguration at Resolve, before root lookup or filesystem
+access. Each catalog retains a private lifetime token in every snapshot; later
+commits and snapshot copies retain that token. Old snapshots from the same
+instance remain eligible for source revalidation. Tokens are not serialized or
+derived from paths/content, and a retained token cannot be reused by a later
+catalog object. This checks catalog lineage, not integrity of caller-modified
+snapshot copies; callers still use immutable acquired snapshots. Opaque IDs
+remain library-local and are not independently authenticated by this check.
+Allocation failures,
 cancellation, content changes, and validation failures return no prepared
 result and do not change the catalog or previously prepared inputs. Nested
 parser, compiler, and KAR errors retain their codes and positions.

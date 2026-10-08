@@ -147,5 +147,28 @@ int main(){
   fs::rename(temp.path.string()+"-moved",removedRoot);
   OPENHDK_FAIL_IF(34,!failed(rootFailure,PreparationErrorCode::InvalidRoot)
       || ready.prepared->lyrics()->cues()[0].decoded!="A");
+  // Distinct catalogs can have identical local IDs, locators and content.
+  TemporaryRoot foreignRoot;write(foreignRoot.path/"song.kar",bytes);
+  SongDiscovery foreign;const auto foreignRegistration=foreign.registerRoot(foreignRoot.path);
+  OPENHDK_FAIL_IF(35,!foreignRegistration.root || !foreign.scan(*foreignRegistration.root).succeeded());
+  const auto foreignSnapshot=foreign.snapshot();
+  OPENHDK_FAIL_IF(36,foreignSnapshot->songs[0].id!=id
+      || foreignSnapshot->songs[0].root!=snapshot->songs[0].root
+      || foreignSnapshot->songs[0].sourceRevision!=snapshot->songs[0].sourceRevision);
+  unsigned checkpoints=0U;PreparationControl rejectedControl;
+  rejectedControl.cancelled=[&]{++checkpoints;return false;};
+  rejectedControl.checkpoint=[&](auto){++checkpoints;};
+  const auto foreignResult=library.prepare(foreignSnapshot,id,{},rejectedControl);
+  OPENHDK_FAIL_IF(37,!failed(foreignResult,PreparationErrorCode::InvalidConfiguration)
+      || foreignResult.error->operation!=PreparationOperation::Resolve || checkpoints!=0U
+      || library.snapshot()!=thai || ready.prepared->lyrics()->cues()[0].decoded!="A");
+  auto unowned=std::make_shared<CatalogSnapshot>();unowned->songs=snapshot->songs;
+  OPENHDK_FAIL_IF(38,!failed(library.prepare(unowned,id),PreparationErrorCode::InvalidConfiguration));
+  // Rescan does not invalidate older snapshots from the original catalog.
+  OPENHDK_FAIL_IF(39,!library.prepare(snapshot,id).succeeded());
+  // Retaining an old token prevents address reuse after its owner dies.
+  const auto orphan=[] { SongDiscovery oldOwner;return oldOwner.snapshot(); }();
+  SongDiscovery newOwner;
+  OPENHDK_FAIL_IF(40,!failed(newOwner.prepare(orphan,id),PreparationErrorCode::InvalidConfiguration));
   return 0;
 }
