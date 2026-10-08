@@ -168,3 +168,11 @@ local RootId/SongId, locators, and source bytes. Foreign and unowned snapshots
 fail at Resolve without invoking preparation hooks; old same-library snapshots
 still prepare after a rescan. A retained snapshot from a destroyed owner cannot
 be adopted by a new owner. This is a lineage check, not snapshot tamper detection.
+
+## Proposed metadata and root-policy coverage
+
+[OHK-META-030](../docs/CATALOG-METADATA-POLICY-CONTRACT.md) specifies future
+fixtures for registration validation, inherited/overridden selection, source
+metadata provenance, member-token authority, invalidation, user overrides and
+staging budgets. These requirements are not current test coverage. The existing
+15 core / 18 audio-enabled suite counts remain unchanged.

@@ -79,6 +79,10 @@ the development tree.
 
 ## 3. Deterministic discovery
 
+The [metadata/root-policy proposal](CATALOG-METADATA-POLICY-CONTRACT.md)
+defines source member authority, source/user/fallback separation, and policy
+inheritance for review before those fields are integrated.
+
 A root registration specifies an existing directory, source mode, and lyric
 encoding/selection policy. Root paths MUST be resolved on the control path.
 Reject overlapping or equivalent roots in one library. Do not infer a root

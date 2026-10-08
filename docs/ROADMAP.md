@@ -73,6 +73,8 @@ occurs when a SoundFont or audio device is unavailable.
   [OHK-ROOT-030](ROOT-REATTACHMENT-CONTRACT.md), including attachment generations,
   transactional invalidation and stale-root checks. Source/member metadata and
   root lyric policies remain pending, so this combined item remains open.
+  Review [OHK-META-030](CATALOG-METADATA-POLICY-CONTRACT.md) before adding
+  member metadata, root policy inheritance or metadata-enabled scan readiness.
 - [x] Implement pure KAR extraction, FF 05/identified FF 01 selection, explicit
   text encoding, and deterministic media-clock lyric-consumer tests.
   Running-backend publication and the generation-bound observer are implemented;
