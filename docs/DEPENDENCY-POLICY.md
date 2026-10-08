@@ -56,7 +56,8 @@ the corresponding structured recoverable backend error.
 
 [OHK-STORE-030](CATALOG-PERSISTENCE-CONTRACT.md) accepts a binary checkpoint
 codec plus future native operating-system file/lock APIs. The pure codec reuses
-the existing SHA-256 and text validators; restore/native stores remain pending.
+the existing SHA-256 and text validators. Fresh-owner restore adds no dependency;
+native stores remain pending.
 It introduces no package, linking change or redistributed asset.
 SQLite remains deferred; this contract does not approve SQLite, Qt SQL or a
 legacy database format. A later engine or copied-code choice must record the

@@ -276,8 +276,12 @@ bounded binary checkpoint, ID/counter-preserving fresh restore, unattached roots
 and an explicit commit/recovery protocol. A pure detached schema-1 codec is
 implemented with canonical ordering, complete validation and shared coexistence
 bounds. It MUST NOT import Ready/source authority or live identity/lineage.
-No filesystem store, restore factory, autosave, migration or durable library
-service is provided today.
+A validated fresh-owner restore factory is implemented. It MUST preserve stored
+IDs/counters/policies/overrides under a new lineage, invalidate every song and
+leave roots unattached. Hints MUST NOT trigger source access. Explicit first
+attachment MUST increment generation/revision and require a complete scan.
+Exhausted counters MUST NOT wrap; old owners/prepared values remain unchanged.
+No filesystem store, autosave, migration or durable library service is provided today.
 Its native provider and durable-first mutation gates require separate evidence;
 this contract does not approve a dependency or change released v0.2.0 behavior.
 

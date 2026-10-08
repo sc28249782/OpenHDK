@@ -1,6 +1,6 @@
 # Test coverage and failure diagnostics
 
-The hardware-free configuration registers nineteen CTest suites: catalog checkpoint codec,
+The hardware-free configuration registers twenty CTest suites: catalog checkpoint codec/restore,
 parser fixtures, MIDI diagnostics CLI, runtime mixer console, velocity curves, mixer presets,
 stereo peak limiter, song catalog core, filesystem discovery, lyric text
 decoding, KAR lyric extraction, media-clock consumption, media-clock
@@ -8,9 +8,9 @@ publication, generation-bound lyric observation, single-song preparation,
 root reattachment, pure catalog metadata/policy models, and catalog metadata
 scan/preparation integration, and override/display transactions.
 The audio-enabled test configuration adds FluidSynth headless
-playback, CLI help, and diagnostics error cases, for twenty-two suites.
+playback, CLI help, and diagnostics error cases, for twenty-three suites.
 These counts describe the development tree; v0.2.0 has six/nine respectively.
-Linux core CI runs nineteen hardware-free suites; Windows bootstrap runs all twenty-two.
+Linux core CI runs twenty hardware-free suites; Windows bootstrap runs all twenty-three.
 
 ## Planned 0.3.0 acceptance
 
@@ -216,8 +216,8 @@ explicit reconciliation and native process-interruption recovery. Provider tests
 must distinguish file synchronization from namespace/durability acknowledgment.
 Windows behavior requires Windows fixtures. Fake failure tests do not prove
 physical power-loss survival. The pure `catalog-checkpoint-codec` suite is now
-registered (nineteen core / twenty-two audio-enabled); restore/native stores
-and durable-first application wiring remain pending.
+registered alongside `catalog-checkpoint-restore` (twenty core / twenty-three
+audio-enabled); native stores and durable-first wiring remain pending.
 
 The codec suite compares production output with checked-in independent Python
 struct/hashlib vectors, including Thai text, combining sequences, allocator gaps
@@ -227,3 +227,18 @@ tampering, recomputed-digest structural corruption, canonical ordering, invalid
 IDs/references/aliases/policies/text, bounds and operation-wide coexistence,
 caller-retained payload charges and deterministic allocation-failure sweeps.
 No test opens a source/store path or claims recovery/durability.
+
+
+## Catalog fresh-owner restore
+
+`catalog-checkpoint-restore` tests validate projection/byte factory admission,
+independent fixture data, new lineage, retained IDs/high-water gaps/generations,
+exact overrides and Invalid/unattached state. Existing hint paths grant no scan
+or preparation access. Explicit first attachment/rescan, active same-path no-op,
+stale and foreign snapshots, hint-only duplicate roots, exhausted history,
+coexistence limits and hint charges on later operations are covered. Allocation
+failure sweeps cover decode/factory and first-attachment publication; cancellation
+after staging retains the unbound owner. Owning queries, snapshots, displays,
+prepared songs and cue batches retain their data after owner destruction.
+These source-root filesystem fixtures test explicit attachment/discovery only;
+no test reads/writes a checkpoint file or claims native store durability.

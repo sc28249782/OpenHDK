@@ -226,7 +226,7 @@ Title provenance carries historical revision evidence; only the primary member
 is authoritative for current source content. Value copies own their strings.
 
 The pure `catalog-metadata-core` suite remains separate from integration coverage.
-The development tree has 19 hardware-free / 22 audio-enabled suites. Released
+The development tree has 20 hardware-free / 23 audio-enabled suites. Released
 v0.2.0 remains unchanged. Section 9 records the current integration boundary.
 
 
@@ -361,8 +361,8 @@ and manual device/lyric validation remain pending. Released v0.2.0 is unchanged.
 [OHK-STORE-030](CATALOG-PERSISTENCE-CONTRACT.md) accepts preserving explicit
 user overrides, identity/allocator history and root policies in a bounded
 checkpoint. It deliberately omits source-derived metadata, validation authority
-and materialized display strings. A restored fresh owner would rebuild source
+and materialized display strings. A restored fresh owner rebuilds source
 metadata only after explicit root attachment and complete scanning. Existing
 in-process snapshots/prepared display retain their original ownership. The
-pure codec is implemented; restore/native stores and durable wiring remain
-pending. Current override/display support does not claim persistence or authorize automatic legacy DB migration.
+pure codec and fresh-owner restore are implemented; native stores and durable
+wiring remain pending. Current override/display support does not claim persistence or authorize automatic legacy DB migration.

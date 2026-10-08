@@ -1,7 +1,7 @@
 # Catalog persistence contract
 
 **Contract ID:** OHK-STORE-030
-**Status:** Accepted by review and merge of PR #54; pure codec implemented, restore/store/provider integration pending.
+**Status:** Accepted by review and merge of PR #54; pure codec and fresh-owner restore implemented; store/provider integration pending.
 **Target:** 0.3.0; not part of released OpenHDK v0.2.0.
 
 This contract supplements [OHK-LIB-030](KARAOKE-LIBRARY-CONTRACT.md),
@@ -9,8 +9,8 @@ This contract supplements [OHK-LIB-030](KARAOKE-LIBRARY-CONTRACT.md),
 [OHK-META-030](CATALOG-METADATA-POLICY-CONTRACT.md).
 [SPECIFICATION.md](SPECIFICATION.md) remains the authority for implemented
 behavior. The types and wire fields below are accepted design obligations.
-A pure detached projection codec is implemented. There is no storage adapter,
-restore factory, live catalog projection adapter, or new dependency today.
+A pure detached projection codec and fresh-owner restore factory are implemented.
+There is no storage adapter, live checkpoint capture adapter, or new dependency today.
 
 ## 1. Storage selection and scope
 
@@ -405,7 +405,8 @@ Minimum independent acceptance fixtures:
 
 Hardware-free regressions and both CI workflows must pass on exact heads.
 Windows-only native behavior requires Windows tests. The current development
-baseline is 19 core / 22 audio-enabled suites. The codec adds one pure suite;
+baseline is 20 core / 23 audio-enabled suites. Codec and restore have separate
+hardware-free suites;
 the full storage milestone checkbox remains open. NCN evidence, application/audio/CLI orchestration,
 manual device/lyric validation and full v0.3.0 release acceptance remain open.
 
@@ -450,5 +451,68 @@ Independent Python struct/hashlib fixtures define empty, root-only and rich
 Thai/combining-text wire bytes, including allocator gaps, duplicate advisory
 hints and an exhausted generation. Tests also cover malformed wire/projections,
 canonicalization, checksum coverage, exact/beyond bounds, retained input charges
-and allocation-failure sweeps. Later slices still require fresh-owner restore,
+and allocation-failure sweeps. Fresh-owner restore is implemented in section 11. Later slices still require
 fake-provider protocol tests, native evidence and durable-first wiring.
+
+
+## 11. Current fresh-owner restore boundary
+
+`library/CatalogCheckpointRestore.hpp` implements slice 2.
+`CatalogCheckpointRestore::fromProjection` validates a complete detached
+projection again, including caller-built values, before returning a unique
+SongDiscovery owner. `fromBytes` treats its input only as wire data and uses the
+existing decoder; no checkpoint file is opened. No existing owner is passed,
+replaced or mutated. Decode errors keep their Decode operation/offset; factory
+errors identify Restore. Failed validation or allocation returns no owner.
+
+Opaque ID construction stays in a private SongCatalog restore member, reachable
+only through the validated adapter. The new owner receives its own private
+lineage token. It retains stored IDs, high-water counters, catalog revision,
+root generations/policies and exact user overrides. All songs are Invalid with
+no source token or metadata. No prepared song, lyric binding, Ready authority,
+audio operation or in-process token is imported. Public numeric-ID construction
+remains unavailable. Serialized identity remains library-local, not authenticated.
+
+Every restored root is represented with an empty inactive native path and an
+optional owned saved hint string. `rootAttachment` returns an owning attached
+flag/hint query without I/O; query allocation exceptions propagate. Saved hints
+remain historical data after attachment and are not a current-path authority.
+Future checkpoint capture must use the matching captured binding/generation,
+not substitute such a saved hint for an active path. This slice does not export
+live snapshots to checkpoint projections.
+
+Scan and preparation reject unattached roots before their filesystem/control
+hooks. Registration and overlap checks ignore inactive hints. The first explicit
+reattachment, even to the saved hint's existing directory, validates the target,
+retains/rechecks native directory identity, and increments generation/revision
+once. Only after all checks and allocations succeed do nonthrowing path/catalog
+swaps and the attached flag publish on the serialized control path. Failure
+leaves the root unattached. Existing active same-path no-op semantics remain.
+A complete scan then revalidates source bytes/lyrics and preserves IDs/overrides;
+pre-attachment snapshots cannot prepare after the generation change. Other roots
+remain independent. Duplicate hints are legal saved data; attaching two roots to
+actual overlapping directories still fails under OHK-ROOT-030.
+
+High-water gaps are retained, never recalculated. Exhausted history can be
+restored, queried and displayed; changed identity/revision/attachment operations
+reject without wrap. Existing equal-override no-ops remain valid at revision
+exhaustion. Discovery maps exhausted ID allocation during registration/scan to
+RevisionExhausted, not an allocation/storage failure.
+
+Factory staging charges retained projection strings, new owner strings and
+three largest-field logical copies for validation/MetadataText coexistence.
+`fromBytes` additionally retains the full wire charge across decode and restore.
+The optional alreadyOwned charge covers other caller-retained payload; no second
+allowance is granted. Count-bounded descriptors and allocator overhead remain
+separate from logical bytes. Imported saved hints are also charged once in later
+scan, preparation, override, display and root-staging operations; mutations do not
+copy their registry strings. Fresh hints and all metadata allocations remain on
+the serialized control path. This is not an audio callback operation.
+
+The hardware-free restore suite exercises independent schema fixtures, existing
+and missing hints, first attach/rescan, stale/foreign snapshots, allocator gaps,
+exhausted history, exact/beyond coexistence bounds, retained payload charges and
+allocation/cancellation failure. Historical snapshots, prepared songs, display
+values, query strings and lyric batches continue to own their original data.
+Native save/lock/recovery providers, durable-first wiring, NCN evidence,
+application orchestration and manual release acceptance remain open.

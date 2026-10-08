@@ -31,7 +31,7 @@ struct DiscoveryDiagnostic {
       case DiscoveryError::LimitExceeded: return "A configured library limit was exceeded.";
       case DiscoveryError::Cancelled: return "The library operation was cancelled.";
       case DiscoveryError::StorageFailure: return "Library staging could not allocate storage.";
-      case DiscoveryError::RevisionExhausted: return "A root attachment or catalog revision counter is exhausted.";
+      case DiscoveryError::RevisionExhausted: return "A library identity, attachment or revision counter is exhausted.";
     }
     return "The library operation failed.";
   }
@@ -72,13 +72,30 @@ struct RootReattachmentControl {
   std::function<void(RootReattachmentCheckpoint)> checkpoint;
 };
 
+// Owning control-path query; a saved hint never establishes an active binding.
+struct RootAttachmentInfo {
+  bool attached;
+  std::optional<std::string> savedDirectoryHint;
+};
+
 class SongDiscovery {
  public:
   std::shared_ptr<const CatalogSnapshot> snapshot() const noexcept { return catalog_.snapshot(); }
+  // Query copies at most one bounded saved hint and performs no filesystem I/O.
+  // Allocation exceptions propagate; the result owns its text after destruction.
+  std::optional<RootAttachmentInfo> rootAttachment(RootId id) const {
+    const auto found = std::find_if(roots_.begin(), roots_.end(),
+        [&](const auto& item) { return item.id == id; });
+    if (found == roots_.end()) return {};
+    return RootAttachmentInfo{found->attached, found->savedHint};
+  }
   // Reject unknown policy before filesystem access or ID/revision consumption.
   RootRegistration registerRoot(const std::filesystem::path& path, RootSourcePolicy policy = {}) {
     if (!isValidRootSourcePolicy(policy))
       return {{}, diagnostic(DiscoveryError::InvalidConfiguration, DiscoveryOperation::RegisterRoot)};
+    if (catalog_.nextRoot_ == std::numeric_limits<std::uint64_t>::max() ||
+        catalog_.snapshot()->revision == std::numeric_limits<std::uint64_t>::max())
+      return {{}, diagnostic(DiscoveryError::RevisionExhausted, DiscoveryOperation::RegisterRoot)};
     try { return registerRootImpl(path, policy); }
     catch (const std::bad_alloc&) { return {{}, diagnostic(DiscoveryError::StorageFailure, DiscoveryOperation::RegisterRoot)}; }
     catch (const std::filesystem::filesystem_error&) { return {{}, diagnostic(DiscoveryError::InvalidRoot, DiscoveryOperation::RegisterRoot)}; }
@@ -100,11 +117,11 @@ class SongDiscovery {
 
   CatalogOverrideResult replaceUserOverrides(SongId id, CatalogOverrideRequest request,
                                             CatalogMetadataLimits limits = {}) {
-    return catalog_.replaceUserOverrides(id, request, limits);
+    return catalog_.replaceUserOverrides(id, request, limits, savedHintBytes());
   }
   CatalogDisplayResult display(std::shared_ptr<const CatalogSnapshot> snapshot, SongId id,
                                CatalogMetadataLimits limits = {}) const {
-    return catalog_.display(std::move(snapshot), id, limits);
+    return catalog_.display(std::move(snapshot), id, limits, savedHintBytes());
   }
 
   // Reject snapshots with foreign or absent catalog lineage before any I/O.
@@ -121,7 +138,7 @@ class SongDiscovery {
     if(song==snapshot->songs.end()) return failure(PreparationErrorCode::NotFound);
     const auto root=std::find_if(roots_.begin(),roots_.end(),
         [&](const auto& item) { return item.id==song->root; });
-    if(root==roots_.end()) return failure(PreparationErrorCode::InvalidRoot);
+    if(root==roots_.end() || !root->attached) return failure(PreparationErrorCode::InvalidRoot);
     const auto captured = std::find_if(snapshot->roots.begin(), snapshot->roots.end(),
         [&](const auto& item) { return item.id == song->root; });
     const auto current = catalog_.snapshot();
@@ -134,10 +151,11 @@ class SongDiscovery {
     if (!isValidRootSourcePolicy(captured->policy) || !isValidLyricSelectionPolicy(effective))
       return failure(PreparationErrorCode::InvalidConfiguration);
     return SongPreparation::prepare(root->path,snapshot,
-        static_cast<std::size_t>(song-snapshot->songs.begin()),options,effective,control);
+        static_cast<std::size_t>(song-snapshot->songs.begin()),options,effective,control,savedHintBytes());
   }
 
  private:
+  friend class CatalogCheckpointRestore;
 #ifdef OPENHDK_ENABLE_TEST_SEAMS
   friend struct RootReattachmentTestAccess;
 #endif
@@ -152,6 +170,7 @@ class SongDiscovery {
       return DiscoveryError::InvalidRoot;
 #endif
     for (const auto& entry : roots_) {
+      if (!entry.attached) continue;
       if (entry.id != root && (LibraryFilesystem::contains(entry.path, canonical) ||
           LibraryFilesystem::contains(canonical, entry.path))) return DiscoveryError::AmbiguousPath;
       std::error_code ec;
@@ -187,7 +206,7 @@ class SongDiscovery {
     if (auto error = validateReattachmentTarget(root, target)) return reattachmentFailure(*error);
     LibraryFilesystem::DirectoryHandle original(target);
     if (!original.identity()) return reattachmentFailure(DiscoveryError::InvalidRoot);
-    if (target == found->path) return {RootReattachmentStatus::Unchanged, {}};
+    if (found->attached && target == found->path) return {RootReattachmentStatus::Unchanged, {}};
     const auto current = catalog_.snapshot();
     const auto binding = std::find_if(current->roots.begin(), current->roots.end(),
         [&](const auto& item) { return item.id == root; });
@@ -197,7 +216,7 @@ class SongDiscovery {
       return reattachmentFailure(DiscoveryError::RevisionExhausted);
     at(RootReattachmentCheckpoint::AfterValidation);
     at(RootReattachmentCheckpoint::BeforeCatalogStaging);
-    auto stagedCatalog = catalog_.stageRootReattachment(root);
+    auto stagedCatalog = catalog_.stageRootReattachment(root, savedHintBytes());
     if (!stagedCatalog) return reattachmentFailure(DiscoveryError::LimitExceeded);
     at(RootReattachmentCheckpoint::BeforeCommit);
     // Hold the original native handle while reopening: its identity cannot be
@@ -213,6 +232,7 @@ class SongDiscovery {
     static_assert(noexcept(found->path.swap(target)));
     found->path.swap(target);
     catalog_.snapshot_.swap(stagedCatalog);
+    found->attached = true; // Nonthrowing; restored hints are still only historical data.
     return {RootReattachmentStatus::Updated, {}};
   }
 
@@ -227,18 +247,31 @@ class SongDiscovery {
       return {{}, diagnostic(DiscoveryError::InvalidRoot, DiscoveryOperation::RegisterRoot)};
 #endif
     for (const auto& entry : roots_) {
+      if (!entry.attached) continue;
       if (LibraryFilesystem::contains(entry.path, canonical) || LibraryFilesystem::contains(canonical, entry.path) ||
           fs::equivalent(entry.path, canonical, ec)) return {{}, diagnostic(DiscoveryError::AmbiguousPath, DiscoveryOperation::RegisterRoot)};
       if (ec) return {{}, diagnostic(DiscoveryError::InvalidRoot, DiscoveryOperation::RegisterRoot)};
     }
     roots_.reserve(roots_.size() + 1U);
-    const auto id = catalog_.addRoot(policy);
+    const auto id = catalog_.addRoot(policy, savedHintBytes());
     if (!id) return {{}, diagnostic(DiscoveryError::StorageFailure, DiscoveryOperation::RegisterRoot)};
     roots_.push_back({*id, std::move(canonical)});
     return {id, {}};
   }
 
-  struct Registered { RootId id; std::filesystem::path path; };
+  struct Registered {
+    RootId id;
+    std::filesystem::path path;
+    bool attached = true;
+    std::optional<std::string> savedHint = std::nullopt;
+  };
+  // Imported hints are immutable, bounded by 1024 * 4096 bytes at restore.
+  // Native registrations add no saved hints; catalog mutations do not copy them.
+  std::size_t savedHintBytes() const noexcept {
+    std::size_t total = 0U;
+    for (const auto& root : roots_) if (root.savedHint) total += root.savedHint->size();
+    return total;
+  }
   static DiscoveryDiagnostic diagnostic(DiscoveryError code, DiscoveryOperation operation, std::string locator = {}) {
     return {code, operation, std::move(locator), {}, {}};
   }
@@ -304,7 +337,7 @@ class SongDiscovery {
 
   DiscoveryResult scanImpl(RootId root, DiscoveryLimits limits, const DiscoveryControl& control, DiscoveryOperation& operation) {
     const auto found = std::find_if(roots_.begin(), roots_.end(), [&](const auto& item) { return item.id == root; });
-    if (found == roots_.end()) return {diagnostic(DiscoveryError::InvalidRoot, DiscoveryOperation::Enumerate), 0U, {}};
+    if (found == roots_.end() || !found->attached) return {diagnostic(DiscoveryError::InvalidRoot, DiscoveryOperation::Enumerate), 0U, {}};
     if (!validLimits(limits)) return {diagnostic(DiscoveryError::LimitExceeded, DiscoveryOperation::Enumerate), 0U, {}};
     // Copy the path: control hooks must not invalidate a vector element reference.
     const auto path = found->path;
@@ -314,7 +347,9 @@ class SongDiscovery {
     if (rootRecord == captured->roots.end() || !isValidRootSourcePolicy(rootRecord->policy))
       return {diagnostic(DiscoveryError::InvalidConfiguration, DiscoveryOperation::Enumerate), 0U, {}};
     const auto policy = rootRecord->policy.lyrics;
-    auto budget = *MetadataPayloadBudget::create(limits.catalog.stagedLocatorBytes);
+    auto available = MetadataPayloadBudget::create(limits.catalog.stagedLocatorBytes, savedHintBytes());
+    if (!available) return {diagnostic(DiscoveryError::LimitExceeded, DiscoveryOperation::Enumerate), 0U, {}};
+    auto budget = *available;
     std::set<const CatalogSourceMetadata*> chargedMetadata;
     std::set<const CatalogUserOverrides*> chargedOverrides;
     for (const auto& song : captured->songs) {
@@ -433,10 +468,11 @@ class SongDiscovery {
       }
     }
     if (cancelled(control)) { result.error = diagnostic(DiscoveryError::Cancelled, DiscoveryOperation::Publish); return result; }
-    const auto committed = catalog_.commitScan(root, std::move(candidates), true, limits.catalog);
+    const auto committed = catalog_.commitScan(root, std::move(candidates), true, limits.catalog, savedHintBytes());
     if (committed != CatalogError::None) {
       result.error = diagnostic(committed == CatalogError::AmbiguousPath ? DiscoveryError::AmbiguousPath :
-          committed == CatalogError::LimitExceeded ? DiscoveryError::LimitExceeded : DiscoveryError::StorageFailure, DiscoveryOperation::Publish);
+          committed == CatalogError::LimitExceeded ? DiscoveryError::LimitExceeded :
+          committed == CatalogError::IdExhausted ? DiscoveryError::RevisionExhausted : DiscoveryError::StorageFailure, DiscoveryOperation::Publish);
     }
     return result;
   }

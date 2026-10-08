@@ -42,11 +42,14 @@ storage adapter requires its own reviewed restore rules; no token or database
 format is selected here.
 
 The [accepted persistence contract](CATALOG-PERSISTENCE-CONTRACT.md) defines
-a future fresh-owner restore with no active directory bindings. It preserves stored
+an implemented fresh-owner restore with no active directory bindings. It preserves stored
 generation history and treats the first explicit attachment, including a saved
 hint path, as a changed binding. The same-path no-op below requires an existing
-active binding. These accepted restore rules await implementation beyond the pure
-codec; the current discovery owner still registers existing directories and has no restore API.
+active binding. The validated restore factory creates inactive root records with
+owned saved hints. Scan/preparation reject these roots before I/O. Explicit
+reattachment uses the same native validation/staging checks below and publishes
+the active flag with its nonthrowing path/catalog commit. Saved hints remain
+historical data, not current-path or Ready authority.
 
 ## 3. Directory validation and no-op requests
 
