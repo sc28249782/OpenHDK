@@ -234,8 +234,11 @@ pure bounded lyric text decoder and KAR selection/immutable cue extractor
 described in lyric contract section 8, plus the pure media-clock consumer in
 section 9. The consumer returns once-only whole-cue batches and an emitted
 prefix as current display state; reset/stop clears that state. These helpers
-are control/observation-path only; catalog preparation and application/CLI
-lyric orchestration remain pending.
+are control/observation-path only. Single-song SMF/KAR preparation now
+resolves SongId from an acquired catalog snapshot, rechecks source revision
+and containment, and owns canonical MIDI and explicit-policy KAR timelines.
+No audio operation is performed by preparation; application/CLI lyric
+orchestration remains pending.
 Complete library and lyric services
 MUST NOT be described as implemented or released behavior. The v0.2.0 parser,
 playback, MIDI-controller, mixer, and limiter contracts remain unchanged.
@@ -247,8 +250,8 @@ media-position publication has an accepted bounded contract in
 are implemented and the FluidSynth adapter publishes committed compiled
 positions, acknowledged generations, finish, failure, and explicit stop state.
 A serialized `LyricClockObserver` applies the accepted observer table to an
-acknowledged generation. Library preparation and application/CLI orchestration
-remain pending; this helper does not prove SongId or source revision. No database
+acknowledged generation. Application/CLI orchestration
+remains pending; this helper does not prove SongId or source revision. No database
 dependency, new CLI option, Qt UI, or
 legacy database migration is authorized by these documents. Acceptance tests
 and any later support claim MUST close the corresponding gates.

@@ -7,8 +7,9 @@ This file records the user-visible scope of each OpenHDK source release.
 - Development library core: opaque song IDs, immutable in-memory catalog
   snapshots, and bounded local SMF/KAR discovery with canonical SMF validation,
   SHA-256 content revisions, per-file diagnostics, and scan rollback.
-  No library CLI, metadata database, KAR/NCN lyric playback, or library playback
-  preparation is provided yet. Released v0.2.0 behavior is unchanged.
+  Single-song SMF/KAR preparation rechecks source revisions and owns immutable
+  MIDI/lyric inputs with catalog identity. No library CLI, metadata database,
+  NCN preparation, or application-level lyric playback is provided yet. Released v0.2.0 behavior is unchanged.
 
 - Development lyric text core: explicit bounded UTF-8/TIS-620 decoding with
   payload byte-offset failures and no partial result or encoding fallback.
@@ -23,8 +24,8 @@ This file records the user-visible scope of each OpenHDK source release.
   explicit backend stop publishes Stopped, and legacy playback reports that no
   compiled clock is available. A serialized lyric observer binds acknowledged
   generations, advances committed positions, retains finished cues, and clears
-  on mismatch, stop, failure, or exhaustion. Catalog preparation and application/CLI
-  lyric orchestration remain unimplemented.
+  on mismatch, stop, failure, or exhaustion. Application/CLI
+  lyric orchestration remains unimplemented.
 
 ## 0.2.0 - 2026-10-06
 

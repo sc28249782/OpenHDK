@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
-#include "library/FilesystemSource.hpp"
+#include "library/SongPreparation.hpp"
 #include "audio/SmfTimelineCompiler.hpp"
 #include <functional>
 #include <new>
@@ -55,6 +55,24 @@ class SongDiscovery {
     try { return scanImpl(root, limits, control, operation); }
     catch (const std::bad_alloc&) { return {diagnostic(DiscoveryError::StorageFailure, operation), 0U, {}}; }
     catch (const std::filesystem::filesystem_error&) { return {diagnostic(DiscoveryError::SourceUnreadable, operation), 0U, {}}; }
+  }
+
+  // Use a previously acquired snapshot from THIS library, not a fabricated or
+  // foreign catalog. Older snapshots remain usable if source bytes still match.
+  SongPreparationResult prepare(std::shared_ptr<const CatalogSnapshot> snapshot,
+      SongId id, PreparationOptions options = {}, const PreparationControl& control = {}) const {
+    const auto failure=[](PreparationErrorCode code) {
+      return SongPreparationResult{nullptr,PreparationError{code,PreparationOperation::Resolve,{},{},{},{}}};
+    };
+    if(!snapshot) return failure(PreparationErrorCode::InvalidConfiguration);
+    const auto song=std::find_if(snapshot->songs.begin(),snapshot->songs.end(),
+        [&](const auto& item) { return item.id==id; });
+    if(song==snapshot->songs.end()) return failure(PreparationErrorCode::NotFound);
+    const auto root=std::find_if(roots_.begin(),roots_.end(),
+        [&](const auto& item) { return item.id==song->root; });
+    if(root==roots_.end()) return failure(PreparationErrorCode::InvalidRoot);
+    return SongPreparation::prepare(root->path,snapshot,
+        static_cast<std::size_t>(song-snapshot->songs.begin()),options,control);
   }
 
  private:

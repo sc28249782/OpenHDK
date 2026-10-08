@@ -71,8 +71,8 @@ occurs when a SoundFont or audio device is unavailable.
 - [ ] Add root reattachment and source/member metadata before library integration.
 - [x] Implement pure KAR extraction, FF 05/identified FF 01 selection, explicit
   text encoding, and deterministic media-clock lyric-consumer tests.
-  Running-backend publication and audio/CLI lyric integration remain separate
-  unfinished work below.
+  Running-backend publication and the generation-bound observer are implemented;
+  application/audio/CLI lyric orchestration remains unfinished below.
 - [ ] Close the NCN24 format evidence gate before implementing its bundle
   normalizer; do not claim generic NCN compatibility.
 - [ ] Select and review persistent storage/schema/recovery and backend
@@ -80,7 +80,8 @@ occurs when a SoundFont or audio device is unavailable.
   [media-clock handoff contract](MEDIA-CLOCK-HANDOFF-CONTRACT.md) is accepted;
   its atomic cell and FluidSynth publication are implemented, while persistent
   storage and application lyric orchestration remain open. A serialized observer
-  binds lyrics to acknowledged generations; library preparation is still needed.
+  binds lyrics to acknowledged generations. Single-song SMF/KAR preparation
+  verifies catalog identity/source tokens; application integration is still needed.
 - [ ] Integrate library preparation and lyric observation without changing
   released MIDI, mixer, or limiter semantics; validate Windows playback.
 - Research staged runtime layout and installers separately; this proposal

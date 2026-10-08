@@ -250,5 +250,6 @@ operations run only on the serialized control path, never in the callback.
 Hardware-free coverage uses synthetic KAR cues, actual publication-cell reads,
 and PlaybackSession times. The headless FluidSynth smoke test binds the
 acknowledged generation and observes start, first block, and finish through
-the public backend clock, then clears before replacement. Library preparation,
-application/CLI orchestration, and manual device/lyric validation remain open.
+the public backend clock, then clears before replacement. Single-song library preparation now owns identity and verified source tokens
+with both timelines. Application/CLI orchestration and manual device/lyric
+validation remain open.
