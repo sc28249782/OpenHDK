@@ -1,16 +1,16 @@
 # Catalog metadata and root lyric policy contract
 
 **Contract ID:** OHK-META-030
-**Status:** Accepted planning contract (PR #50); pure model implemented, integration pending.
+**Status:** Accepted planning contract (PR #50); model and scan/preparation integration implemented; override/display pending.
 **Target:** 0.3.0; not part of released OpenHDK v0.2.0.
 
 This contract supplements [OHK-LIB-030](KARAOKE-LIBRARY-CONTRACT.md),
 [OHK-LYR-030](LYRIC-TIMELINE-CONTRACT.md), and
 [OHK-ROOT-030](ROOT-REATTACHMENT-CONTRACT.md).
 [SPECIFICATION.md](SPECIFICATION.md) remains the authority for implemented
-behavior. Obligations below describe the accepted target. Current discovery
-validates SMF only; preparation takes explicit per-call KAR options. Pure policy/metadata value types are implemented; root registration, catalog
-fields, metadata extraction and override transactions remain unimplemented.
+behavior. Obligations below describe the accepted target. Discovery validates canonical SMF and selected lyrics under its immutable root
+policy. Preparation inherits that policy or takes a complete one-call override.
+Source/member metadata is integrated; override/display transactions remain pending.
 
 ## 1. Scope and data separation
 
@@ -218,16 +218,76 @@ copies. The ledger consumes a caller's remaining existing catalog allowance;
 it does not allocate a second budget or automatically inspect object graphs.
 A failed charge leaves the ledger unchanged and cannot overflow.
 
-Descriptors are control-path value records, not published catalog entries or
-proof of successful extraction. Callers must validate locators and construct
-verified metadata from canonical extraction during the later integration slice.
+Pure descriptors remain control-path values, not independent proof of successful
+extraction. SongDiscovery constructs catalog records from validated locators,
+canonical compilation and the selected lyric extraction described in section 9.
 There is no source artist field or complete lyric timeline in this compact model.
 Title provenance carries historical revision evidence; only the primary member
 is authoritative for current source content. Value copies own their strings.
 
-No root registration policy, scan readiness change, metadata extraction,
-preparation inheritance, override transaction, or display resolver is connected
-yet. Current SongCatalog/SongDiscovery/PreparedSong behavior is unchanged.
-The development tree has 16 hardware-free / 19 audio-enabled suites. The new
-`catalog-metadata-core` suite tests the pure boundary only; the integration
-fixtures in section 7 remain required. Released v0.2.0 remains unchanged.
+The pure `catalog-metadata-core` suite remains separate from integration coverage.
+The development tree has 17 hardware-free / 20 audio-enabled suites. Released
+v0.2.0 remains unchanged. Section 9 records the current integration boundary.
+
+
+## 9. Current scan/preparation integration boundary
+
+`registerRoot(path, RootSourcePolicy)` validates mode/encoding before any
+filesystem access or catalog mutation. Defaults remain SmfKar/UTF-8/automatic.
+The immutable CatalogRoot policy is retained across rescans and reattachment.
+There is no policy update operation. Unknown track existence is diagnosed per
+source, not guessed during registration.
+
+CatalogSong now owns one PrimaryMidi member; `locator()` and `sourceRevision()`
+read directly from it. Compact source metadata is shared as const storage.
+Readable-invalid SMF retains its member revision but has no verified metadata.
+Canonical SMF with invalid selected lyrics retains CanonicalSmf kind and nested
+KAR diagnostics, with no title/summary. Missing/unreadable/reattached sources
+clear current metadata and the content token. Older owning snapshots retain
+their historical data. Logical SongCatalog still accepts caller validation
+results; filesystem guarantees belong to SongDiscovery, not a tamper boundary.
+
+Scan now extracts before publishing Ready. Successful NoLyrics remains Ready.
+FF05 preference, identified FF01 selection and first nonempty @T provenance
+come from the existing extractor, without artist inference or filename fallback.
+Selected text/track/ambiguity errors make only that source Invalid. Limit,
+cancellation, allocation and consistency failures discard the entire scan.
+AfterExtraction is an additional serialized checkpoint for deterministic tests;
+hooks must not reenter library methods.
+
+The existing CatalogLimits `stagedLocatorBytes` name now covers the same 64 MiB
+allowance for all locator/metadata payload. Scan conservatively reserves two
+copies of existing locators plus five incoming copies (enumeration, candidates,
+diagnostics, verification/fold-sort or publication). Compact immutable title
+storage is charged once per shared record. Catalog lookup maps use stable views;
+reserve precedes view construction, and existing locators are not reassigned.
+Pure commitScan reserves two existing and two incoming copies plus shared titles.
+Its older locator-only boundary fixtures are adjusted to these coexistence sums.
+Relocation also checks its staged locator/title allowance before copying.
+
+Extraction takes at most half the remaining staged ceiling to cover decoder and
+owned text coexistence; the existing extractor also charges fixed records under
+its own bound. Empty NoLyrics results require no variable payload. Compact title
+validation reserves its two temporary copies before allocation. These are
+conservative payload limits, not allocator-overhead or process-memory caps.
+Canonical SMF input/parse storage retains its separate bound. Re-enumeration
+and exact rehash remain consistency checks, not atomic filesystem transactions.
+
+PreparationOptions now separates optional `lyricOverride` from `lyricLimits`
+and a bounded `stagedBytes` allowance. Absent override inherits the selected
+snapshot root policy after lineage/attachment checks; unknown encoding fails at
+Resolve before source I/O or hooks. Ready under the root policy is still required,
+so an override cannot rescue an Invalid source. Preparation performs fresh
+extraction and compaction, then verifies the source again before returning.
+Its budget includes acquired snapshot payload, a possible diagnostic locator
+copy, and live extraction/compact text. It returns no partial PreparedSong.
+
+`PreparedSong::effectivePolicy()` and `sourceMetadata()` describe fresh effective
+selection; `song().metadata` describes the acquired catalog's root selection.
+The original snapshot and both timelines remain owned. Per-call selection does
+not mutate catalog metadata or the root policy. Already-prepared metadata is
+unchanged by later scans or reattachment.
+
+User override transactions, display resolution, durable storage, NCN evidence,
+application/CLI orchestration and manual Windows device/lyric validation remain
+pending. This slice adds no audio operation, CLI grammar, version or dependency.

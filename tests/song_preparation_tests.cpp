@@ -40,7 +40,7 @@ int main(){
   const auto snapshot=library.snapshot();const auto id=snapshot->songs[0].id;
   auto ready=library.prepare(snapshot,id);
   OPENHDK_FAIL_IF(2,!ready.succeeded() || ready.error || ready.prepared->song().id!=id
-      || ready.prepared->catalogSnapshot()!=snapshot || ready.prepared->song().sourceRevision!=sourceRevision(bytes)
+      || ready.prepared->catalogSnapshot()!=snapshot || ready.prepared->song().sourceRevision()!=sourceRevision(bytes)
       || ready.prepared->lyrics()->cues().size()!=2 || ready.prepared->lyrics()->cues()[0].decoded!="A"
       || ready.prepared->lyrics()->cues()[1].position.timeMicroseconds!=166666);
   OPENHDK_FAIL_IF(3,!failed(library.prepare(nullptr,id),PreparationErrorCode::InvalidConfiguration));
@@ -50,7 +50,7 @@ int main(){
     auto bad=std::make_shared<CatalogSnapshot>(*snapshot);bad->songs[0].state=state;
     OPENHDK_FAIL_IF(5,!failed(library.prepare(bad,id),PreparationErrorCode::NotReady));
   }
-  auto noToken=std::make_shared<CatalogSnapshot>(*snapshot);noToken->songs[0].sourceRevision.reset();
+  auto noToken=std::make_shared<CatalogSnapshot>(*snapshot);noToken->songs[0].member.revision.reset();
   OPENHDK_FAIL_IF(6,!failed(library.prepare(noToken,id),PreparationErrorCode::NotReady));
   PreparationOptions small;small.smfBytes=bytes.size();
   OPENHDK_FAIL_IF(7,!library.prepare(snapshot,id,small).succeeded());
@@ -90,26 +90,28 @@ int main(){
   write(file,midi(std::string(1,static_cast<char>(0xa1))));
   OPENHDK_FAIL_IF(19,!library.scan(*registered.root).succeeded());
   auto thai=library.snapshot();auto invalidText=library.prepare(thai,id);
-  OPENHDK_FAIL_IF(20,!failed(invalidText,PreparationErrorCode::InvalidLyrics)
-      || !invalidText.error->lyricError || invalidText.error->lyricError->code!=KarLyricErrorCode::InvalidText
-      || !invalidText.error->lyricError->payloadByteOffset);
-  PreparationOptions tis;tis.lyrics.encoding=LyricTextEncoding::Tis620;
-  auto decoded=library.prepare(thai,id,tis);
+  OPENHDK_FAIL_IF(20,!failed(invalidText,PreparationErrorCode::NotReady));
+  SongDiscovery thaiLibrary;
+  const auto thaiRoot=thaiLibrary.registerRoot(temp.path,{LibrarySourceMode::SmfKar,{LyricTextEncoding::Tis620,{}}});
+  OPENHDK_FAIL_IF(21,!thaiRoot.root || !thaiLibrary.scan(*thaiRoot.root).succeeded());
+  const auto thaiSnapshot=thaiLibrary.snapshot();
+  PreparationOptions tis;
+  auto decoded=thaiLibrary.prepare(thaiSnapshot,thaiSnapshot->songs[0].id,tis);
   OPENHDK_FAIL_IF(21,!decoded.succeeded() || decoded.prepared->lyrics()->cues()[0].decoded!="\xe0\xb8\x81"
-      || decoded.prepared->options().lyrics.encoding!=LyricTextEncoding::Tis620);
-  tis.lyrics.limits.cues=1;
-  OPENHDK_FAIL_IF(22,!failed(library.prepare(thai,id,tis),PreparationErrorCode::LimitExceeded));
-  tis.lyrics.trackIndex=99;
-  auto invalidTrack=library.prepare(thai,id,tis);
+      || decoded.prepared->effectivePolicy().encoding!=LyricTextEncoding::Tis620);
+  tis.lyricLimits.cues=1;
+  OPENHDK_FAIL_IF(22,!failed(thaiLibrary.prepare(thaiSnapshot,id,tis),PreparationErrorCode::LimitExceeded));
+  tis.lyricOverride=LyricSelectionPolicy{LyricTextEncoding::Tis620,99U};
+  auto invalidTrack=thaiLibrary.prepare(thaiSnapshot,id,tis);
   OPENHDK_FAIL_IF(23,!failed(invalidTrack,PreparationErrorCode::InvalidLyrics)
       || invalidTrack.error->lyricError->code!=KarLyricErrorCode::InvalidLyricTrack);
   // Inject a Ready descriptor to verify nested canonical-validation errors.
   Bytes corrupt{0};write(file,corrupt);
-  auto forged=std::make_shared<CatalogSnapshot>(*snapshot);forged->songs[0].sourceRevision=sourceRevision(corrupt);
+  auto forged=std::make_shared<CatalogSnapshot>(*snapshot);forged->songs[0].member.revision=sourceRevision(corrupt);
   auto invalidSmf=library.prepare(forged,id);
   OPENHDK_FAIL_IF(24,!failed(invalidSmf,PreparationErrorCode::InvalidSmf) || !invalidSmf.error->parseError);
   auto malformed=bytes;malformed[23]=0xf4;write(file,malformed);
-  forged->songs[0].sourceRevision=sourceRevision(malformed);
+  forged->songs[0].member.revision=sourceRevision(malformed);
   auto invalidEvents=library.prepare(forged,id);
   OPENHDK_FAIL_IF(25,!failed(invalidEvents,PreparationErrorCode::InvalidSmf)
       || !invalidEvents.error->timelineError || !invalidEvents.error->timelineError->trackDecodeError());
@@ -130,17 +132,17 @@ int main(){
     auto snap=owner.snapshot();return owner.prepare(snap,snap->songs[0].id);
   }();
   OPENHDK_FAIL_IF(29,!retained.succeeded() || retained.prepared->lyrics()->profile()!=KarLyricProfile::NoLyrics
-      || retained.prepared->midi().events().size()!=1 || retained.prepared->song().locator!="plain.mid");
+      || retained.prepared->midi().events().size()!=1 || retained.prepared->song().locator()!="plain.mid");
   write(file,bytes);
   PreparationOptions invalidConfig;invalidConfig.smfBytes=64U*1048576U+1U;
   OPENHDK_FAIL_IF(30,!failed(library.prepare(snapshot,id,invalidConfig),PreparationErrorCode::InvalidConfiguration));
-  invalidConfig={};invalidConfig.lyrics.encoding=static_cast<LyricTextEncoding>(999);
+  invalidConfig={};invalidConfig.lyricOverride=LyricSelectionPolicy{static_cast<LyricTextEncoding>(999),{}};
   const auto invalidEncoding=library.prepare(snapshot,id,invalidConfig);
   OPENHDK_FAIL_IF(31,!failed(invalidEncoding,PreparationErrorCode::InvalidConfiguration)
-      || !invalidEncoding.error->lyricError);
-  PreparationOptions lyricBound;lyricBound.lyrics.limits.sourceBytes=2;
+      || invalidEncoding.error->operation!=PreparationOperation::Resolve);
+  PreparationOptions lyricBound;lyricBound.lyricLimits.sourceBytes=2;
   OPENHDK_FAIL_IF(32,!library.prepare(snapshot,id,lyricBound).succeeded());
-  lyricBound.lyrics.limits.sourceBytes=1;
+  lyricBound.lyricLimits.sourceBytes=1;
   OPENHDK_FAIL_IF(33,!failed(library.prepare(snapshot,id,lyricBound),PreparationErrorCode::LimitExceeded));
   auto removedRoot=temp.path;fs::rename(temp.path,temp.path.string()+"-moved");
   const auto rootFailure=library.prepare(snapshot,id);
@@ -154,7 +156,7 @@ int main(){
   const auto foreignSnapshot=foreign.snapshot();
   OPENHDK_FAIL_IF(36,foreignSnapshot->songs[0].id!=id
       || foreignSnapshot->songs[0].root!=snapshot->songs[0].root
-      || foreignSnapshot->songs[0].sourceRevision!=snapshot->songs[0].sourceRevision);
+      || foreignSnapshot->songs[0].sourceRevision()!=snapshot->songs[0].sourceRevision());
   unsigned checkpoints=0U;PreparationControl rejectedControl;
   rejectedControl.cancelled=[&]{++checkpoints;return false;};
   rejectedControl.checkpoint=[&](auto){++checkpoints;};

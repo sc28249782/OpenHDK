@@ -177,5 +177,7 @@ before commit; these do not claim exhaustive allocator fault coverage. Native
 source-symlink coverage runs where the OS permits fixture creation. Observable
 self-alias coverage depends on a filesystem exposing distinct equivalent
 canonical paths; the implementation rejects such equivalence when detected.
-Source/member metadata, root lyric policies, NCN, persistence, and CLI/audio
-orchestration remain separate work.
+Root policies and compact source metadata are integrated under OHK-META-030.
+Reattachment preserves policy while clearing current metadata/revisions;
+prepared and historical snapshots retain their ownership. Override/display
+transactions, NCN, persistence and CLI/audio orchestration remain separate work.

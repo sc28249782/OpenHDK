@@ -41,7 +41,10 @@ struct PreparationError {
 };
 struct PreparationOptions {
   std::size_t smfBytes = 64U * 1048576U;
-  KarLyricOptions lyrics{}; // Explicit policy; no filename/locale encoding guesses.
+  // Absent means inherit the acquired snapshot root's complete policy.
+  std::optional<LyricSelectionPolicy> lyricOverride = std::nullopt;
+  KarLyricLimits lyricLimits{};
+  std::size_t stagedBytes = MetadataPayloadBudget::kMaxBytes;
 };
 enum class PreparationCheckpoint { AfterRead, AfterExtraction };
 struct PreparationControl {
@@ -58,18 +61,25 @@ public:
   const SmfTimeline& midi() const noexcept { return *compiled_.timeline(); }
   std::shared_ptr<const KarLyricTimeline> lyrics() const noexcept { return lyrics_; }
   const PreparationOptions& options() const noexcept { return options_; }
+  const LyricSelectionPolicy& effectivePolicy() const noexcept { return effectivePolicy_; }
+  // Fresh extraction under effectivePolicy(), distinct from song().metadata,
+  // whose selection reflects the root policy recorded in catalogSnapshot().
+  const CatalogSourceMetadata& sourceMetadata() const noexcept { return *metadata_; }
 private:
   friend class SongPreparation;
   PreparedSong(std::shared_ptr<const CatalogSnapshot> snapshot, std::size_t index,
                SmfTimelineCompileResult compiled, std::shared_ptr<const KarLyricTimeline> lyrics,
-               PreparationOptions options)
+               PreparationOptions options, LyricSelectionPolicy effectivePolicy,
+               std::shared_ptr<const CatalogSourceMetadata> metadata)
       : snapshot_(std::move(snapshot)), index_(index), compiled_(std::move(compiled)),
-        lyrics_(std::move(lyrics)), options_(options) {}
+        lyrics_(std::move(lyrics)), options_(options), effectivePolicy_(effectivePolicy), metadata_(std::move(metadata)) {}
   std::shared_ptr<const CatalogSnapshot> snapshot_;
   std::size_t index_;
   SmfTimelineCompileResult compiled_;
   std::shared_ptr<const KarLyricTimeline> lyrics_;
   PreparationOptions options_;
+  LyricSelectionPolicy effectivePolicy_;
+  std::shared_ptr<const CatalogSourceMetadata> metadata_;
 };
 struct SongPreparationResult {
   std::shared_ptr<const PreparedSong> prepared;
@@ -84,30 +94,41 @@ private:
   friend class SongDiscovery;
   static SongPreparationResult prepare(const std::filesystem::path& root,
       std::shared_ptr<const CatalogSnapshot> snapshot, std::size_t index,
-      PreparationOptions options, const PreparationControl& control) {
+      PreparationOptions options, LyricSelectionPolicy effectivePolicy, const PreparationControl& control) {
     auto operation=PreparationOperation::Resolve;
     const auto& song=snapshot->songs[index];
     const auto fail=[&](PreparationErrorCode code) {
-      return SongPreparationResult{nullptr,PreparationError{code,operation,song.locator,{},{},{}}};
+      return SongPreparationResult{nullptr,PreparationError{code,operation,song.locator(),{},{},{}}};
     };
     const auto cancelled=[&] { return control.cancelled && control.cancelled(); };
     try {
-      if(options.smfBytes==0U || options.smfBytes>64U*1048576U)
+      if(options.smfBytes==0U || options.smfBytes>64U*1048576U
+          || !isValidLyricSelectionPolicy(effectivePolicy) || !validKarLyricLimits(options.lyricLimits)
+          || !MetadataPayloadBudget::create(options.stagedBytes))
         return fail(PreparationErrorCode::InvalidConfiguration);
-      if(song.state!=CatalogState::Ready || !song.sourceRevision)
+      if(song.state!=CatalogState::Ready || !song.sourceRevision())
         return fail(PreparationErrorCode::NotReady);
+      auto budget = *MetadataPayloadBudget::create(options.stagedBytes);
+      std::set<const CatalogSourceMetadata*> chargedMetadata;
+      for (const auto& retained : snapshot->songs) {
+        if (!budget.charge(retained.locator().size())
+            || !chargeSourceMetadata(budget, retained.metadata, chargedMetadata))
+          return fail(PreparationErrorCode::LimitExceeded);
+      }
+      // Reserve a possible error locator copy while extraction is still live.
+      if (!budget.charge(song.locator().size())) return fail(PreparationErrorCode::LimitExceeded);
       if(cancelled()) return fail(PreparationErrorCode::Cancelled);
       std::error_code ec;
       if(std::filesystem::canonical(root,ec)!=root || ec
           || !std::filesystem::is_directory(root,ec) || ec)
         return fail(PreparationErrorCode::InvalidRoot);
       operation=PreparationOperation::Read;
-      auto input=LibraryFilesystem::read(root,song.locator,options.smfBytes);
+      auto input=LibraryFilesystem::read(root,song.locator(),options.smfBytes);
       if(input.error!=LibraryFilesystem::ReadError::None)
         return fail(input.error==LibraryFilesystem::ReadError::LimitExceeded ? PreparationErrorCode::LimitExceeded :
           input.error==LibraryFilesystem::ReadError::AmbiguousPath ? PreparationErrorCode::AmbiguousPath :
           PreparationErrorCode::SourceUnreadable);
-      if(sourceRevision(input.bytes)!=*song.sourceRevision) return fail(PreparationErrorCode::SourceChanged);
+      if(sourceRevision(input.bytes)!=*song.sourceRevision()) return fail(PreparationErrorCode::SourceChanged);
       if(control.checkpoint) control.checkpoint(PreparationCheckpoint::AfterRead);
       if(cancelled()) return fail(PreparationErrorCode::Cancelled);
       operation=PreparationOperation::Compile;
@@ -125,7 +146,10 @@ private:
         result.error->timelineError=*compiled->error(); return result;
       }
       operation=PreparationOperation::ExtractLyrics;
-      const auto lyrics=KarLyricExtractor::extract(*compiled->timeline(),options.lyrics);
+      auto extractionOptions = *karOptionsForPolicy(effectivePolicy, options.lyricLimits);
+      extractionOptions.limits.stagedBytes = std::min(extractionOptions.limits.stagedBytes,
+          std::max(std::size_t{1U}, budget.remaining() / 2U));
+      const auto lyrics=KarLyricExtractor::extract(*compiled->timeline(),extractionOptions);
       if(!lyrics.succeeded()) {
         const auto code=lyrics.error()->code;
         auto result=fail(code==KarLyricErrorCode::LimitExceeded ? PreparationErrorCode::LimitExceeded :
@@ -133,20 +157,28 @@ private:
           PreparationErrorCode::InvalidLyrics);
         result.error->lyricError=*lyrics.error(); return result;
       }
+      if (!chargeLyricPayload(budget, *lyrics.timeline())) return fail(PreparationErrorCode::LimitExceeded);
+      const auto metadata = compactSourceMetadata(*lyrics.timeline(), *song.sourceRevision(),
+          effectivePolicy, options.lyricLimits.titleBytes, budget);
+      if (metadata.error) {
+        auto result = fail(metadata.error->code == KarLyricErrorCode::LimitExceeded
+            ? PreparationErrorCode::LimitExceeded : PreparationErrorCode::InvalidConfiguration);
+        result.error->lyricError = *metadata.error; return result;
+      }
       if(control.checkpoint) control.checkpoint(PreparationCheckpoint::AfterExtraction);
       if(cancelled()) return fail(PreparationErrorCode::Cancelled);
       operation=PreparationOperation::Verify;
       // Release the first raw buffer before rereading. The compiled result owns
       // its event payloads. This check is not an atomic filesystem snapshot.
       std::vector<std::uint8_t>().swap(input.bytes);
-      const auto verified=LibraryFilesystem::read(root,song.locator,options.smfBytes);
+      const auto verified=LibraryFilesystem::read(root,song.locator(),options.smfBytes);
       if(verified.error!=LibraryFilesystem::ReadError::None
-          || sourceRevision(verified.bytes)!=*song.sourceRevision)
+          || sourceRevision(verified.bytes)!=*song.sourceRevision())
         return fail(PreparationErrorCode::SourceChanged);
       if(cancelled()) return fail(PreparationErrorCode::Cancelled);
       operation=PreparationOperation::Publish;
       auto prepared=std::shared_ptr<const PreparedSong>(new PreparedSong(
-          snapshot,index,std::move(*compiled),lyrics.timeline(),options));
+          snapshot,index,std::move(*compiled),lyrics.timeline(),options,effectivePolicy,metadata.metadata));
       return {std::move(prepared),{}};
     } catch(const std::bad_alloc&) { return fail(PreparationErrorCode::StorageFailure); }
       catch(const std::filesystem::filesystem_error&) { return fail(PreparationErrorCode::SourceUnreadable); }

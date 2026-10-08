@@ -1,14 +1,16 @@
 # Test coverage and failure diagnostics
 
-The hardware-free configuration registers sixteen CTest suites: parser fixtures,
+The hardware-free configuration registers seventeen CTest suites: parser fixtures,
 MIDI diagnostics CLI, runtime mixer console, velocity curves, mixer presets,
 stereo peak limiter, song catalog core, filesystem discovery, lyric text
 decoding, KAR lyric extraction, media-clock consumption, media-clock
-publication, generation-bound lyric observation, single-song preparation, root reattachment, and pure catalog metadata/policy models.
+publication, generation-bound lyric observation, single-song preparation,
+root reattachment, pure catalog metadata/policy models, and catalog metadata
+scan/preparation integration.
 The audio-enabled test configuration adds FluidSynth headless
-playback, CLI help, and diagnostics error cases, for nineteen suites.
+playback, CLI help, and diagnostics error cases, for twenty suites.
 These counts describe the development tree; v0.2.0 has six/nine respectively.
-Linux core CI runs sixteen hardware-free suites; Windows bootstrap runs all nineteen.
+Linux core CI runs seventeen hardware-free suites; Windows bootstrap runs all twenty.
 
 ## Planned 0.3.0 acceptance
 
@@ -63,7 +65,7 @@ explicit stop, restart, legacy unavailable state, and shutdown. Deterministic
 mid-block failure injection checks that failure retains the previous committed
 position.
 
-Remaining catalog metadata and library integration tests must use independently
+Remaining override/display and library integration tests must use independently
 authored fixtures. The `root-reattachment` suite covers the accepted
 [OHK-ROOT-030 boundary](../docs/ROOT-REATTACHMENT-CONTRACT.md): move/rescan,
 invalidation of every catalog state, same-path no-op, initial/late cancellation,
@@ -160,8 +162,9 @@ changing its retained catalog identity. No audio start is part of preparation.
 
 Native symlink setup may be unavailable on Windows; that fixture runs when the
 OS permits creation. Existing discovery coverage retains the native path checks.
-Root-registered lyric policies, NCN members, metadata indexing, persistent
-storage, and application playback lifecycle remain separate acceptance work.
+Root policy and compact metadata integration are covered below. User
+metadata override/display transactions, NCN members, persistent storage and
+application playback lifecycle remain separate acceptance work.
 
 Preparation lineage regression checks use two distinct libraries with equal
 local RootId/SongId, locators, and source bytes. Foreign and unowned snapshots
@@ -180,7 +183,15 @@ multibyte boundaries, owning override/provenance copies, and checked budget
 charges at/beyond the ceiling (including SIZE_MAX and coexisting copies).
 It uses no filesystem, synth, private seam, or media asset.
 
-Registration validation before I/O, inherited/overridden preparation,
-canonical metadata extraction, member-token authority in catalog entries,
-invalidation, override/display transactions and aggregate staging remain future
-integration coverage. Pure value validation does not claim those guarantees.
+`catalog-metadata-integration` uses independent synthetic SMF/KAR files in
+isolated temporary roots. It checks invalid registration before filesystem work
+and ID/revision consumption, immutable root policies, inherited and overridden
+selection, FF05 preference without title leakage, NoLyrics/@T-only behavior,
+exact title/provenance, primary-member accessor authority, invalid/missing/
+reattached clearing with historical ownership, per-file nested lyric errors,
+non-rescue of Invalid entries, changed files, cancellation and injected bad_alloc
+rollback, and source/metadata coexistence limits. Title fixtures cover 4096/4097
+bytes; no real media asset or audio operation is used. Hooks are deterministic
+fault injection, not exhaustive allocator coverage. Updated pure catalog boundary
+fixtures account for retained/staged locators, including Missing entries.
+Override/display transactions and their fixtures remain pending.
