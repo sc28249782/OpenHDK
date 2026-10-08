@@ -78,7 +78,7 @@ v0.2.0 behavior.
 | **Store sequence** | Positive uint64 wire counter for actual checkpoint publications; live store enforcement is pending. It is separate from catalog revision, RootId attachment generation and backend playback generation. |
 | **Store commit token** | Accepted future acknowledged store sequence plus the schema-defined final digest used to reject stale updates. It is not an authentication credential. |
 | **CommitUncertain** | Accepted future outcome after publication begins when the committed disk state or required synchronization cannot be confirmed. The store refuses writes until explicit validated reconciliation. |
-| **Restored owner** | Accepted future fresh catalog/discovery instance retaining saved IDs/counters/overrides with a new runtime lineage and no active root bindings. Explicit attachment and rescan precede Ready. |
+| **Restored owner** | Implemented fresh catalog/discovery instance retaining saved IDs/counters/overrides with a new runtime lineage and no active root bindings. Explicit attachment and rescan precede Ready. |
 | **lyric cue** | A timed text fragment or display action retaining source order and media time. It does not imply a syllable or grapheme. |
 | **NCN24** | The proposed narrow MIDI/LYR/CUR profile, with a format-evidence gate before implementation. It is not all NCN dialects. |
 | **playback generation** | A nonzero identity for one admitted compiled-playback attempt. It prevents an observer from mixing positions and lyrics across attempts. |

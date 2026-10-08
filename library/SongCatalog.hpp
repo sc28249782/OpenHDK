@@ -18,6 +18,8 @@ namespace OpenHDK {
 
 // Library-owned identifiers; no path/content conversion is available.
 class SongCatalog;
+class CatalogCheckpointRestore;
+struct CatalogCheckpointProjection;
 class RootId {
  public:
   auto operator<=>(const RootId&) const = default;
@@ -158,12 +160,14 @@ class SongCatalog {
   SongCatalog(const SongCatalog&) = delete;
   SongCatalog& operator=(const SongCatalog&) = delete;
 
-  std::optional<RootId> addRoot(RootSourcePolicy policy = {}) {
+  std::optional<RootId> addRoot(RootSourcePolicy policy = {}, std::size_t alreadyOwned = 0U) {
     if (!isValidRootSourcePolicy(policy)) return std::nullopt;
     if (nextRoot_ == std::numeric_limits<std::uint64_t>::max()) return std::nullopt;
     const RootId root(nextRoot_);
     if (snapshot_->revision == std::numeric_limits<std::uint64_t>::max()) return std::nullopt;
-    auto budget = *MetadataPayloadBudget::create();
+    auto available = MetadataPayloadBudget::create(MetadataPayloadBudget::kMaxBytes, alreadyOwned);
+    if (!available) return std::nullopt;
+    auto budget = *available;
     if (!chargeCatalogPayload(budget, *snapshot_, 2U)) return std::nullopt;
     auto staged = std::make_shared<CatalogSnapshot>(*snapshot_);
     staged->roots.push_back({root, 1U, policy});
@@ -178,14 +182,16 @@ class SongCatalog {
   }
 
   CatalogError commitScan(RootId root, std::vector<CatalogCandidate> candidates,
-                          bool complete, CatalogLimits limits = {}) {
+                          bool complete, CatalogLimits limits = {}, std::size_t alreadyOwned = 0U) {
     if (!knownRoot(root)) return CatalogError::UnknownRoot;
     if (!complete) return CatalogError::IncompleteScan;
     if (limits.candidates == 0U || limits.candidates > 10000U ||
         limits.locatorBytes == 0U || limits.locatorBytes > 4096U ||
         limits.stagedLocatorBytes == 0U || limits.stagedLocatorBytes > 64U * 1048576U ||
         candidates.size() > limits.candidates) return CatalogError::LimitExceeded;
-    auto budget = *MetadataPayloadBudget::create(limits.stagedLocatorBytes);
+    auto available = MetadataPayloadBudget::create(limits.stagedLocatorBytes, alreadyOwned);
+    if (!available) return CatalogError::LimitExceeded;
+    auto budget = *available;
     std::set<const CatalogSourceMetadata*> chargedMetadata;
     std::set<const CatalogUserOverrides*> chargedOverrides;
     for (const auto& song : snapshot_->songs) {
@@ -315,7 +321,7 @@ class SongCatalog {
   // Complete record replacement on the serialized control path. All errors are
   // nonallocating structured values; no source/root/lyric operation occurs here.
   CatalogOverrideResult replaceUserOverrides(SongId id, CatalogOverrideRequest request,
-                                            CatalogMetadataLimits limits = {}) {
+                                            CatalogMetadataLimits limits = {}, std::size_t alreadyOwned = 0U) {
     const auto fail = [](CatalogMetadataErrorCode code, CatalogMetadataField field = CatalogMetadataField::None,
                          std::optional<std::size_t> offset = std::nullopt) {
       return CatalogOverrideResult{{}, CatalogMetadataError{code, field, offset}};
@@ -342,7 +348,9 @@ class SongCatalog {
     if (snapshot_->revision == std::numeric_limits<std::uint64_t>::max())
       return fail(CatalogMetadataErrorCode::RevisionExhausted);
     try {
-      auto budget = *MetadataPayloadBudget::create(limits.stagedBytes);
+      auto available = MetadataPayloadBudget::create(limits.stagedBytes, alreadyOwned);
+      if (!available) return fail(CatalogMetadataErrorCode::LimitExceeded);
+      auto budget = *available;
       if (!chargeCatalogPayload(budget, *snapshot_, 2U)) return fail(CatalogMetadataErrorCode::LimitExceeded);
       // Reserve both validation/retained copies per requested field before growth.
       auto peak = budget;
@@ -369,7 +377,7 @@ class SongCatalog {
   }
 
   CatalogDisplayResult display(std::shared_ptr<const CatalogSnapshot> snapshot, SongId id,
-                               CatalogMetadataLimits limits = {}) const {
+                               CatalogMetadataLimits limits = {}, std::size_t alreadyOwned = 0U) const {
     const auto fail = [](CatalogMetadataErrorCode code) {
       return CatalogDisplayResult{nullptr, CatalogMetadataError{code, CatalogMetadataField::None, {}}};
     };
@@ -379,7 +387,9 @@ class SongCatalog {
         [&](const auto& song) { return song.id == id; });
     if (found == snapshot->songs.end()) return fail(CatalogMetadataErrorCode::NotFound);
     try {
-      auto budget = *MetadataPayloadBudget::create(limits.stagedBytes);
+      auto available = MetadataPayloadBudget::create(limits.stagedBytes, alreadyOwned);
+      if (!available) return fail(CatalogMetadataErrorCode::LimitExceeded);
+      auto budget = *available;
       if (!chargeCatalogPayload(budget, *snapshot)) return fail(CatalogMetadataErrorCode::LimitExceeded);
       return resolveCatalogDisplay(found->locator(), found->metadata.get(), found->overrides.get(),
                                    limits.textBytes, budget);
@@ -388,6 +398,9 @@ class SongCatalog {
 
  private:
   friend class SongDiscovery;
+  friend class CatalogCheckpointRestore;
+  // Defined by the validated restore adapter, never exposed as raw-ID construction.
+  void restoreCheckpointProjection(const CatalogCheckpointProjection& projection);
 #ifdef OPENHDK_ENABLE_TEST_SEAMS
   friend struct RootReattachmentTestAccess;
   friend struct CatalogMetadataTransactionTestAccess;
@@ -398,8 +411,10 @@ class SongCatalog {
   }
   // Discovery stages its path mapping before calling this helper. Neither
   // staging step publishes. The serialized writer commits with noexcept swaps.
-  std::shared_ptr<const CatalogSnapshot> stageRootReattachment(RootId root) const {
-    auto budget = *MetadataPayloadBudget::create();
+  std::shared_ptr<const CatalogSnapshot> stageRootReattachment(RootId root, std::size_t alreadyOwned = 0U) const {
+    auto available = MetadataPayloadBudget::create(MetadataPayloadBudget::kMaxBytes, alreadyOwned);
+    if (!available) return nullptr;
+    auto budget = *available;
     if (!chargeCatalogPayload(budget, *snapshot_, 2U)) return nullptr;
     auto staged = std::make_shared<CatalogSnapshot>(*snapshot_);
     const auto found = std::find_if(staged->roots.begin(), staged->roots.end(),

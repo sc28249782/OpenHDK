@@ -173,8 +173,11 @@ revision are separate. Explicit checkpoint success applies only to the captured
 revision; durable mutation wiring must commit storage before memory publication.
 CommitUncertain blocks further writes until explicit validated reconciliation.
 The pure schema-1 codec and detached projection are implemented with complete
-validation and one operation-wide coexistence ledger. Live projection adapters,
-restore owners and native stores remain pending. It approves no database package
+validation and one operation-wide coexistence ledger. A validated restore
+factory creates a fresh SongDiscovery lineage with retained IDs/history/overrides
+and Invalid songs. Roots are inactive; saved hints perform no path I/O. First
+explicit attachment increments generation/revision before complete scanning.
+Live checkpoint capture adapters and native stores remain pending. It approves no database package
 and adds no callback-visible file, lock, decode, or recovery operation.
 
 The audio callback owns no filesystem, database, text-decoding, or UI work.

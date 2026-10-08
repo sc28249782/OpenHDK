@@ -97,7 +97,8 @@ private:
   friend class SongDiscovery;
   static SongPreparationResult prepare(const std::filesystem::path& root,
       std::shared_ptr<const CatalogSnapshot> snapshot, std::size_t index,
-      PreparationOptions options, LyricSelectionPolicy effectivePolicy, const PreparationControl& control) {
+      PreparationOptions options, LyricSelectionPolicy effectivePolicy, const PreparationControl& control,
+      std::size_t alreadyOwned = 0U) {
     auto operation=PreparationOperation::Resolve;
     const auto& song=snapshot->songs[index];
     const auto fail=[&](PreparationErrorCode code) {
@@ -111,7 +112,9 @@ private:
         return fail(PreparationErrorCode::InvalidConfiguration);
       if(song.state!=CatalogState::Ready || !song.sourceRevision())
         return fail(PreparationErrorCode::NotReady);
-      auto budget = *MetadataPayloadBudget::create(options.stagedBytes);
+      auto available = MetadataPayloadBudget::create(options.stagedBytes, alreadyOwned);
+      if (!available) return fail(PreparationErrorCode::LimitExceeded);
+      auto budget = *available;
       if (!chargeCatalogPayload(budget, *snapshot)) return fail(PreparationErrorCode::LimitExceeded);
       // Reserve a possible error locator copy while extraction is still live.
       if (!budget.charge(song.locator().size())) return fail(PreparationErrorCode::LimitExceeded);

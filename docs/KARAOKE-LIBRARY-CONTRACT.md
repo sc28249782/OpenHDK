@@ -159,7 +159,8 @@ An existing HandyKaraoke database MUST NOT be opened for automatic migration.
 
 [OHK-STORE-030](CATALOG-PERSISTENCE-CONTRACT.md) proposes a bounded binary
 whole-catalog checkpoint as the first adapter, without a third-party database.
-Its schema, fresh-owner restore and commit/uncertainty rules require review.
+Its schema and fresh-owner restore are implemented; commit/uncertainty providers
+and durable-first integration require their separate review/evidence gates.
 Explicit checkpoint save would acknowledge only its captured revision; it would
 not make earlier in-memory mutations automatically durable. Full persistent
 mutation integration must still stage changes, commit storage, then publish
@@ -321,8 +322,9 @@ cue/search cache. Atomic user title/artist replacement and owning display
 resolution are implemented under OHK-META-030, including prepared effective
 source context and acquired overrides. Durable storage, NCN
 lyrics and application playback orchestration remain unimplemented.
-The accepted OHK-STORE-030 has a pure detached codec; it does not close restore,
-native storage or durable-first wiring gates.
+The accepted OHK-STORE-030 has a pure detached codec and validated fresh-owner
+restore. Restored roots are unattached until explicit reattachment and scanning;
+native storage and durable-first wiring gates remain open.
 Native mounted filesystem changes are not a hostile-writer sandbox guarantee.
 
 All methods require one serialized control path and must not be reentered from
