@@ -10,8 +10,8 @@ file ownership are specified in
 [KARAOKE-LIBRARY-CONTRACT.md](KARAOKE-LIBRARY-CONTRACT.md).
 The accepted [catalog metadata/root policy contract](CATALOG-METADATA-POLICY-CONTRACT.md)
 defines registration policy, compact source title provenance, and prepare-time
-overrides. Its pure value models are implemented; scan/preparation integration
-remains pending. It does not change current track selection or decoder rules.
+overrides. Its models and scan/preparation integration are implemented, reusing
+the current track selection and decoder rules without changing source events.
 
 ## 1. Immutable lyric timeline
 
@@ -306,8 +306,10 @@ there is no separate arbitrary tag count. Allocation exceptions propagate
 without publishing a partial result. The caller must budget other simultaneously
 retained catalog/lyric payload against the library's total staging ceiling.
 
-The pure media-clock consumer described in section 9 is implemented. Catalog
-metadata integration and audio/CLI lyric integration remain unimplemented. The NCN evidence gate remains open. Released
+The pure media-clock consumer described in section 9 is implemented. Compact
+catalog metadata and root-policy scan/preparation integration are implemented
+under OHK-META-030; override/display transactions and audio/CLI lyric
+orchestration remain unimplemented. The NCN evidence gate remains open. Released
 v0.2.0 has no KAR/NCN lyric service.
 
 ## 9. Current pure media-clock consumer boundary

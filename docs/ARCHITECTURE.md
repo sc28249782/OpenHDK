@@ -123,11 +123,13 @@ It does not construct UI state or publish clocks from the running backend.
 
 `SongDiscovery::prepare` resolves one Ready SongId from an acquired snapshot,
 checks containment and its SHA-256/byte-count token, and builds immutable MIDI
-and explicit-policy KAR timelines. A final reread detects preparation-time
+and KAR timelines under inherited or complete per-call selection policy.
+A final reread detects preparation-time
 changes. PreparedSong retains catalog identity and its original snapshot;
 rescans never replace its buffers. Preparation does not start or replace audio.
-Catalog metadata, durable storage, NCN preparation, and
-application lyric orchestration remain unimplemented. The
+Source metadata is connected to scan and preparation; override/display
+transactions, durable storage, NCN preparation and application lyric
+orchestration remain unimplemented. The
 [root reattachment contract](ROOT-REATTACHMENT-CONTRACT.md) separates root
 attachment generations from catalog and playback revisions. The development
 tree stages the new path and invalidated catalog together, verifies native
@@ -145,10 +147,12 @@ not an atomic filesystem snapshot; future playback preparation must revalidate s
 The accepted [metadata/root policy contract](CATALOG-METADATA-POLICY-CONTRACT.md)
 separates source fields, user overrides and filename fallback. It specifies
 immutable root policies, bounded per-scan extraction summaries and prepared
-metadata under the effective policy. Pure policy/metadata records, bounded
-UTF-8 text and a checked payload ledger now exist in `CatalogMetadata.hpp`.
-These are not current catalog fields; scan/preparation integration and
-override/display transactions remain pending.
+metadata under the effective policy. SongDiscovery now extracts before Ready;
+NoLyrics succeeds. CatalogSong has one primary member and shared const compact
+metadata. PreparedSong retains fresh effective metadata and the acquired root
+context separately. SourceMetadataExtraction reuses canonical KAR results,
+with one existing staged payload allowance and checked coexistence charges.
+Override/display transactions remain pending.
 Catalog methods are serialized and non-reentrant. Readers share acquired
 immutable snapshots. Lyric extraction and the pure consumer reuse compiled/session media time
 rather than an independent wall clock.

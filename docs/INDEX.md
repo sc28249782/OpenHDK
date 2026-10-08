@@ -24,7 +24,7 @@ continue to apply independently of feature plans.
 | [MIDI-CHANNEL-CONTROLLERS](MIDI-CHANNEL-CONTROLLERS.md) | Source controllers, runtime gain, resets, and diagnostics interpretation. |
 | [MIXER-DYNAMICS-CONTRACT](MIXER-DYNAMICS-CONTRACT.md) | Implemented velocity curves, presets, and peak limiter. |
 | [KARAOKE-LIBRARY-CONTRACT](KARAOKE-LIBRARY-CONTRACT.md) | Accepted 0.3.0 contract; catalog/discovery/preparation slices implemented, full services gated. |
-| [CATALOG-METADATA-POLICY-CONTRACT](CATALOG-METADATA-POLICY-CONTRACT.md) | Accepted member/metadata and root-policy contract; pure models implemented, scan/preparation and override/display integration pending. |
+| [CATALOG-METADATA-POLICY-CONTRACT](CATALOG-METADATA-POLICY-CONTRACT.md) | Accepted member/metadata and root-policy contract; models and scan/preparation implemented; override/display transactions pending. |
 | [ROOT-REATTACHMENT-CONTRACT](ROOT-REATTACHMENT-CONTRACT.md) | Accepted attachment-generation/transaction rules; local SMF/KAR reattachment implemented, CLI/storage gated. |
 | [LYRIC-TIMELINE-CONTRACT](LYRIC-TIMELINE-CONTRACT.md) | Accepted KAR/media timing contract; extraction/consumer and backend observation implemented; application/NCN24 gated. |
 | [MEDIA-CLOCK-HANDOFF-CONTRACT](MEDIA-CLOCK-HANDOFF-CONTRACT.md) | Accepted backend-clock handoff; FluidSynth publication implemented, generation-bound observer implemented; application integration pending. |
@@ -72,11 +72,11 @@ explicit pre-implementation gates. Running-backend publication has an
 adapter publishes it and a serialized observer binds the acknowledged
 generation. Single-song preparation binds catalog identity and verifies source
 revisions; application orchestration remains pending. Local reattachment follows the
-[accepted contract](ROOT-REATTACHMENT-CONTRACT.md); catalog metadata, root
-registration and storage remain pending. The
+[accepted contract](ROOT-REATTACHMENT-CONTRACT.md). The
 [accepted metadata/root policy contract](CATALOG-METADATA-POLICY-CONTRACT.md)
-has pure value types and bounded validation. Integrate canonical metadata
-extraction and policy inheritance next, then override/display transactions.
+is connected to root registration, canonical metadata extraction and policy
+inheritance. Implement override/display transactions next; storage, NCN
+and application integration remain gated.
 Preserve the
 canonical SMF and mixer contracts unless a compatibility change is accepted.
 

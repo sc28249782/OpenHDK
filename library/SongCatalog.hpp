@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
 
-#include "library/SourceRevision.hpp"
+#include "library/SourceMetadataExtraction.hpp"
 #include <algorithm>
 #include <compare>
 #include <cstdint>
@@ -43,23 +43,28 @@ enum class CatalogError {
 struct CatalogLimits {
   std::size_t candidates = 10000U;
   std::size_t locatorBytes = 4096U;
+  // Historical name: bounds all staged locator and metadata payload bytes.
   std::size_t stagedLocatorBytes = 64U * 1048576U;
 };
 struct CatalogCandidate {
   std::string locator;
   CatalogState state = CatalogState::Ready;
   std::optional<SourceRevision> revision = std::nullopt;
+  std::shared_ptr<const CatalogSourceMetadata> metadata = nullptr;
 };
 struct CatalogSong {
   SongId id;
   RootId root;
-  std::string locator;
+  SourceMemberDescriptor member;
   CatalogState state;
-  std::optional<SourceRevision> sourceRevision = std::nullopt;
+  std::shared_ptr<const CatalogSourceMetadata> metadata = nullptr;
+  const std::string& locator() const noexcept { return member.locator; }
+  const std::optional<SourceRevision>& sourceRevision() const noexcept { return member.revision; }
 };
 struct CatalogRoot {
   RootId id;
   std::uint64_t attachmentGeneration = 1U;
+  RootSourcePolicy policy{};
 };
 struct CatalogSnapshot {
   std::uint64_t revision = 0U;
@@ -125,7 +130,7 @@ inline bool isCatalogLocator(std::string_view text) noexcept {
 // commits and catalog destruction.
 // This is a logical model: root containment, source validation, exact revision
 // validation and filesystem discovery are provided by the discovery wrapper;
-// metadata and playback preparation belong to subsequent slices.
+// canonical metadata extraction and playback preparation belong to discovery.
 // Allocation exceptions propagate; staged mutation preserves the old snapshot.
 class SongCatalog {
  public:
@@ -137,12 +142,13 @@ class SongCatalog {
   SongCatalog(const SongCatalog&) = delete;
   SongCatalog& operator=(const SongCatalog&) = delete;
 
-  std::optional<RootId> addRoot() {
+  std::optional<RootId> addRoot(RootSourcePolicy policy = {}) {
+    if (!isValidRootSourcePolicy(policy)) return std::nullopt;
     if (nextRoot_ == std::numeric_limits<std::uint64_t>::max()) return std::nullopt;
     const RootId root(nextRoot_);
     if (snapshot_->revision == std::numeric_limits<std::uint64_t>::max()) return std::nullopt;
     auto staged = std::make_shared<CatalogSnapshot>(*snapshot_);
-    staged->roots.push_back({root, 1U});
+    staged->roots.push_back({root, 1U, policy});
     ++staged->revision;
     snapshot_ = std::move(staged);
     ++nextRoot_;
@@ -161,15 +167,23 @@ class SongCatalog {
         limits.locatorBytes == 0U || limits.locatorBytes > 4096U ||
         limits.stagedLocatorBytes == 0U || limits.stagedLocatorBytes > 64U * 1048576U ||
         candidates.size() > limits.candidates) return CatalogError::LimitExceeded;
-    std::size_t bytes = 0U;
+    auto budget = *MetadataPayloadBudget::create(limits.stagedLocatorBytes);
+    std::set<const CatalogSourceMetadata*> chargedMetadata;
+    for (const auto& song : snapshot_->songs) {
+      // Current and staged snapshot own locator copies; metadata is shared.
+      if (!budget.charge(song.locator().size()) || !budget.charge(song.locator().size())
+          || !chargeSourceMetadata(budget, song.metadata, chargedMetadata)) return CatalogError::LimitExceeded;
+    }
     for (const auto& candidate : candidates) {
       if (!isCatalogLocator(candidate.locator)) return CatalogError::InvalidLocator;
       if (candidate.state == CatalogState::Missing ||
           (candidate.state != CatalogState::Ready && candidate.state != CatalogState::Invalid &&
            candidate.state != CatalogState::UnsupportedProfile)) return CatalogError::InvalidCandidate;
       if (candidate.locator.size() > limits.locatorBytes ||
-          candidate.locator.size() > limits.stagedLocatorBytes - bytes) return CatalogError::LimitExceeded;
-      bytes += candidate.locator.size();
+          !budget.charge(candidate.locator.size()) || !budget.charge(candidate.locator.size())
+          || !chargeSourceMetadata(budget, candidate.metadata, chargedMetadata)) return CatalogError::LimitExceeded;
+      if (candidate.state != CatalogState::Ready && candidate.metadata
+          && (candidate.metadata->title || candidate.metadata->lyrics)) return CatalogError::InvalidCandidate;
     }
     std::sort(candidates.begin(), candidates.end(), [](const auto& a, const auto& b) {
       return catalogByteLess(a.locator, b.locator);
@@ -190,37 +204,45 @@ class SongCatalog {
     auto staged = std::make_shared<CatalogSnapshot>(*snapshot_);
     auto nextSong = nextSong_;
     for (auto& song : staged->songs) {
-      if (song.root == root) song.state = CatalogState::Missing;
+      if (song.root == root) {
+        song.state = CatalogState::Missing;
+        song.member.revision.reset();
+        song.metadata.reset();
+      }
     }
-    const auto fold = [](std::string_view locator) {
-      std::string key(locator);
-      for (auto& c : key) c = static_cast<char>(catalogAsciiFold(static_cast<unsigned char>(c)));
-      return key;
-    };
+    // Reserve before creating views; existing locators are never reassigned.
+    staged->songs.reserve(staged->songs.size() + candidates.size());
     struct ByteLess {
-      bool operator()(const std::string& a, const std::string& b) const noexcept {
-        return catalogByteLess(a, b);
+      bool operator()(std::string_view a, std::string_view b) const noexcept { return catalogByteLess(a, b); }
+    };
+    struct FoldLess {
+      bool operator()(std::string_view a, std::string_view b) const noexcept {
+        return std::lexicographical_compare(a.begin(), a.end(), b.begin(), b.end(),
+            [](char x, char y) { return catalogAsciiFold(static_cast<unsigned char>(x))
+                < catalogAsciiFold(static_cast<unsigned char>(y)); });
       }
     };
-    std::map<std::string, std::size_t, ByteLess> existing;
-    std::map<std::string, std::size_t, ByteLess> folded;
+    std::map<std::string_view, std::size_t, ByteLess> existing;
+    std::map<std::string_view, std::size_t, FoldLess> folded;
     for (std::size_t i = 0U; i < staged->songs.size(); ++i) {
       const auto& song = staged->songs[i];
       if (song.root == root) {
-        existing.emplace(song.locator, i);
-        folded.emplace(fold(song.locator), i);
+        existing.emplace(song.locator(), i);
+        folded.emplace(song.locator(), i);
       }
     }
     for (const auto& candidate : candidates) {
       const auto found = existing.find(candidate.locator);
       if (found != existing.end()) {
         staged->songs[found->second].state = candidate.state;
-        staged->songs[found->second].sourceRevision = candidate.revision;
+        staged->songs[found->second].member.revision = candidate.revision;
+        staged->songs[found->second].metadata = candidate.metadata;
       } else {
         // Case-only rename requires explicit relocation, including Missing entries.
-        if (folded.contains(fold(candidate.locator))) return CatalogError::AmbiguousPath;
+        if (folded.contains(candidate.locator)) return CatalogError::AmbiguousPath;
         if (nextSong == std::numeric_limits<std::uint64_t>::max()) return CatalogError::IdExhausted;
-        staged->songs.push_back({SongId(nextSong++), root, candidate.locator, candidate.state, candidate.revision});
+        staged->songs.push_back({SongId(nextSong++), root,
+            {SourceMemberRole::PrimaryMidi, candidate.locator, candidate.revision}, candidate.state, candidate.metadata});
       }
     }
     ++staged->revision;
@@ -237,16 +259,24 @@ class SongCatalog {
         [&](const auto& song) { return song.id == id; });
     if (found == snapshot_->songs.end()) return CatalogError::NotFound;
     if (std::any_of(snapshot_->songs.begin(), snapshot_->songs.end(), [&](const auto& song) {
-          return song.id != id && song.root == root && catalogAliases(song.locator, locator);
+          return song.id != id && song.root == root && catalogAliases(song.locator(), locator);
         })) return CatalogError::AmbiguousPath;
     if (snapshot_->revision == std::numeric_limits<std::uint64_t>::max()) return CatalogError::IdExhausted;
+    auto budget = *MetadataPayloadBudget::create();
+    std::set<const CatalogSourceMetadata*> charged;
+    if (!budget.charge(locator.size())) return CatalogError::LimitExceeded;
+    for (const auto& existing : snapshot_->songs) {
+      if (!budget.charge(existing.locator().size()) || !budget.charge(existing.locator().size())
+          || !chargeSourceMetadata(budget, existing.metadata, charged)) return CatalogError::LimitExceeded;
+    }
     auto staged = std::make_shared<CatalogSnapshot>(*snapshot_);
     auto& song = staged->songs[static_cast<std::size_t>(found - snapshot_->songs.begin())];
     song.root = root;
-    song.locator = std::move(locator);
+    song.member.locator = std::move(locator);
     // The new source must be validated by a later complete scan.
     song.state = CatalogState::Invalid;
-    song.sourceRevision.reset();
+    song.member.revision.reset();
+    song.metadata.reset();
     ++staged->revision;
     snapshot_ = std::move(staged);
     return CatalogError::None;
@@ -284,7 +314,8 @@ class SongCatalog {
     for (auto& song : staged->songs) {
       if (song.root == root) {
         song.state = CatalogState::Invalid;
-        song.sourceRevision.reset();
+        song.member.revision.reset();
+        song.metadata.reset();
       }
     }
     return staged;

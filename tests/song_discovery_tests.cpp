@@ -74,17 +74,17 @@ int main() {
   auto result = discovery.scan(root);
   OPENHDK_FAIL_IF(7, !result.succeeded() || result.candidates != 3U || !result.diagnostics.empty());
   const auto first = discovery.snapshot();
-  OPENHDK_FAIL_IF(8, first->songs.size() != 3U || first->songs[0].locator != "a.kAr" || first->songs[2].locator != "z.MID");
+  OPENHDK_FAIL_IF(8, first->songs.size() != 3U || first->songs[0].locator() != "a.kAr" || first->songs[2].locator() != "z.MID");
   for (const auto& song : first->songs) {
-    OPENHDK_FAIL_IF(9, song.state != CatalogState::Ready || song.sourceRevision != sourceRevision(midi));
+    OPENHDK_FAIL_IF(9, song.state != CatalogState::Ready || song.sourceRevision() != sourceRevision(midi));
   }
   const auto id = first->songs[2].id;
   const auto time = fs::last_write_time(fixture.path / "z.MID");
   auto changed = midi; changed[13] = 97U;
   write(fixture.path / "z.MID", changed); fs::last_write_time(fixture.path / "z.MID", time);
   result = discovery.scan(root);
-  OPENHDK_FAIL_IF(10, !result.succeeded() || discovery.snapshot()->songs[2].id != id || discovery.snapshot()->songs[2].sourceRevision == first->songs[2].sourceRevision);
-  OPENHDK_FAIL_IF(11, first->songs[2].sourceRevision != sourceRevision(midi));
+  OPENHDK_FAIL_IF(10, !result.succeeded() || discovery.snapshot()->songs[2].id != id || discovery.snapshot()->songs[2].sourceRevision() == first->songs[2].sourceRevision());
+  OPENHDK_FAIL_IF(11, first->songs[2].sourceRevision() != sourceRevision(midi));
   write(fixture.path / "bad.mid", {1U});
   result = discovery.scan(root);
   OPENHDK_FAIL_IF(12, !result.succeeded() || result.diagnostics.size() != 1U || !result.diagnostics[0].parseError || result.diagnostics[0].parseError->code != SmfParseErrorCode::TruncatedHeader || result.diagnostics[0].parseError->offset != 1U);
@@ -122,7 +122,7 @@ int main() {
   fs::create_hard_link(fixture.path / "z.MID", fixture.path / "hard.mid", ec);
   OPENHDK_FAIL_IF(22, ec || !discovery.scan(root).succeeded());
   const auto hard = discovery.snapshot();
-  const auto hardSong = std::find_if(hard->songs.begin(), hard->songs.end(), [](const auto& song) { return song.locator == "hard.mid"; });
+  const auto hardSong = std::find_if(hard->songs.begin(), hard->songs.end(), [](const auto& song) { return song.locator() == "hard.mid"; });
   OPENHDK_FAIL_IF(23, hardSong == hard->songs.end() || hardSong->id == id);
   TemporaryRoot external;
   write(external.path / "outside.mid", midi);
@@ -133,7 +133,7 @@ int main() {
   if (!ec) {
     OPENHDK_FAIL_IF(25, !discovery.scan(root).succeeded());
     for (const auto& song : discovery.snapshot()->songs) {
-      OPENHDK_FAIL_IF(26, song.locator.starts_with("escape/"));
+      OPENHDK_FAIL_IF(26, song.locator().starts_with("escape/"));
     }
     OPENHDK_FAIL_IF(27, LibraryFilesystem::read(fixture.path, "escape/outside.mid", 100U).error != LibraryFilesystem::ReadError::AmbiguousPath);
   } else { std::cerr << "Directory symlink fixture unavailable: " << ec.message() << '\n'; }
@@ -189,8 +189,8 @@ int main() {
   CloseHandle(locked);
   OPENHDK_FAIL_IF(40, !lockResult.succeeded());
   const auto lockedSnapshot = discovery.snapshot();
-  const auto lockedSong = std::find_if(lockedSnapshot->songs.begin(), lockedSnapshot->songs.end(), [](const auto& song) { return song.locator == "locked.mid"; });
-  OPENHDK_FAIL_IF(41, lockedSong == lockedSnapshot->songs.end() || lockedSong->state != CatalogState::Invalid || lockedSong->sourceRevision);
+  const auto lockedSong = std::find_if(lockedSnapshot->songs.begin(), lockedSnapshot->songs.end(), [](const auto& song) { return song.locator() == "locked.mid"; });
+  OPENHDK_FAIL_IF(41, lockedSong == lockedSnapshot->songs.end() || lockedSong->state != CatalogState::Invalid || lockedSong->sourceRevision());
   OPENHDK_FAIL_IF(42, !discovery.scan(root).succeeded());
 #else
   if (::geteuid() != 0) {

@@ -81,7 +81,7 @@ the development tree.
 
 The [accepted metadata/root-policy contract](CATALOG-METADATA-POLICY-CONTRACT.md)
 defines source member authority, source/user/fallback separation, and policy
-inheritance for review before those fields are integrated.
+inheritance; its scan/preparation integration is implemented below.
 
 A root registration specifies an existing directory, source mode, and lyric
 encoding/selection policy. Root paths MUST be resolved on the control path.
@@ -222,8 +222,9 @@ roots and rejects equivalent or overlapping roots. Windows UNC roots are
 rejected, while extended local paths remain eligible; local mounted-filesystem selection remains the caller's responsibility. Discovery sorts regular
 `.mid`, `.midi`, and `.kar` candidates, skips symbolic links and Windows reparse
 points, enforces configured limits, and validates canonical SMF parsing and
-compilation before publishing Ready. A `.kar` extension does not establish
-lyric support. NCN root modes and lyric-policy registration remain unimplemented.
+compilation plus selected lyric extraction before publishing Ready. NoLyrics
+succeeds. Registration validates and retains an immutable SmfKar root policy;
+filename extensions do not select encoding. NCN root modes remain unimplemented.
 
 The source token is SHA-256 plus byte count over the bytes actually read, using
 an independent implementation of [NIST FIPS 180-4](https://doi.org/10.6028/NIST.FIPS.180-4).
@@ -244,11 +245,12 @@ library dependency is introduced. The implementation sources are the
 and [GetFinalPathNameByHandleW](https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-getfinalpathnamebyhandlew).
 
 The scanner processes one SMF at a time and releases its temporary parse and
-compile storage before the next. The locator budget reserves the old snapshot's
-staged locators plus four copies of incoming locator bytes to cover enumeration,
-descriptors, re-enumeration/fold sorting, and publication. Source bytes have a
-separate per-SMF bound. Metadata and lyrics require additional accounting when
-those layers arrive. Allocation failure aborts without partial publication.
+compile/extraction storage before the next. Its existing 64 MiB payload budget
+reserves two existing locator copies, five incoming copies and shared compact
+title payload once per immutable record. Lyric temporaries and compact title
+validation fit the remaining allowance; no second metadata budget is granted.
+Source bytes have a separate per-SMF bound. See OHK-META-030 section 9 for phase
+accounting. Allocation failure aborts without partial publication.
 
 Before publication, the scanner re-enumerates the candidate set and re-reads
 content tokens. Detected changes, cancellation, directory failures, limit
@@ -266,14 +268,15 @@ and verify every source again before using it.
 `SongDiscovery::prepare(snapshot, SongId, options)` now resolves a selected
 Ready primary SMF/KAR source with a recorded token from an acquired snapshot.
 It reopens through the same no-follow reader, checks the exact revision,
-compiles canonical MIDI, extracts KAR lyrics with explicit per-call encoding
-and track options, and rereads the source token before publishing. This
-supports one primary source, not NCN bundles. Discovery still validates SMF
-only; Ready does not imply that lyric extraction will succeed.
+compiles canonical MIDI, extracts KAR lyrics under inherited root selection or
+a complete one-call override, and rereads the source token before publishing.
+This supports one primary source, not NCN bundles. Ready includes validation
+under the root policy; extraction can still fail under a different override.
 
 `library/SongPreparation.hpp` returns an immutable PreparedSong that retains
 its original catalog snapshot, identity/locator/revision, compiled MIDI,
-extracted lyrics (including NoLyrics), and selected preparation options.
+extracted lyrics (including NoLyrics), requested options, effective policy and
+fresh source metadata. Acquired song metadata retains the root-policy context.
 No backend start, stop, replacement, or observer binding occurs in preparation.
 Preparation MUST reject a null snapshot or one with absent/foreign catalog
 lineage as InvalidConfiguration at Resolve, before root lookup or filesystem
@@ -303,12 +306,11 @@ AfterRead/AfterExtraction support deterministic mutation/cancellation tests.
 The reread is not an atomic filesystem transaction: later edits do not change
 the immutable prepared buffers, and hostile-writer guarantees are not claimed.
 
-Local root reattachment is implemented under OHK-ROOT-030. Pure bounded metadata/policy values exist under OHK-META-030. Catalog
-source/member metadata integration, root-registered lyric
-policies, durable storage, catalog lyric indexing, NCN lyrics, and application
-playback orchestration remain unimplemented. Pure KAR selection/cue extraction
-exists separately under
-lyric contract section 8; discovery does not call it or claim lyric readiness.
+Local root reattachment is implemented under OHK-ROOT-030. Source/member
+metadata and root lyric policies are connected under OHK-META-030. Discovery
+reuses KAR extraction before Ready and retains only compact metadata, not a
+cue/search cache. User override/display transactions, durable storage, NCN
+lyrics and application playback orchestration remain unimplemented.
 Native mounted filesystem changes are not a hostile-writer sandbox guarantee.
 
 All methods require one serialized control path and must not be reentered from

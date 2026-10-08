@@ -253,12 +253,15 @@ Validated same-path requests leave state unchanged; already-prepared buffers
 remain owned. This adds no released behavior or CLI operation.
 
 [CATALOG-METADATA-POLICY-CONTRACT.md](CATALOG-METADATA-POLICY-CONTRACT.md)
-is an accepted planning contract. Pure policy/metadata values, bounded UTF-8
-text and a checked payload ledger are implemented. Root policy registration,
-source metadata extraction, override/display transactions and preparation
-inheritance remain pending. Current discovery still validates music only,
-and current preparation
-uses explicit per-call options; no metadata-enabled Ready gate is implemented.
+is an accepted planning contract. Policy/metadata values and bounded text are
+connected to root registration, scan and preparation. Library Ready includes
+selected lyric validation under the root policy; NoLyrics remains successful.
+Preparation inherits the acquired root policy or uses a complete one-call
+selection override after lineage/attachment checks, while retaining fresh
+source metadata separately from catalog metadata. Invalid sources cannot be
+rescued by a one-call override. User override/display transactions remain
+pending. These changes do not alter standalone SMF diagnostics or playback CLI
+behavior and are not part of released v0.2.0.
 
 Persistent storage selection and the NCN format evidence supplement require
 reviewed designs before their adapters are implemented. Running-backend

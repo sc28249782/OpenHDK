@@ -77,9 +77,9 @@ int main() {
   OPENHDK_FAIL_IF(6, !updated.succeeded() || updated.status != RootReattachmentStatus::Updated
       || invalidated->revision != original->revision + 1U || generation(*invalidated, *root) != 2U
       || generation(*invalidated, *second) != 1U || invalidated->songs[0].id != id
-      || invalidated->songs[0].state != CatalogState::Invalid || invalidated->songs[0].sourceRevision
+      || invalidated->songs[0].state != CatalogState::Invalid || invalidated->songs[0].sourceRevision()
       || invalidated->songs[1].state != original->songs[1].state
-      || invalidated->songs[1].sourceRevision != original->songs[1].sourceRevision);
+      || invalidated->songs[1].sourceRevision() != original->songs[1].sourceRevision());
   unsigned hooks = 0U; PreparationControl control;
   control.cancelled = [&] { ++hooks; return false; };
   OPENHDK_FAIL_IF(7, !sourceChanged(library.prepare(original, id, {}, control)) || hooks != 0U);
@@ -165,8 +165,8 @@ int main() {
   RootReattachmentTestAccess::invalidateAllStates(catalog, pureRoot);
   for (std::size_t i = 0; i < pureBefore->songs.size(); ++i) {
     const auto& song = catalog.snapshot()->songs[i];
-    OPENHDK_FAIL_IF(29, song.id != pureBefore->songs[i].id || song.locator != pureBefore->songs[i].locator
-        || (song.root == pureRoot && (song.state != CatalogState::Invalid || song.sourceRevision)));
+    OPENHDK_FAIL_IF(29, song.id != pureBefore->songs[i].id || song.locator() != pureBefore->songs[i].locator()
+        || (song.root == pureRoot && (song.state != CatalogState::Invalid || song.sourceRevision())));
   }
   OPENHDK_FAIL_IF(30, generation(*catalog.snapshot(), pureRoot) != 2U
       || generation(*catalog.snapshot(), unrelated) != 1U || catalog.snapshot()->revision != pureBefore->revision + 1U);
@@ -192,7 +192,7 @@ int main() {
     OPENHDK_FAIL_IF(36, !library.reattachRoot(*root, linked).succeeded());
     auto injected = std::make_shared<CatalogSnapshot>(*library.snapshot());
     injected->songs[0].state = CatalogState::Ready;
-    injected->songs[0].sourceRevision = original->songs[0].sourceRevision;
+    injected->songs[0].member.revision = original->songs[0].sourceRevision();
     const auto denied = library.prepare(injected, id);
     OPENHDK_FAIL_IF(37, !denied.error || denied.error->code != PreparationErrorCode::AmbiguousPath);
   } else {

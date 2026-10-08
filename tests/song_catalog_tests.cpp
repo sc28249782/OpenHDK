@@ -27,7 +27,7 @@ int main() {
   const auto first = catalog.snapshot();
   const auto a = first->songs[0].id;
   const auto z = first->songs[1].id;
-  OPENHDK_FAIL_IF(7, first->revision != empty->revision + 1U || first->songs[0].locator != "a.mid" || a == z);
+  OPENHDK_FAIL_IF(7, first->revision != empty->revision + 1U || first->songs[0].locator() != "a.mid" || a == z);
   OPENHDK_FAIL_IF(8, empty->revision != 2U || !empty->songs.empty());
   OPENHDK_FAIL_IF(9, catalog.commitScan(root, {{"a.mid", CatalogState::Invalid}, {"z.mid"}}, true) != CatalogError::None);
   OPENHDK_FAIL_IF(10, catalog.snapshot()->songs[0].id != a || catalog.snapshot()->songs[0].state != CatalogState::Invalid);
@@ -41,13 +41,14 @@ int main() {
   OPENHDK_FAIL_IF(17, catalog.commitScan(root, {{"a.mid"}}, true, {1U, 5U, 4U}) != CatalogError::LimitExceeded || catalog.snapshot() != before);
   OPENHDK_FAIL_IF(18, catalog.commitScan(root, {{"a.mid"}}, true, {0U, 5U, 5U}) != CatalogError::LimitExceeded || catalog.snapshot() != before);
   OPENHDK_FAIL_IF(19, catalog.commitScan(root, {{"a.mid"}}, true, {10001U, 5U, 5U}) != CatalogError::LimitExceeded || catalog.snapshot() != before);
-  OPENHDK_FAIL_IF(20, catalog.commitScan(root, {{"a.mid"}}, true, {1U, 5U, 5U}) != CatalogError::None);
+  // Two existing 5-byte locator copies + two incoming copies = 30 bytes.
+  OPENHDK_FAIL_IF(20, catalog.commitScan(root, {{"a.mid"}}, true, {1U, 5U, 30U}) != CatalogError::None);
   OPENHDK_FAIL_IF(21, catalog.snapshot()->songs[1].id != z || catalog.snapshot()->songs[1].state != CatalogState::Missing);
   before = catalog.snapshot();
   OPENHDK_FAIL_IF(22, catalog.commitScan(root, {{"Z.mid"}}, true) != CatalogError::AmbiguousPath || catalog.snapshot() != before);
   OPENHDK_FAIL_IF(23, catalog.relocate(a, root, "Z.mid") != CatalogError::AmbiguousPath || catalog.snapshot() != before);
   OPENHDK_FAIL_IF(24, catalog.relocate(z, root, "Z.mid") != CatalogError::None);
-  OPENHDK_FAIL_IF(25, catalog.snapshot()->songs[1].id != z || catalog.snapshot()->songs[1].locator != "Z.mid" || catalog.snapshot()->songs[1].state != CatalogState::Invalid);
+  OPENHDK_FAIL_IF(25, catalog.snapshot()->songs[1].id != z || catalog.snapshot()->songs[1].locator() != "Z.mid" || catalog.snapshot()->songs[1].state != CatalogState::Invalid);
   OPENHDK_FAIL_IF(26, catalog.commitScan(root, {{"a.mid"}, {"Z.mid"}}, true) != CatalogError::None || catalog.snapshot()->songs[1].state != CatalogState::Ready);
   OPENHDK_FAIL_IF(27, catalog.commitScan(otherRoot, {{"a.mid", CatalogState::UnsupportedProfile}}, true) != CatalogError::None);
   OPENHDK_FAIL_IF(28, catalog.snapshot()->songs[2].id == a || catalog.snapshot()->songs[2].state != CatalogState::UnsupportedProfile);
@@ -62,7 +63,7 @@ int main() {
   OPENHDK_FAIL_IF(32, forward.commitScan(rf, {{"a.mid"}, {"b.mid"}, {"c.mid"}}, true) != CatalogError::None);
   OPENHDK_FAIL_IF(33, reverse.commitScan(rr, {{"c.mid"}, {"a.mid"}, {"b.mid"}}, true) != CatalogError::None);
   for (std::size_t i = 0U; i < 3U; ++i) {
-    OPENHDK_FAIL_IF(34, forward.snapshot()->songs[i].id != reverse.snapshot()->songs[i].id || forward.snapshot()->songs[i].locator != reverse.snapshot()->songs[i].locator);
+    OPENHDK_FAIL_IF(34, forward.snapshot()->songs[i].id != reverse.snapshot()->songs[i].id || forward.snapshot()->songs[i].locator() != reverse.snapshot()->songs[i].locator());
   }
   // Failed transactions must not consume a song ID.
   SongCatalog failed, clean;
@@ -95,9 +96,11 @@ int main() {
   OPENHDK_FAIL_IF(47, boundary.commitScan(rb, {{maxLocator}}, true) != CatalogError::None);
   const auto boundaryBefore = boundary.snapshot();
   OPENHDK_FAIL_IF(48, boundary.commitScan(rb, {{maxLocator + "x"}}, true) != CatalogError::LimitExceeded || boundary.snapshot() != boundaryBefore);
-  OPENHDK_FAIL_IF(49, boundary.commitScan(rb, {{"a.mid"}, {"b.mid"}}, true, {2U, 5U, 10U}) != CatalogError::None);
+  // Existing 4096-byte locator twice + two 5-byte candidates twice = 8212.
+  OPENHDK_FAIL_IF(49, boundary.commitScan(rb, {{"a.mid"}, {"b.mid"}}, true, {2U, 5U, 8212U}) != CatalogError::None);
   const auto sumBefore = boundary.snapshot();
-  OPENHDK_FAIL_IF(50, boundary.commitScan(rb, {{"a.mid"}, {"b.mid"}}, true, {2U, 5U, 9U}) != CatalogError::LimitExceeded || boundary.snapshot() != sumBefore);
+  // Rescan retains the Missing long locator too: 2*(4096+5+5)+2*(5+5)=8232.
+  OPENHDK_FAIL_IF(50, boundary.commitScan(rb, {{"a.mid"}, {"b.mid"}}, true, {2U, 5U, 8231U}) != CatalogError::LimitExceeded || boundary.snapshot() != sumBefore);
   // Non-ASCII case and distinct normalization spellings remain distinct keys.
   OPENHDK_FAIL_IF(51, boundary.commitScan(rb, {{"É.mid"}, {"é.mid"}, {"e\xcc\x81.mid"}}, true) != CatalogError::None);
   std::shared_ptr<const CatalogSnapshot> outlivesOwner;
@@ -107,6 +110,6 @@ int main() {
     OPENHDK_FAIL_IF(52, temporary.commitScan(rt, {{"retained.mid"}}, true) != CatalogError::None);
     outlivesOwner = temporary.snapshot();
   }
-  OPENHDK_FAIL_IF(53, outlivesOwner->songs.size() != 1U || outlivesOwner->songs[0].locator != "retained.mid");
+  OPENHDK_FAIL_IF(53, outlivesOwner->songs.size() != 1U || outlivesOwner->songs[0].locator() != "retained.mid");
   return 0;
 }

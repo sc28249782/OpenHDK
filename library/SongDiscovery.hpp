@@ -9,17 +9,20 @@
 namespace OpenHDK {
 enum class DiscoveryError {
   InvalidRoot, AmbiguousPath, SourceUnreadable, SourceChanged, InvalidSmf,
-  LimitExceeded, Cancelled, StorageFailure, RevisionExhausted
+  LimitExceeded, Cancelled, StorageFailure, RevisionExhausted, InvalidConfiguration, InvalidLyrics
 };
-enum class DiscoveryOperation { RegisterRoot, Enumerate, Read, Validate, Publish, ReattachRoot };
+enum class DiscoveryOperation { RegisterRoot, Enumerate, Read, Validate, Publish, ReattachRoot, ExtractLyrics };
 struct DiscoveryDiagnostic {
   DiscoveryError code;
   DiscoveryOperation operation;
   std::string locator;
   std::optional<SmfParseError> parseError = std::nullopt;
   std::optional<SmfTimelineError> timelineError = std::nullopt;
+  std::optional<KarLyricError> lyricError = std::nullopt;
   std::string_view message() const noexcept {
     switch (code) {
+      case DiscoveryError::InvalidConfiguration: return "The root policy or library configuration is invalid.";
+      case DiscoveryError::InvalidLyrics: return "The selected lyrics failed validation.";
       case DiscoveryError::InvalidRoot: return "The registered root or selected directory is invalid.";
       case DiscoveryError::AmbiguousPath: return "The selected path overlaps or aliases a registered source.";
       case DiscoveryError::SourceUnreadable: return "A source could not be read.";
@@ -43,8 +46,9 @@ struct DiscoveryLimits {
   CatalogLimits catalog;
   std::size_t depth = 32U;
   std::size_t smfBytes = 64U * 1048576U;
+  KarLyricLimits lyrics{};
 };
-enum class DiscoveryCheckpoint { AfterEnumeration, AfterValidation, BeforePublication };
+enum class DiscoveryCheckpoint { AfterEnumeration, AfterValidation, BeforePublication, AfterExtraction };
 struct DiscoveryControl {
   // Control-path only; hooks permit deterministic cancellation/change tests.
   std::function<bool()> cancelled;
@@ -71,9 +75,11 @@ struct RootReattachmentControl {
 class SongDiscovery {
  public:
   std::shared_ptr<const CatalogSnapshot> snapshot() const noexcept { return catalog_.snapshot(); }
-  // This slice supports SMF/KAR discovery only; it does not extract lyrics.
-  RootRegistration registerRoot(const std::filesystem::path& path) {
-    try { return registerRootImpl(path); }
+  // Reject unknown policy before filesystem access or ID/revision consumption.
+  RootRegistration registerRoot(const std::filesystem::path& path, RootSourcePolicy policy = {}) {
+    if (!isValidRootSourcePolicy(policy))
+      return {{}, diagnostic(DiscoveryError::InvalidConfiguration, DiscoveryOperation::RegisterRoot)};
+    try { return registerRootImpl(path, policy); }
     catch (const std::bad_alloc&) { return {{}, diagnostic(DiscoveryError::StorageFailure, DiscoveryOperation::RegisterRoot)}; }
     catch (const std::filesystem::filesystem_error&) { return {{}, diagnostic(DiscoveryError::InvalidRoot, DiscoveryOperation::RegisterRoot)}; }
   }
@@ -115,8 +121,11 @@ class SongDiscovery {
     if (captured == snapshot->roots.end() || binding == current->roots.end() ||
         captured->attachmentGeneration != binding->attachmentGeneration)
       return failure(PreparationErrorCode::SourceChanged);
+    const auto effective = options.lyricOverride.value_or(captured->policy.lyrics);
+    if (!isValidRootSourcePolicy(captured->policy) || !isValidLyricSelectionPolicy(effective))
+      return failure(PreparationErrorCode::InvalidConfiguration);
     return SongPreparation::prepare(root->path,snapshot,
-        static_cast<std::size_t>(song-snapshot->songs.begin()),options,control);
+        static_cast<std::size_t>(song-snapshot->songs.begin()),options,effective,control);
   }
 
  private:
@@ -197,7 +206,7 @@ class SongDiscovery {
     return {RootReattachmentStatus::Updated, {}};
   }
 
-  RootRegistration registerRootImpl(const std::filesystem::path& path) {
+  RootRegistration registerRootImpl(const std::filesystem::path& path, RootSourcePolicy policy) {
     namespace fs = std::filesystem;
     std::error_code ec;
     auto canonical = fs::canonical(path, ec);
@@ -213,7 +222,7 @@ class SongDiscovery {
       if (ec) return {{}, diagnostic(DiscoveryError::InvalidRoot, DiscoveryOperation::RegisterRoot)};
     }
     roots_.reserve(roots_.size() + 1U);
-    const auto id = catalog_.addRoot();
+    const auto id = catalog_.addRoot(policy);
     if (!id) return {{}, diagnostic(DiscoveryError::StorageFailure, DiscoveryOperation::RegisterRoot)};
     roots_.push_back({*id, std::move(canonical)});
     return {id, {}};
@@ -231,7 +240,7 @@ class SongDiscovery {
     return limits.depth > 0U && limits.depth <= 32U && limits.smfBytes > 0U && limits.smfBytes <= 64U * 1048576U &&
       limits.catalog.candidates > 0U && limits.catalog.candidates <= 10000U &&
       limits.catalog.locatorBytes > 0U && limits.catalog.locatorBytes <= 4096U &&
-      limits.catalog.stagedLocatorBytes > 0U && limits.catalog.stagedLocatorBytes <= 64U * 1048576U;
+      limits.catalog.stagedLocatorBytes > 0U && limits.catalog.stagedLocatorBytes <= 64U * 1048576U && validKarLyricLimits(limits.lyrics);
   }
   static std::optional<DiscoveryDiagnostic> collect(const std::filesystem::path& root,
       DiscoveryLimits limits, const DiscoveryControl& control, std::vector<std::string>& locators) {
@@ -289,20 +298,34 @@ class SongDiscovery {
     if (!validLimits(limits)) return {diagnostic(DiscoveryError::LimitExceeded, DiscoveryOperation::Enumerate), 0U, {}};
     // Copy the path: control hooks must not invalidate a vector element reference.
     const auto path = found->path;
-    // Reserve the existing staged snapshot plus four concurrent path copies:
-    // enumeration, candidate descriptors, re-enumeration/fold sort, publication.
-    // Fixed-size revisions and temporary SMF parse buffers are separate bounds.
-    std::size_t existingBytes = 0U;
-    for (const auto& song : catalog_.snapshot()->songs) {
-      if (song.locator.size() > limits.catalog.stagedLocatorBytes - existingBytes)
+    const auto captured = catalog_.snapshot();
+    const auto rootRecord = std::find_if(captured->roots.begin(), captured->roots.end(),
+        [&](const auto& item) { return item.id == root; });
+    if (rootRecord == captured->roots.end() || !isValidRootSourcePolicy(rootRecord->policy))
+      return {diagnostic(DiscoveryError::InvalidConfiguration, DiscoveryOperation::Enumerate), 0U, {}};
+    const auto policy = rootRecord->policy.lyrics;
+    auto budget = *MetadataPayloadBudget::create(limits.catalog.stagedLocatorBytes);
+    std::set<const CatalogSourceMetadata*> chargedMetadata;
+    for (const auto& song : captured->songs) {
+      // Current + staged locator copies; immutable compact records are shared.
+      if (!budget.charge(song.locator().size()) || !budget.charge(song.locator().size())
+          || !chargeSourceMetadata(budget, song.metadata, chargedMetadata))
         return {diagnostic(DiscoveryError::LimitExceeded, DiscoveryOperation::Enumerate), 0U, {}};
-      existingBytes += song.locator.size();
     }
+    // Five incoming copies cover enumeration/candidates, diagnostics, and either
+    // verification + fold-sort or verification + catalog publication. Catalog
+    // lookup maps now use stable views, not extra owned path strings.
     auto enumerationLimits = limits;
-    enumerationLimits.catalog.stagedLocatorBytes = (limits.catalog.stagedLocatorBytes - existingBytes) / 4U;
+    enumerationLimits.catalog.stagedLocatorBytes = budget.remaining() / 5U;
     std::vector<std::string> locators;
     DiscoveryResult result;
     if (auto error = collect(path, enumerationLimits, control, locators)) { result.error = std::move(error); return result; }
+    for (const auto& locator : locators) {
+      for (unsigned copy = 0U; copy < 5U; ++copy) {
+        if (!budget.charge(locator.size()))
+          return {diagnostic(DiscoveryError::LimitExceeded, DiscoveryOperation::Enumerate), 0U, {}};
+      }
+    }
     result.candidates = locators.size();
     checkpoint(control, DiscoveryCheckpoint::AfterEnumeration);
     std::vector<CatalogCandidate> candidates;
@@ -337,6 +360,43 @@ class SongDiscovery {
             candidate.state = CatalogState::Invalid;
             auto error = diagnostic(DiscoveryError::InvalidSmf, DiscoveryOperation::Validate, locator);
             error.timelineError = *compiled.error(); result.diagnostics.push_back(std::move(error));
+          } else {
+            operation = DiscoveryOperation::ExtractLyrics;
+            auto options = *karOptionsForPolicy(policy, limits.lyrics);
+            // Extraction can temporarily hold both decoded text and its owned
+            // copy. Reserve twice its staged ceiling within the existing budget.
+            options.limits.stagedBytes = std::min(options.limits.stagedBytes,
+                std::max(std::size_t{1U}, budget.remaining() / 2U));
+            const auto lyrics = KarLyricExtractor::extract(*compiled.timeline(), options);
+            if (!lyrics.succeeded()) {
+              auto error = diagnostic(lyrics.error()->code == KarLyricErrorCode::LimitExceeded
+                  ? DiscoveryError::LimitExceeded : DiscoveryError::InvalidLyrics, operation, locator);
+              error.lyricError = *lyrics.error();
+              if (error.code == DiscoveryError::LimitExceeded) { result.error = std::move(error); return result; }
+              candidate.state = CatalogState::Invalid;
+              auto invalid = std::make_shared<CatalogSourceMetadata>();
+              invalid->kind = VerifiedSourceKind::CanonicalSmf;
+              candidate.metadata = std::move(invalid);
+              result.diagnostics.push_back(std::move(error));
+            } else {
+              auto live = budget;
+              if (!chargeLyricPayload(live, *lyrics.timeline())) {
+                result.error = diagnostic(DiscoveryError::LimitExceeded, operation, locator); return result;
+              }
+              const auto compact = compactSourceMetadata(*lyrics.timeline(), *candidate.revision,
+                  policy, limits.lyrics.titleBytes, live);
+              if (compact.error) {
+                result.error = diagnostic(compact.error->code == KarLyricErrorCode::LimitExceeded
+                    ? DiscoveryError::LimitExceeded : DiscoveryError::InvalidConfiguration, operation, locator);
+                result.error->lyricError = *compact.error; return result;
+              }
+              candidate.metadata = compact.metadata;
+              if (!chargeSourceMetadata(budget, candidate.metadata, chargedMetadata)) {
+                result.error = diagnostic(DiscoveryError::LimitExceeded, operation, locator); return result;
+              }
+            }
+            checkpoint(control, DiscoveryCheckpoint::AfterExtraction);
+            if (cancelled(control)) { result.error = diagnostic(DiscoveryError::Cancelled, operation, locator); return result; }
           }
         }
       }
