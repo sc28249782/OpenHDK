@@ -235,7 +235,8 @@ described in lyric contract section 8, plus the pure media-clock consumer in
 section 9. The consumer returns once-only whole-cue batches and an emitted
 prefix as current display state; reset/stop clears that state. These helpers
 are control/observation-path only. Single-song SMF/KAR preparation now
-resolves SongId from an acquired catalog snapshot, rechecks source revision
+rejects absent/foreign snapshot lineage before filesystem access, resolves
+SongId from an acquired catalog snapshot, rechecks source revision
 and containment, and owns canonical MIDI and explicit-policy KAR timelines.
 No audio operation is performed by preparation; application/CLI lyric
 orchestration remains pending.

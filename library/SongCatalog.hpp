@@ -60,6 +60,10 @@ struct CatalogSong {
 struct CatalogSnapshot {
   std::uint64_t revision = 0U;
   std::vector<CatalogSong> songs;
+ private:
+  // Lifetime identity, not a path/content key or a persistent identifier.
+  std::shared_ptr<const unsigned char> origin_;
+  friend class SongCatalog;
 };
 
 inline bool catalogByteLess(std::string_view a, std::string_view b) noexcept {
@@ -120,7 +124,11 @@ inline bool isCatalogLocator(std::string_view text) noexcept {
 // Allocation exceptions propagate; staged mutation preserves the old snapshot.
 class SongCatalog {
  public:
-  SongCatalog() : snapshot_(std::make_shared<const CatalogSnapshot>()) {}
+  SongCatalog() {
+    auto initial = std::make_shared<CatalogSnapshot>();
+    initial->origin_ = std::make_shared<const unsigned char>(0U);
+    snapshot_ = std::move(initial);
+  }
   SongCatalog(const SongCatalog&) = delete;
   SongCatalog& operator=(const SongCatalog&) = delete;
 
@@ -132,6 +140,9 @@ class SongCatalog {
     return root;
   }
   std::shared_ptr<const CatalogSnapshot> snapshot() const noexcept { return snapshot_; }
+  bool ownsSnapshot(const CatalogSnapshot& snapshot) const noexcept {
+    return snapshot.origin_ == snapshot_->origin_;
+  }
 
   CatalogError commitScan(RootId root, std::vector<CatalogCandidate> candidates,
                           bool complete, CatalogLimits limits = {}) {
