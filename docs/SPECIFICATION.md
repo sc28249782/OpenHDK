@@ -252,6 +252,12 @@ Preparation rejects stale attachment generations at Resolve before source I/O.
 Validated same-path requests leave state unchanged; already-prepared buffers
 remain owned. This adds no released behavior or CLI operation.
 
+[CATALOG-METADATA-POLICY-CONTRACT.md](CATALOG-METADATA-POLICY-CONTRACT.md)
+proposes root lyric-policy registration, source/member metadata, explicit user
+overrides, and preparation inheritance. Acceptance and implementation remain
+pending. Current discovery still validates music only, and current preparation
+uses explicit per-call options; no metadata-enabled Ready gate is implemented.
+
 Persistent storage selection and the NCN format evidence supplement require
 reviewed designs before their adapters are implemented. Running-backend
 media-position publication has an accepted bounded contract in

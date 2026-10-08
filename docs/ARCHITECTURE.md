@@ -142,6 +142,11 @@ acknowledgements and clears it on generation mismatch or terminal errors.
 The controller owns the observer for one backend lifetime and clears it before
 stop/replacement/shutdown. Application orchestration remains pending. A final scan check is
 not an atomic filesystem snapshot; future playback preparation must revalidate source tokens.
+The proposed [metadata/root policy contract](CATALOG-METADATA-POLICY-CONTRACT.md)
+separates source fields, user overrides and filename fallback. It proposes
+immutable root policies, bounded per-scan extraction summaries and prepared
+metadata under the effective policy. These are not current catalog fields;
+scan/preparation integration requires contract acceptance first.
 Catalog methods are serialized and non-reentrant. Readers share acquired
 immutable snapshots. Lyric extraction and the pure consumer reuse compiled/session media time
 rather than an independent wall clock.
