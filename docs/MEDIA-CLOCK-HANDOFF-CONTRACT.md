@@ -2,8 +2,8 @@
 
 **Contract ID:** OHK-CLOCK-030
 
-**Status:** Accepted by PR #41. The pure publication cell is implemented in
-the development tree; backend integration remains pending.
+**Status:** Accepted by PR #41. The publication cell and FluidSynth adapter are
+implemented in the development tree; lyric-consumer binding remains pending.
 
 **Target:** OpenHDK 0.3.0. Released v0.2.0 has no backend clock observer or
 karaoke lyric service.
@@ -212,7 +212,15 @@ generation counter. A test-only seam injects counter boundaries and an action
 between the odd sequence store and payload publication. The production publish
 path has no hook, allocation, lock, retry, I/O, or logging.
 
-The cell does not yet publish from `FluidSynthBackend`, acknowledge a generation
-from compiled playback, or drive `LyricMediaConsumer`. The remaining lifecycle,
-failed-block commit, and real headless-render tests in section 9 must pass when
-that adapter is implemented.
+`FluidSynthBackend` acknowledges a nonzero generation after a successful
+compiled start. It publishes Preparing and Playing from the quiescent control
+path, publishes committed block positions and Finished from the render owner,
+publishes Stopped after an explicit backend stop, and returns to the unbound
+value after shutdown. Legacy playback publishes LegacyPlayer/Unavailable
+without a fabricated time. Headless smoke coverage checks start, progression,
+finish, explicit stop, replacement, legacy, and shutdown records.
+A distant-End-of-Track fixture commits one block, then a private test seam
+requests more frames than FluidSynth accepts. The resulting failure record
+retains the prior committed time and reports the fixed RenderFailed code.
+
+The backend does not yet drive `LyricMediaConsumer`.

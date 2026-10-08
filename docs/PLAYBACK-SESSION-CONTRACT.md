@@ -89,7 +89,10 @@ an implicit duration. The legacy FluidSynth file player and compiled-timeline
 entry points cannot control the synth together.
 
 The accepted [running-backend media-clock handoff](MEDIA-CLOCK-HANDOFF-CONTRACT.md)
-will publish only positions whose complete MIDI dispatch and PCM render block
-succeeded. It will not expose callback-owned `PlaybackSession` state or treat
-the frame-derived render clock as a device presentation clock. Its pure atomic
-cell is implemented, but this playback adapter does not publish to it yet.
+publishes only positions whose complete MIDI dispatch and PCM render block
+succeeded. It does not expose callback-owned `PlaybackSession` state or treat
+the frame-derived render clock as a device presentation clock. A successful
+compiled start acknowledges its generation; finish retains the final committed
+position until stop, replacement, or shutdown changes the record. Explicit
+backend stop quiesces rendering and publishes Stopped with time zero for the
+current compiled generation.

@@ -50,14 +50,18 @@ reset/stop/reprepare, NoLyrics, null preparation, and owning batch lifetime.
 Known frame-derived positions from a real PlaybackSession cover pause/resume,
 completion without changing session state, stop/restart, and partition-invariant
 cue order. These hardware-free tests do not establish backend/device/GUI lyric
-synchronization; running-backend clock publication still needs backend
+synchronization; running-backend clock publication still needs lyric-consumer
 integration. The accepted
 [media-clock handoff contract](../docs/MEDIA-CLOCK-HANDOFF-CONTRACT.md) defines
 the required concurrency, lifecycle, failure, and exhaustion tests. Pure-cell
 coverage now checks coherent concurrent snapshots, deterministic unstable
 reads, generation non-reuse, and both counter exhaustion boundaries. Backend
 lifecycle and real-render cases remain acceptance requirements rather than
-current coverage.
+current pure-cell coverage. The Windows headless smoke test additionally checks
+compiled generation acknowledgment, first-block progression, retained finish,
+explicit stop, restart, legacy unavailable state, and shutdown. Deterministic
+mid-block failure injection checks that failure retains the previous committed
+position.
 
 Remaining catalog metadata, root reattachment, and library integration tests
 must use independently authored fixtures. NCN24 requires a reviewed evidence

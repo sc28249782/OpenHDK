@@ -78,7 +78,8 @@ occurs when a SoundFont or audio device is unavailable.
 - [ ] Select and review persistent storage/schema/recovery and backend
   media-position publication before implementing those adapters. The
   [media-clock handoff contract](MEDIA-CLOCK-HANDOFF-CONTRACT.md) is accepted;
-  its pure atomic cell is implemented, while the backend adapter remains open.
+  its atomic cell and FluidSynth publication are implemented, while persistent
+  storage and lyric-consumer binding remain open.
 - [ ] Integrate library preparation and lyric observation without changing
   released MIDI, mixer, or limiter semantics; validate Windows playback.
 - Research staged runtime layout and installers separately; this proposal

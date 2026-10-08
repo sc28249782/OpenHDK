@@ -244,7 +244,9 @@ Persistent storage selection and the NCN format evidence supplement require
 reviewed designs before their adapters are implemented. Running-backend
 media-position publication has an accepted bounded contract in
 `MEDIA-CLOCK-HANDOFF-CONTRACT.md`. Its pure atomic cell and generation counter
-are implemented, while backend integration remains pending. No database
+are implemented and the FluidSynth adapter publishes committed compiled
+positions, acknowledged generations, finish, failure, and explicit stop state.
+Lyric-consumer binding remains pending. No database
 dependency, new CLI option, Qt UI, or
 legacy database migration is authorized by these documents. Acceptance tests
 and any later support claim MUST close the corresponding gates.

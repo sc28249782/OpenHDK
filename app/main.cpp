@@ -316,7 +316,8 @@ int runPlayback(const CommandLineOptions& options, OpenHDK::AudioBackendStatus& 
         std::cerr << "Audio initialization failed: " << status.message << '\n';
         return kRuntimeError;
     }
-    if (!backend.playCompiledTimeline(*timeline.timeline(), status)) {
+    OpenHDK::AudioBackendPlaybackStart playbackStart;
+    if (!backend.playCompiledTimeline(*timeline.timeline(), playbackStart, status)) {
         std::cerr << "MIDI playback failed: " << status.message << '\n';
         return kRuntimeError;
     }

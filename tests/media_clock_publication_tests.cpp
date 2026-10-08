@@ -66,6 +66,7 @@ int main() {
         || !matches(*second.snapshot, kFailed));
 
     PlaybackGenerationCounter generations;
+    OPENHDK_FAIL_IF(7, !generations.canAdmit());
     const auto generation1 = generations.admit();
     const auto generation2 = generations.admit();
     OPENHDK_FAIL_IF(7, generation1 != 1U || generation2 != 2U
@@ -74,7 +75,8 @@ int main() {
     auto nearGenerationEnd = MediaClockPublicationTestAccess::generationAt(
         std::numeric_limits<std::uint64_t>::max() - 1U);
     const auto lastGeneration = nearGenerationEnd.admit();
-    OPENHDK_FAIL_IF(8, lastGeneration != std::numeric_limits<std::uint64_t>::max());
+    OPENHDK_FAIL_IF(8, lastGeneration != std::numeric_limits<std::uint64_t>::max()
+        || nearGenerationEnd.canAdmit());
     OPENHDK_FAIL_IF(9, nearGenerationEnd.admit().has_value()
         || nearGenerationEnd.current() != std::numeric_limits<std::uint64_t>::max());
 
