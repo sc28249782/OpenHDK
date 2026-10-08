@@ -324,9 +324,9 @@ external edits or prove freshness against a deliberately restored old file.
 ## 8. Native provider evidence and honest limits
 
 The [native provider plan](NATIVE-CHECKPOINT-PROVIDER-PLAN.md) proposes API
-choices and an evidence matrix for slice 4. It requires review before
-implementation. Its Windows synchronization gate remains open; no native
-provider is implemented or accepted by that plan.
+choices and an evidence matrix for slice 4, accepted by review/merge of PR #58.
+A Linux ownership lease is implemented; full native providers and publication
+acceptance remain pending. Its Windows synchronization gate remains open.
 
 An atomic namespace update and a durable acknowledgment are different claims.
 The provider review must identify exact open/lock/publication/flush APIs, handle
@@ -410,7 +410,7 @@ Minimum independent acceptance fixtures:
 
 Hardware-free regressions and both CI workflows must pass on exact heads.
 Windows-only native behavior requires Windows tests. The current development
-baseline is 21 core / 24 audio-enabled suites. Codec, restore and detached protocol have separate
+baseline is 22 core / 25 audio-enabled suites. Codec, restore and detached protocol have separate
 hardware-free suites;
 the full storage milestone checkbox remains open. NCN evidence, application/audio/CLI orchestration,
 manual device/lyric validation and full v0.3.0 release acceptance remain open.

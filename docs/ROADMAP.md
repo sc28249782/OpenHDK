@@ -95,9 +95,10 @@ occurs when a SoundFont or audio device is unavailable.
   the detached coordinator has fake-provider protocol tests. Native providers,
   durability and durable-first mutation wiring remain separate acceptance gates;
   codec/restore/protocol alone do not complete the storage checkbox.
-  The [proposed native provider plan](NATIVE-CHECKPOINT-PROVIDER-PLAN.md) puts
+  The [accepted native provider plan](NATIVE-CHECKPOINT-PROVIDER-PLAN.md) puts
   Linux ownership/publication tests first and separates Windows API/synchronization
-  review from native acceptance. The Windows synchronization gate remains open.
+  review from native acceptance. Linux ownership/lease tests are implemented;
+  staging/publication and ext4 acceptance remain pending. The Windows gate stays open.
 - [ ] Integrate library preparation and lyric observation without changing
   released MIDI, mixer, or limiter semantics; validate Windows playback.
 - Research staged runtime layout and installers separately; this proposal

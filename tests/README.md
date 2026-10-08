@@ -1,6 +1,6 @@
 # Test coverage and failure diagnostics
 
-The hardware-free configuration registers twenty-one CTest suites: catalog checkpoint codec/restore/store protocol,
+The hardware-free configuration registers twenty-two CTest suites: catalog checkpoint codec/restore/store protocol,
 parser fixtures, MIDI diagnostics CLI, runtime mixer console, velocity curves, mixer presets,
 stereo peak limiter, song catalog core, filesystem discovery, lyric text
 decoding, KAR lyric extraction, media-clock consumption, media-clock
@@ -8,9 +8,9 @@ publication, generation-bound lyric observation, single-song preparation,
 root reattachment, pure catalog metadata/policy models, and catalog metadata
 scan/preparation integration, and override/display transactions.
 The audio-enabled test configuration adds FluidSynth headless
-playback, CLI help, and diagnostics error cases, for twenty-four suites.
+playback, CLI help, and diagnostics error cases, for twenty-five suites.
 These counts describe the development tree; v0.2.0 has six/nine respectively.
-Linux core CI runs twenty-one hardware-free suites; Windows bootstrap runs all twenty-four.
+Linux core CI runs twenty-two hardware-free suites; Windows bootstrap runs all twenty-five.
 
 ## Planned 0.3.0 acceptance
 
@@ -216,7 +216,7 @@ explicit reconciliation and native process-interruption recovery. Provider tests
 must distinguish file synchronization from namespace/durability acknowledgment.
 Windows behavior requires Windows fixtures. Fake failure tests do not prove
 physical power-loss survival. The pure `catalog-checkpoint-codec` suite is now
-registered alongside `catalog-checkpoint-restore` (twenty-one core / twenty-four
+registered alongside `catalog-checkpoint-restore` (twenty-two core / twenty-five
 audio-enabled); native stores and durable-first wiring remain pending.
 
 The codec suite compares production output with checked-in independent Python
@@ -258,14 +258,15 @@ blocking allocations at publish tests the acknowledgment path.
 
 These simulations do not prove native OS locking, path capability validation,
 crash recovery or durability. The test adds no filesystem provider and does not
-complete the storage release gate. There are 21 core / 24 audio-enabled suites.
+complete the storage release gate. There are 22 core / 25 audio-enabled suites.
 
 ## Planned native checkpoint provider evidence
 
-The [proposed native provider plan](../docs/NATIVE-CHECKPOINT-PROVIDER-PLAN.md)
+The [accepted native provider plan](../docs/NATIVE-CHECKPOINT-PROVIDER-PLAN.md)
 records an API/fault/interruption matrix and per-platform evidence fields.
-It adds no executable test or passing native result. The baseline remains
-21 core / 24 audio-enabled suites. Fake-provider successes do not prove native
+The ownership primitive has a dedicated suite; no publication or durability
+result is claimed. The baseline is
+22 core / 25 audio-enabled suites. Fake-provider successes do not prove native
 lock ownership, namespace synchronization or durability.
 
 Future native tests must verify the filesystem used by the test directory and
@@ -277,3 +278,20 @@ and inspect primary/artifacts before harness cleanup. Injected API faults and
 real subprocess interruption must have separate results. Missing NTFS/ext4
 execution remains Pending/Skipped evidence. Windows acknowledgment tests require
 a reviewed synchronization sequence first; they cannot replace that review.
+
+## Linux checkpoint lease
+
+`linux_checkpoint_lease_tests.cpp` registers linux-checkpoint-lease with
+OPENHDK_ENABLE_TEST_SEAMS=1 only on that target. On Linux it runs real openat,
+metadata, process-registry and flock checks. A test-only filesystem bypass allows
+ownership probes on overlay/tmpfs; production ext4 eligibility stays enabled.
+The local overlay run is not native ext4 publication evidence. Non-Linux runs
+exercise only UnsupportedStorage without I/O, not Windows native ownership.
+
+The suite verifies same-object/same-process contention, fresh exec contenders,
+process-exit lock release, regular single-link primary/lock admission, FIFO and
+ancestor/final symlink rejection, directory/lock replacement, preserved bytes,
+exact configuration bounds, allocation-failure reservation cleanup and the
+64-owner registry cap. Parent-owned child
+PIDs have bounded waits and cleanup. No source media or unowned directory is
+removed. Publication, synchronization and durability tests remain pending.

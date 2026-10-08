@@ -1,13 +1,14 @@
 # Native checkpoint provider plan
 
 **Plan ID:** OHK-NATIVE-030
-**Status:** Proposed API and evidence plan; requires review before implementation.
+**Status:** Accepted by review and merge of PR #58; Linux ownership primitive implemented; publication/native acceptance and Windows synchronization pending.
 **Target:** OHK-STORE-030 slice 4; not part of released v0.2.0.
 **Source review date:** 2026-10-08.
 
 This plan supplements the accepted [persistence contract](CATALOG-PERSISTENCE-CONTRACT.md).
 [SPECIFICATION.md](SPECIFICATION.md) remains the authority for implemented behavior.
-The codec, restore factory and detached coordinator are implemented. Native
+The codec, restore factory, detached coordinator and Linux ownership primitive
+are implemented. Full native
 providers are not implemented or accepted. This document records API candidates,
 required tests and unresolved decisions. It adds no dependency or storage support.
 
@@ -18,7 +19,7 @@ provider must satisfy the existing `CheckpointStoreProvider` interface. Keep
 provider code, tests and evidence outside the audio callback. The fake provider
 in PR #57 proves coordinator decisions only.
 
-Use this order after review:
+The accepted implementation order is:
 
 1. Specify finite path/handle, name-attempt and buffer bounds, then implement
    path/handle ownership and lease acquisition on Linux.
@@ -32,9 +33,11 @@ Use this order after review:
 5. Continue slice 5 separately: live capture, reciprocal store/song-root
    containment, same-library snapshot admission and durable-first mutations.
 
+The ownership primitive implements the ownership portion of step 1.
 A completed Linux provider does not approve Windows storage. A platform compile
-or passing hosted CI test does not close a filesystem evidence gate. This plan
-completes no roadmap checkbox and changes no suite count (21 core / 24 audio).
+or passing hosted CI test does not close a filesystem evidence gate.
+The storage roadmap checkbox remains open. The development tree now has
+22 core / 25 audio-enabled suites; the new lease suite has no publication test.
 
 ## 2. Shared ownership and resource rules
 
@@ -239,7 +242,8 @@ A missing required environment is Pending/Skipped evidence, not Passed.
 ## 7. Evidence record and release gate
 
 Each platform needs a separate record tied to an exact provider/test commit.
-Do not populate a record from this documentation-only PR.
+Populate a record only from an executed native provider test revision. The
+current ownership tests do not populate a publication or durability record.
 
 | Record field | Required content |
 | --- | --- |
@@ -254,8 +258,8 @@ Do not populate a record from this documentation-only PR.
 A hosted runner may supply native evidence only if the record verifies its
 actual filesystem/environment and runs the required native cases. Existing
 Linux core and Windows bootstrap jobs continue to guard regressions; their
-current tests do not close either provider gate. No new passing test is claimed
-by this plan. Windows listening/lyric validation, NCN evidence, application
+current tests do not close either provider gate. The ownership suite passes native Linux lock/path tests using a test-only
+filesystem bypass when needed; ext4 publication acceptance remains pending. Windows listening/lyric validation, NCN evidence, application
 orchestration and source-release gates remain separate.
 
 ## 8. Primary API references
@@ -275,3 +279,57 @@ provider. This plan adds no third-party library.
 - [W5: Microsoft LockFileEx](https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-lockfileex).
 - [W6: Microsoft GetFileInformationByHandle](https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-getfileinformationbyhandle).
 - [W7: Microsoft GetFileInformationByHandleEx](https://learn.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-getfileinformationbyhandleex).
+
+## 9. Current Linux ownership implementation boundary
+
+`library/LinuxCheckpointLease.hpp` implements a noncopyable control-path lease,
+not a CheckpointStoreProvider. It has no checkpoint reader, artifact writer,
+publication, synchronization, recovery or live-capture interface. Windows and
+other non-Linux builds reject valid requests with UnsupportedStorage, and
+invalid configuration is rejected without filesystem access.
+
+The default bounds are 4096 UTF-8 parent bytes, 32 parent components and 128
+UTF-8 primary-name bytes. Positive smaller bounds are allowed; increases require
+review. Inputs are absolute, normalized component paths with no dot/dot-dot,
+empty components, control bytes, backslashes or colon aliases. A primary is one
+component; the .ohk-lock suffix is reserved. The process registry admits at most
+64 simultaneous leases. Its key is directory dev/inode plus exact Linux primary
+bytes; no Unicode normalization or ASCII case folding changes Linux identity.
+The lease retains two native descriptors and uses at most four concurrently
+during traversal/checks. Retained path/name/lock-name bytes and both owned key-name copies are exposed
+by ownedBytes for later combined
+provider accounting. Logical sizes are not a process-memory ceiling.
+
+Component-wise no-follow directory opens retain the final parent. Existing
+primary admission checks regular type, single link and identity across the
+metadata/open observations. Special-file opens use nonblocking flags. These are
+identity/type observations, not an atomic pathname sandbox or content revision.
+The stable lock uses exclusive creation or no-truncate existing open, regular
+single-link checks before and after existing-file open, native flock and name/identity recheck. release/destruction
+close only owned descriptors and release the process reservation; they never
+unlink the lock. Same-object reacquire and competing owners return Busy.
+
+Production acquire obtains STATX_MNT_ID from the retained directory and checks
+that exact ID's filesystem label in /proc/self/mountinfo is ext4. Missing statx
+support/returned mask, unavailable or malformed mount data, oversized input or a
+non-ext4 label fails closed before lock creation. The parser bounds a line to
+8191 bytes and its consumed text to 1 MiB. This is eligibility for a lock primitive, not
+native provider or durability acceptance; it does not close the Windows gate.
+Sources: [Linux statx](https://man7.org/linux/man-pages/man2/statx.2.html) and
+[proc mountinfo](https://man7.org/linux/man-pages/man5/proc_pid_mountinfo.5.html),
+retrieved on 2026-10-08.
+
+The test target alone enables OPENHDK_ENABLE_TEST_SEAMS. Its private-access
+helper bypasses only filesystem eligibility so real Linux ownership tests can
+run on overlay/tmpfs in CI. It does not replace openat/flock/type/identity checks.
+The current local test filesystem is overlay; production rejects it. Tests use
+exec children with fresh process registries and CLOEXEC lease descriptors, so
+cross-process contention does not depend on the parent's copied registry or
+inherited flock descriptor. A bounded handshake/termination test verifies OS
+lock release after child exit. Harness cleanup occurs after owners are released.
+
+The suite covers aliases/special files, preserved primary/lock bytes, contention,
+directory/lock replacement, bounds, capacity and reservation cleanup. Native
+ext4 publication and interruption evidence remain Pending, not Passed. Next
+work adds the Linux provider staging/publication sequence and separate evidence;
+no acknowledged native save exists in this slice.
