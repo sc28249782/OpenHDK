@@ -6,19 +6,21 @@
 #include <iostream>
 #ifdef __linux__
 #include <chrono>
+#include <fstream>
 #include <poll.h>
 #include <signal.h>
 #include <sys/wait.h>
 #include <sys/utsname.h>
 #endif
-namespace { bool forbidNew=false; }
+namespace { bool forbidNew=false;std::ptrdiff_t allocationCountdown=-1;std::uint64_t allocationThrows=0; }
 #if defined(_MSC_VER)
 #define TEST_NOINLINE __declspec(noinline)
 #else
 #define TEST_NOINLINE __attribute__((noinline))
 #endif
 TEST_NOINLINE void* operator new(std::size_t n) {
-  if(forbidNew)throw std::bad_alloc();
+  if(forbidNew || allocationCountdown==0){++allocationThrows;throw std::bad_alloc();}
+  if(allocationCountdown>0)--allocationCountdown;
   if(auto p=std::malloc(n?n:1))return p;
   throw std::bad_alloc();
 }
@@ -171,6 +173,207 @@ bool reap(pid_t pid,int& status) {
   for(unsigned n=0;n<500;++n){const auto rc=::waitpid(pid,&status,WNOHANG);if(rc==pid)return true;if(rc<0)return false;::usleep(10000);}
   return false;
 }
+struct OwnershipPacket {int code=-1;std::int64_t nativeError=0;};
+CheckpointBytes fixtureBytes(const fs::path& path) {
+  const int fd=::open(path.c_str(),O_RDONLY|O_NOFOLLOW|O_NONBLOCK|O_CLOEXEC);
+  if(fd<0)throw std::runtime_error("fixture read open");
+  struct stat st{};std::array<std::uint8_t,256> bytes{};
+  const bool regular=::fstat(fd,&st)==0 && S_ISREG(st.st_mode) && st.st_size>=0 && st.st_size<=256;
+  const auto n=regular?::pread(fd,bytes.data(),static_cast<std::size_t>(st.st_size),0):-1;::close(fd);
+  if(!regular || n!=st.st_size)throw std::runtime_error("fixture read bounds");
+  return {bytes.begin(),bytes.begin()+n};
+}
+void putFixture(const fs::path& path,std::span<const std::uint8_t> bytes) {
+  std::ofstream f(path,std::ios::binary|std::ios::trunc);
+  f.write(reinterpret_cast<const char*>(bytes.data()),static_cast<std::streamsize>(bytes.size()));
+  if(!f)throw std::runtime_error("fixture write");
+}
+bool preserved(const fs::path& path,const CheckpointBytes& before,std::string_view tag) {
+  const auto after=fixtureBytes(path);std::cout<<"PRESERVED tag="<<tag<<" bytes_equal="<<(before==after)<<" before_sha256=";
+  hex(sourceRevision(before).sha256);std::cout<<" after_sha256=";hex(sourceRevision(after).sha256);std::cout<<'\n';
+  return before==after && inspect(path,tag);
+}
+void providerReceipt(std::string_view tag,const std::optional<StoreProviderError>& error) {
+  std::cout<<"PROVIDER_CASE tag="<<tag<<" success="<<(!error)<<" code="<<(error?static_cast<int>(error->code):-1)
+      <<" native_errno="<<(error?error->nativeError:0)<<" injected=0\n";
+}
+void openReceipt(std::string_view tag,const StoreOpenResult& r) {
+  std::cout<<"OPEN_CASE tag="<<tag<<" success="<<r.succeeded()<<" projection="<<r.projection.has_value()
+      <<" expectation="<<r.expectation.has_value();
+  if(r.error)std::cout<<" code="<<static_cast<int>(r.error->code)<<" operation="<<static_cast<int>(r.error->operation)<<" native_errno="<<r.error->nativeError;
+  std::cout<<'\n';
+}
+bool errorIs(const std::optional<StoreProviderError>& e,StoreErrorCode c){return e && e->code==c;}
+// Dedicated directories and bounded synthetic bytes. Every refusal records its
+// operation/result and checks preservation before the enclosing harness cleans up.
+int matrixTests(const fs::path& parent) {
+  const auto baseline=*encodeCatalogCheckpoint(fixture(1)).value;
+  const auto replacement=*encodeCatalogCheckpoint(fixture(2)).value;
+  const auto make=[&](std::string_view name) {auto p=parent/std::string(name);fs::create_directory(p);return p;};
+  std::cout<<"MATRIX groups=4 scope=selected-cases native-acceptance=Pending\n";
+  {
+    const auto root=make("ownership");putFixture(root/"catalog",baseline);
+    LinuxCheckpointProvider p(root.string(),"catalog");enable(p);CatalogCheckpointStore owner(p),same(p);
+    auto opened=owner.open();OPENHDK_FAIL_IF(21,!opened.succeeded() || !trace("ownership-owner-open",p));
+    auto rejected=same.open();openReceipt("same-provider-second-store",rejected);
+    OPENHDK_FAIL_IF(22,rejected.succeeded() || rejected.error->code!=StoreErrorCode::Busy || !preserved(root/"catalog",baseline,"same-provider"));
+    LinuxCheckpointProvider contender(root.string(),"catalog");enable(contender);auto busy=contender.acquire();providerReceipt("same-process-contender",busy);
+    OPENHDK_FAIL_IF(23,!errorIs(busy,StoreErrorCode::Busy) || !trace("same-process-contender",contender));contender.release();
+    int pipes[2];OPENHDK_FAIL_IF(24,::pipe(pipes)<0);const auto fd=std::to_string(pipes[1]);const auto pid=::fork();OPENHDK_FAIL_IF(25,pid<0);
+    if(pid==0){::close(pipes[0]);::execl("/proc/self/exe","evidence","--matrix-contend",root.c_str(),fd.c_str(),nullptr);::_exit(99);}
+    ::close(pipes[1]);pollfd event{pipes[0],POLLIN,0};OwnershipPacket packet;
+    const auto ready=::poll(&event,1,5000);const auto n=ready>0?::read(pipes[0],&packet,sizeof(packet)):0;::close(pipes[0]);
+    int status=0;const bool exited=reap(pid,status);
+    if(!exited){(void)::kill(pid,SIGKILL);(void)reap(pid,status);}
+    std::cout<<"OWNERSHIP_CHILD pid="<<pid<<" packet_bytes="<<n<<" code="<<packet.code<<" native_errno="<<packet.nativeError
+        <<" injected=0 wait_complete="<<exited<<" wait_status="<<status<<'\n';
+    OPENHDK_FAIL_IF(26,n!=sizeof(packet) || !exited || !WIFEXITED(status) || WEXITSTATUS(status)!=0 ||
+        packet.code!=static_cast<int>(StoreErrorCode::Busy) || packet.nativeError!=EWOULDBLOCK);
+    auto live=p.readPrimary(256);OPENHDK_FAIL_IF(27,live.error || live.bytes!=baseline || !preserved(root/"catalog",baseline,"owner-after-contenders") || !trace("owner-still-held",p));
+    (void)owner.close();auto acquired=contender.acquire();providerReceipt("after-owner-release",acquired);
+    OPENHDK_FAIL_IF(28,acquired || !trace("after-owner-release",contender));contender.release();
+  }
+  {
+    const auto root=make("owner-death");putFixture(root/"catalog",baseline);
+    int pipes[2];OPENHDK_FAIL_IF(29,::pipe(pipes)<0);const auto fd=std::to_string(pipes[1]);const auto pid=::fork();OPENHDK_FAIL_IF(30,pid<0);
+    if(pid==0){::close(pipes[0]);::execl("/proc/self/exe","evidence","--matrix-hold",root.c_str(),fd.c_str(),nullptr);::_exit(99);}
+    ::close(pipes[1]);pollfd event{pipes[0],POLLIN,0};OwnershipPacket packet;
+    const auto ready=::poll(&event,1,5000);const auto n=ready>0?::read(pipes[0],&packet,sizeof(packet)):0;::close(pipes[0]);
+    LinuxCheckpointProvider contender(root.string(),"catalog");enable(contender);const auto busy=contender.acquire();providerReceipt("live-child-owner",busy);
+    struct stat before{};const int observed=::lstat((root/"catalog.ohk-lock").c_str(),&before);
+    const int killed=::kill(pid,SIGKILL);int status=0;const bool exited=reap(pid,status);
+    std::cout<<"OWNER_DEATH pid="<<pid<<" packet_bytes="<<n<<" admitted_code="<<packet.code<<" admitted_errno="<<packet.nativeError
+        <<" kill_rc="<<killed<<" wait_complete="<<exited<<" wait_status="<<status<<'\n';
+    OPENHDK_FAIL_IF(31,n!=sizeof(packet) || packet.code!=-1 || !errorIs(busy,StoreErrorCode::Busy) || observed!=0 || killed!=0 || !exited || !WIFSIGNALED(status) || WTERMSIG(status)!=SIGKILL);
+    const auto acquired=contender.acquire();providerReceipt("after-owner-death",acquired);struct stat after{};
+    OPENHDK_FAIL_IF(32,acquired || ::lstat((root/"catalog.ohk-lock").c_str(),&after)<0 || before.st_dev!=after.st_dev || before.st_ino!=after.st_ino ||
+        !preserved(root/"catalog",baseline,"owner-death-primary") || !trace("after-owner-death",contender));
+    std::cout<<"LOCK_PRESERVED dev="<<after.st_dev<<" ino="<<after.st_ino<<" links="<<after.st_nlink<<" stale_lock_deleted=0\n";contender.release();
+  }
+  for(const auto tag:{"primary-symlink","primary-hardlink","primary-fifo","lock-symlink","lock-hardlink","lock-fifo"}) {
+    const auto root=make(tag);putFixture(root/"sentinel",baseline);putFixture(root/"catalog",baseline);
+    const bool lock=std::string_view(tag).starts_with("lock-");const auto selected=root/(lock?"catalog.ohk-lock":"catalog");
+    if(!lock)fs::remove(selected);
+    if(std::string_view(tag).ends_with("symlink"))fs::create_symlink("sentinel",selected);
+    else if(std::string_view(tag).ends_with("hardlink"))fs::create_hard_link(root/"sentinel",selected);
+    else OPENHDK_FAIL_IF(33,::mkfifo(selected.c_str(),0600)<0);
+    struct stat before{},after{};OPENHDK_FAIL_IF(34,::lstat(selected.c_str(),&before)<0);
+    LinuxCheckpointProvider p(root.string(),"catalog");enable(p);const auto rejected=p.acquire();providerReceipt(tag,rejected);
+    const bool sameIdentity=::lstat(selected.c_str(),&after)==0 && before.st_dev==after.st_dev && before.st_ino==after.st_ino && before.st_mode==after.st_mode && before.st_nlink==after.st_nlink;
+    std::cout<<"PATH_PRESERVED tag="<<tag<<" identity_equal="<<sameIdentity<<" before_ino="<<before.st_ino<<" after_ino="<<after.st_ino<<" mode="<<after.st_mode<<" links="<<after.st_nlink<<'\n';
+    OPENHDK_FAIL_IF(34,!sameIdentity || !errorIs(rejected,StoreErrorCode::SourceChanged) || !trace(tag,p) || !inspect(selected,tag) || !preserved(root/"sentinel",baseline,tag));
+    if(lock)OPENHDK_FAIL_IF(35,!preserved(root/"catalog",baseline,tag));
+  }
+  {
+    const auto root=make("ancestor-symlink");fs::create_directories(root/"real"/"child");putFixture(root/"real"/"child"/"catalog",baseline);
+    fs::create_directory_symlink("real",root/"linked");LinuxCheckpointProvider p((root/"linked"/"child").string(),"catalog");enable(p);
+    const auto rejected=p.acquire();providerReceipt("ancestor-symlink",rejected);
+    OPENHDK_FAIL_IF(36,!errorIs(rejected,StoreErrorCode::SourceChanged) || fs::exists(root/"real"/"child"/"catalog.ohk-lock") ||
+        !preserved(root/"real"/"child"/"catalog",baseline,"ancestor-symlink") || !trace("ancestor-symlink",p));
+  }
+  {
+    const auto root=make("directory-replacement");fs::create_directory(root/"active");putFixture(root/"active"/"catalog",baseline);
+    LinuxCheckpointProvider p((root/"active").string(),"catalog");enable(p);OPENHDK_FAIL_IF(37,p.acquire() || !trace("directory-original",p));
+    fs::rename(root/"active",root/"old");fs::create_directory(root/"active");putFixture(root/"active"/"catalog",replacement);
+    auto rejected=p.checkDirectory();providerReceipt("directory-replacement",rejected);
+    OPENHDK_FAIL_IF(38,!errorIs(rejected,StoreErrorCode::SourceChanged) || !preserved(root/"old"/"catalog",baseline,"retained-directory") ||
+        !preserved(root/"active"/"catalog",replacement,"replacement-directory") || !trace("directory-replacement",p));p.release();
+    OPENHDK_FAIL_IF(39,!fs::exists(root/"old"/"catalog.ohk-lock"));
+  }
+  {
+    const auto root=make("short-io");putFixture(root/"catalog",baseline);LinuxCheckpointProvider p(root.string(),"catalog");enable(p);
+    OPENHDK_FAIL_IF(40,p.acquire() || !trace("short-io-open",p));Access::shortIo(p);
+    const auto a=p.createArtifact(StoreArtifactKind::Candidate);OPENHDK_FAIL_IF(41,!a.artifact || p.writeArtifact(*a.artifact,baseline));
+    auto read=p.readArtifact(*a.artifact,256);OPENHDK_FAIL_IF(42,read.error || read.bytes!=baseline);
+    unsigned interruptedRead=0,interruptedWrite=0;std::uint64_t bytesRead=0,bytesWritten=0;
+    for(const auto& e:Access::records(p)) {
+      if(e.call==LinuxProviderCall::Read || e.call==LinuxProviderCall::Write) {
+        if(e.injected){OPENHDK_FAIL_IF(43,e.result!=-1 || e.nativeError!=EINTR);if(e.call==LinuxProviderCall::Read)++interruptedRead;else ++interruptedWrite;}
+        else {OPENHDK_FAIL_IF(44,e.result<0 || e.result>7);if(e.call==LinuxProviderCall::Read)bytesRead+=static_cast<std::uint64_t>(e.result);else bytesWritten+=static_cast<std::uint64_t>(e.result);}
+      }
+    }
+    std::cout<<"SHORT_IO read_bytes="<<bytesRead<<" write_bytes="<<bytesWritten<<" chunk_max=7 injected_read_eintr="<<interruptedRead<<" injected_write_eintr="<<interruptedWrite<<'\n';
+    OPENHDK_FAIL_IF(45,bytesRead!=baseline.size() || bytesWritten!=baseline.size() || interruptedRead!=1 || interruptedWrite!=1 || p.cleanup(*a.artifact) || !trace("short-io-retry",p) || !preserved(root/"catalog",baseline,"short-io-primary"));p.release();
+  }
+  {
+    const auto root=make("partial-write");putFixture(root/"catalog",baseline);LinuxCheckpointProvider p(root.string(),"catalog");enable(p);
+    OPENHDK_FAIL_IF(46,p.acquire() || !trace("partial-write-open",p));Access::partialWrite(p,7);
+    const auto a=p.createArtifact(StoreArtifactKind::Candidate);OPENHDK_FAIL_IF(47,!a.artifact);
+    auto failed=p.writeArtifact(*a.artifact,baseline);
+    const auto name=Access::artifactName(p,*a.artifact);const auto prefix=fixtureBytes(root/name);
+    std::cout<<"PARTIAL_WRITE code="<<(failed?static_cast<int>(failed->code):-1)<<" native_errno="<<(failed?failed->nativeError:0)<<" injected=1 successful_prefix_bytes="<<prefix.size()<<'\n';
+    OPENHDK_FAIL_IF(48,!errorIs(failed,StoreErrorCode::StorageFailure) || failed->nativeError!=EIO ||
+        prefix!=CheckpointBytes(baseline.begin(),baseline.begin()+7) || !inspect(root/name,"partial-write-before-cleanup") || p.cleanup(*a.artifact) ||
+        !trace("partial-write",p) || !preserved(root/"catalog",baseline,"partial-write-primary"));p.release();
+  }
+  {
+    const auto root=make("allocation");putFixture(root/"catalog",baseline);LinuxCheckpointProvider p(root.string(),"catalog");enable(p);CatalogCheckpointStore store(p);
+    auto opened=store.open();OPENHDK_FAIL_IF(49,!opened.succeeded() || !trace("allocation-open",p));const auto next=fixture(2);bool succeeded=false;unsigned failures=0;
+    for(std::ptrdiff_t budget=0;budget<128;++budget) {
+      const auto before=allocationThrows;allocationCountdown=budget;auto result=store.save(next,*opened.expectation);allocationCountdown=-1;
+      std::cout<<"ALLOCATION budget="<<budget<<" injected=1 throws="<<(allocationThrows-before)<<'\n';saveReceipt("allocation-sweep",result);
+      OPENHDK_FAIL_IF(50,!trace("allocation-sweep",p));
+      if(result.succeeded()){succeeded=true;OPENHDK_FAIL_IF(51,!namespaceReceipt(root,"allocation-success"));break;}
+      ++failures;OPENHDK_FAIL_IF(52,!result.error || result.error->code!=StoreErrorCode::StorageFailure || result.expectation || store.faulted() ||
+          allocationThrows==before || !preserved(root/"catalog",baseline,"allocation-failure-primary"));
+    }
+    std::cout<<"ALLOCATION_SUMMARY failed_budgets="<<failures<<" reached_success="<<succeeded<<'\n';OPENHDK_FAIL_IF(53,!succeeded || failures==0);(void)store.close();
+  }
+  {
+    const auto root=make("external-primary");putFixture(root/"catalog",baseline);LinuxCheckpointProvider p(root.string(),"catalog");enable(p);
+    OPENHDK_FAIL_IF(54,p.acquire() || !p.readPrimary(256).bytes || !trace("external-primary-recheck",p));
+    const auto a=p.createArtifact(StoreArtifactKind::Candidate);OPENHDK_FAIL_IF(55,!a.artifact || p.writeArtifact(*a.artifact,baseline) || p.syncArtifact(*a.artifact));
+    putFixture(root/"incoming",replacement);fs::rename(root/"catalog",root/"old-primary");fs::rename(root/"incoming",root/"catalog");
+    auto result=p.publish(*a.artifact,false);
+    std::cout<<"PUBLISH_CASE tag=external-primary-after-read outcome="<<static_cast<int>(result.outcome)<<" code="<<(result.error?static_cast<int>(result.error->code):-1)<<" native_errno="<<(result.error?result.error->nativeError:0)<<" point=after-read-before-publish-identity-check\n";
+    OPENHDK_FAIL_IF(56,result.outcome!=StorePublication::NotCommitted || !errorIs(result.error,StoreErrorCode::SourceChanged) || p.cleanup(*a.artifact) || !trace("external-primary",p) ||
+        !preserved(root/"catalog",replacement,"external-primary-kept") || !preserved(root/"old-primary",baseline,"old-primary-kept"));p.release();
+  }
+  {
+    const auto root=make("expected-absent");LinuxCheckpointProvider p(root.string(),"catalog");enable(p);OPENHDK_FAIL_IF(57,p.acquire() || !trace("expected-absent-open",p));
+    const auto a=p.createArtifact(StoreArtifactKind::Candidate);OPENHDK_FAIL_IF(58,!a.artifact || p.writeArtifact(*a.artifact,baseline) || p.syncArtifact(*a.artifact));putFixture(root/"catalog",replacement);
+    const auto result=p.publish(*a.artifact,true);
+    std::cout<<"PUBLISH_CASE tag=expected-absent-race outcome="<<static_cast<int>(result.outcome)<<" native_errno="<<(result.error?result.error->nativeError:0)<<" injected=0\n";
+    OPENHDK_FAIL_IF(59,result.outcome!=StorePublication::NotCommitted || !errorIs(result.error,StoreErrorCode::StaleCheckpoint) || result.error->nativeError!=EEXIST ||
+        p.cleanup(*a.artifact) || !trace("expected-absent-race",p) || !preserved(root/"catalog",replacement,"expected-absent-primary"));p.release();
+  }
+  {
+    const auto root=make("replaced-stage");putFixture(root/"catalog",baseline);LinuxCheckpointProvider p(root.string(),"catalog");enable(p);OPENHDK_FAIL_IF(60,p.acquire() || !trace("replaced-stage-open",p));
+    const auto a=p.createArtifact(StoreArtifactKind::Candidate);OPENHDK_FAIL_IF(61,!a.artifact || p.writeArtifact(*a.artifact,baseline));
+    const fs::path name=root/Access::artifactName(p,*a.artifact);fs::rename(name,root/"retained-stage");putFixture(name,replacement);
+    const auto result=p.cleanup(*a.artifact);providerReceipt("replaced-stage-cleanup",result);
+    OPENHDK_FAIL_IF(62,!errorIs(result,StoreErrorCode::SourceChanged) || !trace("replaced-stage-cleanup",p) || !preserved(name,replacement,"unrelated-stage-kept") ||
+        !preserved(root/"retained-stage",baseline,"held-stage-kept") || !preserved(root/"catalog",baseline,"replaced-stage-primary"));p.release();
+  }
+  for(const auto schema:{-1,0,2}) {
+    const auto root=make("invalid-schema-"+std::to_string(schema));auto malformed=baseline;
+    if(schema<0)malformed[0]^=1;
+    else {malformed[8]=static_cast<std::uint8_t>(schema);const auto digest=sourceRevision(std::span(malformed).first(malformed.size()-32)).sha256;std::copy(digest.begin(),digest.end(),malformed.end()-32);}
+    putFixture(root/"catalog",malformed);putFixture(root/".ohk-stage-unrelated-valid",baseline);
+    LinuxCheckpointProvider p(root.string(),"catalog");enable(p);CatalogCheckpointStore store(p);auto result=store.open();openReceipt("invalid-schema",result);
+    const auto expected=schema<0?StoreErrorCode::InvalidCheckpoint:StoreErrorCode::UnsupportedSchema;
+    std::cout<<"SCHEMA attempted="<<schema<<" expected_code="<<static_cast<int>(expected)<<'\n';
+    OPENHDK_FAIL_IF(63,result.succeeded() || !result.error || result.error->code!=expected || result.expectation || result.projection || !trace("invalid-schema",p) ||
+        !preserved(root/"catalog",malformed,"invalid-primary-kept") || !preserved(root/".ohk-stage-unrelated-valid",baseline,"valid-stage-not-promoted"));
+  }
+  {
+    const auto root=make("missing-after-uncertainty");putFixture(root/"catalog",baseline);LinuxCheckpointProvider p(root.string(),"catalog");enable(p);CatalogCheckpointStore store(p);
+    auto opened=store.open();OPENHDK_FAIL_IF(64,!opened.succeeded() || !trace("missing-open",p));Access::fault(p,LinuxProviderFault::Publish);
+    auto uncertain=store.save(fixture(2),*opened.expectation);saveReceipt("missing-uncertain",uncertain);
+    OPENHDK_FAIL_IF(65,uncertain.succeeded() || !store.faulted() || uncertain.expectation || !trace("missing-uncertain",p) || !namespaceReceipt(root,"uncertain-artifacts"));
+    Access::fault(p,LinuxProviderFault::None);(void)store.close();fs::rename(root/"catalog",root/"retained-primary");
+    auto missing=store.open();openReceipt("missing-after-uncertainty",missing);
+    std::cout<<"MISSING_STATE faulted="<<store.faulted()<<" primary_exists="<<fs::exists(root/"catalog")<<'\n';
+    OPENHDK_FAIL_IF(66,missing.succeeded() || !missing.error || missing.error->code!=StoreErrorCode::NotFound || missing.error->operation!=StoreOperation::Reconcile ||
+        missing.expectation || !store.faulted() || fs::exists(root/"catalog") || !trace("missing-after-uncertainty",p) || !namespaceReceipt(root,"missing-no-promotion") ||
+        !preserved(root/"retained-primary",baseline,"retained-primary-kept"));
+    fs::rename(root/"retained-primary",root/"catalog");auto recovered=store.open();openReceipt("explicit-restoration",recovered);
+    std::cout<<"RECOVERY_STATE faulted="<<store.faulted()<<" primary_exists="<<fs::exists(root/"catalog")<<'\n';
+    OPENHDK_FAIL_IF(67,!recovered.succeeded() || store.faulted() || !trace("explicit-restoration",p));(void)store.close();
+  }
+  std::cout<<"MATRIX status=completed native-acceptance=Pending\n";return 0;
+}
+
 }
 #endif
 int main(int argc,char** argv) {
@@ -178,6 +381,14 @@ int main(int argc,char** argv) {
   (void)argc;(void)argv;std::cout<<"EVIDENCE platform=non-linux status=Skipped native-ext4-required\n";return 0;
 #else
   nativeMode=std::getenv("OPENHDK_NATIVE_CHECKPOINT_DIR")!=nullptr;
+  if(argc==4 && (std::string_view(argv[1])=="--matrix-contend" || std::string_view(argv[1])=="--matrix-hold")) {
+    LinuxCheckpointProvider p(argv[2],"catalog");enable(p);const auto error=p.acquire();
+    OwnershipPacket packet;packet.code=error?static_cast<int>(error->code):-1;packet.nativeError=error?error->nativeError:0;
+    const int fd=std::stoi(argv[3]);ssize_t n;do{n=::write(fd,&packet,sizeof(packet));}while(n<0 && errno==EINTR);
+    if(n!=static_cast<ssize_t>(sizeof(packet)))return 93;
+    if(std::string_view(argv[1])=="--matrix-hold" && !error)for(;;)::pause();
+    return 0;
+  }
   if(argc==5 && std::string_view(argv[1])=="--cut") {
     childPipe=std::stoi(argv[3]);const auto phase=std::stoi(argv[4]);
     LinuxCheckpointProvider p(argv[2],"catalog");childProvider=&p;enable(p);CatalogCheckpointStore store(p);
@@ -244,6 +455,7 @@ int main(int argc,char** argv) {
         <<" observed_revision="<<opened.projection->catalogRevision<<" expected_revision="<<expectedRevision<<'\n';
     OPENHDK_FAIL_IF(20,opened.projection->catalogRevision!=expectedRevision);(void)store.close();
   }
+  const int matrix=matrixTests(root);if(matrix)return matrix;
   std::cout<<"EVIDENCE status=completed native-acceptance=Pending test_exit=0\n";
 #endif
 }

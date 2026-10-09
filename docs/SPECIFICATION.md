@@ -302,7 +302,10 @@ logical bytes in its existing staged allowance. Native ext4 acceptance remains
 The separate evidence target records bounded selected-call and artifact receipts
 before cleanup. A pinned collector retains explicit compiler/test/overall exit
 codes. A pinned WSL2 ext4 receipt run is recorded; full-matrix review and
-reviewer acceptance remain Pending.
+reviewer acceptance remain Pending. The extended evidence target adds
+case preservation observations for ownership/path, short-I/O/allocation, external
+replacement and invalid/missing primary; a fresh pinned run is required for those
+new observations.
 
 Its Windows synchronization question remains open.
 The native provider and durable-first mutation gates require separate evidence;

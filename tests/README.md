@@ -330,3 +330,15 @@ compiler/test/overall exit codes and log hashes, keeping failure bundles too.
 See [receipt semantics and pending gates](../docs/NATIVE-LINUX-CHECKPOINT-EVIDENCE.md).
 There are 24 core / 27 audio-enabled suites. The six seam targets require
 OPENHDK_ENABLE_TEST_SEAMS=1 when compiled directly; CMake sets it per target.
+
+
+The same evidence target now adds case receipts for same-provider/process and
+fresh-exec ownership, OS release after owned-child termination, unsafe path/file
+types and directory replacement, forced seven-byte I/O with injected EINTR,
+partial-write EIO, allocation-failure budgets, external primary/stage replacement,
+ExpectedAbsent EEXIST, invalid/schema-0/schema-2 primary and missing primary after
+uncertainty. Each refusal checks byte preservation or explicit absence before
+harness cleanup. The partial-write seam is test-only. Source-corruption tests do
+not repair or select staged alternatives. Aggregate lease errors do not constitute
+a full syscall trace. This extends the existing target; suite counts are unchanged.
+The stored 9310ab3 receipts predate these cases; a new pinned native run is required.
