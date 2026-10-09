@@ -81,7 +81,7 @@ ctest --test-dir build --output-on-failure
 
 The default POC configuration uses pinned FluidSynth and miniaudio dependencies
 (and downloads a pinned test SoundFont when audio POC tests are enabled). For
-the twenty-three hardware-free core test suites, use:
+the twenty-four hardware-free core test suites, use:
 
 ```powershell
 cmake -S . -B build-parser -DOPENHDK_BUILD_AUDIO_POC=OFF -DOPENHDK_BUILD_TESTS=ON -DOPENHDK_FETCH_TEST_FIXTURES=OFF
@@ -91,7 +91,7 @@ ctest --test-dir build-parser --output-on-failure
 
 The lightweight Linux core CI job uses this hardware-free configuration with
 strict compiler warnings and AddressSanitizer/UndefinedBehaviorSanitizer. It
-runs twenty-three suites: catalog checkpoint codec/restore/store protocol, SMF parser fixtures, MIDI
+runs twenty-four suites: catalog checkpoint codec/restore/store protocol, SMF parser fixtures, MIDI
 diagnostics CLI, runtime mixer console, velocity curves, mixer presets, stereo peak limiting, song catalog
 identity/transactions, filesystem discovery, lyric text decoding, KAR cue
 extraction, media-clock consumption, atomic media-clock publication,
@@ -165,3 +165,9 @@ source-release procedure.
 ## License
 
 OpenHDK is licensed under GPL-3.0-or-later. See [LICENSE](LICENSE).
+
+
+The development tree also has a bounded Linux checkpoint evidence collector.
+See the [native evidence procedure](docs/NATIVE-LINUX-CHECKPOINT-EVIDENCE.md)
+for pinned ext4 runs and explicit exit-code receipts. Native acceptance remains
+Pending; this does not change the released v0.2.0 storage boundary.

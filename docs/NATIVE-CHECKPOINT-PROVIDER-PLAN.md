@@ -36,7 +36,7 @@ The ownership primitive implements the ownership portion of step 1.
 A completed Linux provider does not approve Windows storage. A platform compile
 or passing hosted CI test does not close a filesystem evidence gate.
 The storage roadmap checkbox remains open. The development tree now has
-23 core / 26 audio-enabled suites; the provider suite adds publication regression
+24 core / 27 audio-enabled suites; the provider suite adds publication regression
 tests. These do not close native ext4 acceptance.
 
 ## 2. Shared ownership and resource rules
@@ -370,3 +370,15 @@ exit-code receipts, detailed native return/token/artifact observations and the
 remaining matrix coverage require a follow-up evidence/test slice before review.
 No log may be retroactively filled with unobserved values. WSL2 virtual-disk
 observations do not approve native Windows/NTFS or cross-OS/DrvFS storage.
+
+
+## 12. Bounded receipt instrumentation
+
+The separate linux-checkpoint-evidence target and
+[collector procedure](NATIVE-LINUX-CHECKPOINT-EVIDENCE.md) now provide bounded
+selected-call, token/wire, artifact and child-cut receipts before fixture cleanup.
+Instrumentation is test-only and adds no production storage API. The collector
+records explicit command exit codes and preserves failure bundles. This is not
+a full syscall trace or completion of the matrix. Fresh pinned native execution
+and explicit reviewer acceptance remain Pending; historical logs stay unchanged.
+Windows synchronization and durable-first application wiring remain pending.

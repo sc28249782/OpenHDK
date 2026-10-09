@@ -410,7 +410,7 @@ Minimum independent acceptance fixtures:
 
 Hardware-free regressions and both CI workflows must pass on exact heads.
 Windows-only native behavior requires Windows tests. The current development
-baseline is 23 core / 26 audio-enabled suites. Codec, restore and detached protocol have separate
+baseline is 24 core / 27 audio-enabled suites. Codec, restore and detached protocol have separate
 hardware-free suites;
 the full storage milestone checkbox remains open. NCN evidence, application/audio/CLI orchestration,
 manual device/lyric validation and full v0.3.0 release acceptance remain open.
