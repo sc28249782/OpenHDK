@@ -142,7 +142,10 @@ roots require explicit attachment and a complete scan; hints grant no source acc
 A detached checkpoint store coordinator has fake-provider protocol tests for
 stale tokens, staged publication and uncertainty recovery. Live checkpoint
 capture now acquires an immutable projection/context together. Durable library
-operations remain pending. None of these changes are part of released v0.2.0.
+operations remain pending. The
+[proposed durable service contract](docs/DURABLE-LIBRARY-SERVICE-CONTRACT.md)
+defines exclusive admission and override-first commit-before-publication work.
+It requires review before implementation. None of these changes are part of released v0.2.0.
 The [accepted native provider plan](docs/NATIVE-CHECKPOINT-PROVIDER-PLAN.md)
 records Linux/ext4 and Windows/NTFS API candidates and required native evidence;
 a Linux ownership lease and experimental checkpoint provider are implemented.

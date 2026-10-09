@@ -369,3 +369,14 @@ includes retained catalog metadata once per shared record and output copies;
 it is not a whole-process memory cap. Capture performs no save, durability
 acknowledgment, mutation publication or automatic root attachment. Commit-before-
 publish mutation wiring remains a separate slice; Windows save stays gated.
+
+## Proposed durable service tests
+
+[OHK-DURABLE-030](../docs/DURABLE-LIBRARY-SERVICE-CONTRACT.md#9-required-tests-and-implementation-order)
+defines the next slice 5 test requirements; no service suite exists yet. Planned
+fake-provider tests observe old memory during publication and require confirmed
+sync before the memory swap. They cover baseline admission, complete override
+staging, rollback, no-op, cleanup warnings, uncertainty/recovery, allocation
+prohibition after publication and shared-ledger boundaries. Native binding and
+reciprocal store/root containment need separate reviewed integration/evidence.
+Current suite counts and historical provider receipts remain unchanged.

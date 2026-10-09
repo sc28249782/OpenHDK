@@ -26,6 +26,7 @@ continue to apply independently of feature plans.
 | [KARAOKE-LIBRARY-CONTRACT](KARAOKE-LIBRARY-CONTRACT.md) | Accepted 0.3.0 contract; catalog/discovery/preparation slices implemented, full services gated. |
 | [CATALOG-METADATA-POLICY-CONTRACT](CATALOG-METADATA-POLICY-CONTRACT.md) | Accepted member/metadata and root-policy contract; models, scan/preparation and override/display transactions implemented. |
 | [CATALOG-PERSISTENCE-CONTRACT](CATALOG-PERSISTENCE-CONTRACT.md) | Accepted schema-1 contract with pure codec, fresh-owner restore and fake-provider store protocol implemented; scoped Linux evidence accepted and live capture implemented; Windows and durable-first wiring pending. |
+| [DURABLE-LIBRARY-SERVICE-CONTRACT](DURABLE-LIBRARY-SERVICE-CONTRACT.md) | Proposed exclusive service/baseline admission, override staging and commit-before-memory-publication contract; not implemented. |
 | [NATIVE-LINUX-CHECKPOINT-EVIDENCE](NATIVE-LINUX-CHECKPOINT-EVIDENCE.md) | Scoped acceptance recorded for 6a6337d on WSL2 /dev/sdd ext4; evidence bundles retained. |
 | [NATIVE-CHECKPOINT-PROVIDER-PLAN](NATIVE-CHECKPOINT-PROVIDER-PLAN.md) | Accepted API/evidence plan; Linux lease and experimental provider implemented; scoped Linux acceptance recorded; Windows synchronization BLOCKED. |
 | [ROOT-REATTACHMENT-CONTRACT](ROOT-REATTACHMENT-CONTRACT.md) | Accepted attachment-generation/transaction rules; local SMF/KAR reattachment implemented, CLI/storage gated. |

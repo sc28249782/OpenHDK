@@ -193,6 +193,12 @@ Capture acquires one serialized owner snapshot/counters/root mapping into a
 const owning projection/context, without I/O. It preserves historical captures
 after owner changes. Durable-first mutation publication remains pending. It approves no database package
 and adds no callback-visible file, lock, decode, or recovery operation.
+The [proposed durable service boundary](DURABLE-LIBRARY-SERVICE-CONTRACT.md)
+requires exclusive owner/store lifetimes and an acknowledged baseline. Its first
+planned mutation is complete user override replacement: private staging, confirmed
+store commit, then noexcept memory publication. Native binding capabilities and
+reciprocal store/root containment require a later reviewed integration slice.
+This is a proposal, not implemented durable library behavior.
 
 The evidence target records bounded selected-call and artifact receipts before
 cleanup. The maintainer reviewed the pinned WSL2 ext4 matrix run and explicitly
