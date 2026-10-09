@@ -104,6 +104,60 @@ primary sequence/digest/projection and artifact observations required by section
 of the plan. The current suite prints cut point/repetition/revision; supplementary
 native matrix observations and logs are still required before acceptance.
 
+## Receipt collector (fresh run required)
+
+The separate `linux-checkpoint-evidence` target adds bounded receipts; the older
+regression target and submitted logs remain unchanged. On Linux, ordinary CI
+uses the private filesystem bypass. With OPENHDK_NATIVE_CHECKPOINT_DIR set,
+production eligibility must succeed, including in fresh exec children. Non-Linux
+execution prints Skipped and performs no provider I/O.
+
+After this test slice is reviewed, use its exact full commit and a clean checkout:
+
+```sh
+bash tests/run-linux-checkpoint-evidence.sh FULL_COMMIT_SHA /path/to/native-ext4
+```
+
+The parent must already exist, be outside the checkout and report ext4. The
+collector requires g++, not Ninja, compiles all hardware-free suites with strict
+warnings, and records individual compiler/test exit codes and the overall code.
+Compile/run deadlines are 180/120 seconds with a five-second kill grace. Output
+is a new `openhdk-receipts-*` directory containing environment.log, per-suite
+compile/run logs, receipts.log, source-after.log and SHA256SUMS. Failure bundles
+are retained too. Sanitizers are off by default; explicitly set
+OPENHDK_EVIDENCE_SANITIZERS=1 to request ASan/UBSan and record that choice. A failed
+collector invocation is not a successful native run.
+
+Receipt meanings and bounds:
+
+| Receipt | Observation |
+| --- | --- |
+| NATIVE | Selected openat/pread/pwrite/fsync/rename/unlink returns, errno only on failure, and an injected flag; injected provider EIO is not an OS return. |
+| ARTIFACT | Held candidate/prior descriptor identity, capability, consumed state and up to 256 actual bytes, captured before cleanup closes/unlinks it. |
+| WIRE / PROJECTION | Full tiny synthetic wire in hex, full-wire SHA-256 and decoded sequence/revision/high-water/counts/footer digest; malformed/empty probes report decode errors. |
+| SAVE / ACK / OPEN / PUBLISH | Coordinator result, acknowledged token or explicit failure; numeric enum values refer to CatalogCheckpointStore.hpp. |
+| CHILD / CUT_RESULT | Owned child PID, termination/wait receipt, and asserted old/new revision for four cuts repeated twice. |
+| FILE / NAMESPACE | Actual primary and at most 64 stage entries inspected before fixture deletion, including absent/malformed entries; names do not authorize recovery. |
+| EXIT / OVERALL | Actual compiler/test/collector exit codes; silence is not substituted for success. |
+
+Each provider buffers at most 256 fixed records. Overflow or incomplete artifact
+capture fails the evidence target; it does not silently truncate. Record insertion
+performs no allocation or formatting. Test-only cleanup capture adds fstat/pread
+observations; production builds contain neither receipt storage nor that extra
+I/O. A separate allocation prohibition covers the instrumented update after
+rename. The interruption hook transports a fixed packet to the parent through a
+test pipe; formatting occurs outside publication. Parent receipt/wait deadlines
+are finite and only the harness-owned PID is terminated.
+
+This is selected-call instrumentation, not a complete syscall trace: lease walk,
+all identity checks and every auxiliary syscall are not individually traced.
+The collector covers successful create/update, selected injected save/reconcile
+faults, actual EEXIST create rejection and process interruption. Remaining matrix
+rows still require their own evidence; a complete log does not itself accept the
+provider. Process termination does not simulate power loss. A fresh pinned ext4
+run and explicit review remain Pending. The 2026-10-09 logs above are immutable
+and must not be backfilled with observations from this target.
+
 ## Acceptance record (partially populated; gate open)
 
 | Required evidence | State |

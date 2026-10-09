@@ -191,6 +191,10 @@ reconciliation. The coordinator includes retained provider bytes in its existing
 ledger. Native ext4 acceptance and live capture adapters remain pending. It approves no database package
 and adds no callback-visible file, lock, decode, or recovery operation.
 
+The separate evidence target records bounded selected-call and artifact receipts
+before cleanup. A pinned collector retains explicit compiler/test/overall exit
+codes; fresh native execution and reviewer acceptance remain Pending.
+
 The audio callback owns no filesystem, database, text-decoding, or UI work.
 Backend progress publication uses its accepted real-time-safe handoff contract.
 Persistent storage needs a selected/reviewed adapter. NCN24 normalization needs

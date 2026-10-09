@@ -7,6 +7,16 @@
 namespace OpenHDK {
 #ifdef OPENHDK_ENABLE_TEST_SEAMS
 struct LinuxCheckpointProviderTestAccess;
+enum class LinuxProviderCall { OpenArtifact=1, Write=2, Read=3, SyncFile=4,
+  SyncDirectory=5, RenameNoReplace=6, RenameReplace=7, Unlink=8,
+  CleanupSnapshot=9, InjectedBoundary=10, OpenRead=11 };
+struct LinuxProviderReceipt {
+  LinuxProviderCall call{};std::int64_t result=0;int nativeError=0;
+  std::uint64_t capability=0;int fd=-1;bool injected=false;
+  std::uint64_t device=0,inode=0,links=0;std::int64_t bytes=0;
+  bool consumed=false;std::array<char,96> name{};
+  std::array<std::uint8_t,256> wire{};std::int64_t capturedBytes=-1;int captureError=0;
+};
 enum class LinuxProviderFault { None, Write, ReadArtifact, SyncArtifact, Publish, SyncPublication, Cleanup, Reconcile };
 #endif
 // Serialized control path. Native ext4 evidence remains a separate gate.
@@ -64,7 +74,7 @@ class LinuxCheckpointProvider final : public CheckpointStoreProvider {
       at=std::to_chars(at,name.data()+name.size()-1,static_cast<std::uint64_t>(::getpid())).ptr;*at++='-';
       std::to_chars(at,name.data()+name.size()-1,*id);
       if(primaryName_==name.data())continue; // Never create a probe/stage at selected primary.
-      Fd fd(::openat(dir(),name.data(),O_RDWR|O_CREAT|O_EXCL|O_NOFOLLOW|O_NONBLOCK|O_CLOEXEC,0600));
+      Fd fd(static_cast<int>(nativeResult(1,::openat(dir(),name.data(),O_RDWR|O_CREAT|O_EXCL|O_NOFOLLOW|O_NONBLOCK|O_CLOEXEC,0600),-1,*id)));
       if(fd.value<0){if(errno==EEXIST)continue;return {{},error(StoreErrorCode::StorageFailure,errno)};}
       slot->name=name;slot->id=*id;slot->fd=std::move(fd);slot->consumed=false;
       if(auto e=verify(*slot))return {StoreArtifact{*id},e};
@@ -127,7 +137,7 @@ class LinuxCheckpointProvider final : public CheckpointStoreProvider {
       return {StorePublication::NotCommitted,error(StoreErrorCode::SourceChanged)};
     if(inject(4))return {StorePublication::Uncertain,error(StoreErrorCode::StorageFailure,EIO)};
     const auto rc=absent?noReplace(s->name.data(),primaryName_.c_str())
-        : ::renameat(dir(),s->name.data(),dir(),primaryName_.c_str());
+        : static_cast<int>(nativeResult(7,::renameat(dir(),s->name.data(),dir(),primaryName_.c_str()),s->fd.value,s->id));
     if(rc<0) {
       const auto native=errno;
       if(absent && native==EEXIST)return {StorePublication::NotCommitted,error(StoreErrorCode::StaleCheckpoint,native)};
@@ -172,10 +182,11 @@ class LinuxCheckpointProvider final : public CheckpointStoreProvider {
   std::optional<StoreProviderError> cleanup(StoreArtifact a) noexcept override {
 #ifdef __linux__
     auto* s=slot(a);if(!s)return error(StoreErrorCode::InvalidConfiguration);
+    cleanupSnapshot(*s);
     if(!s->consumed) {
       if(auto e=verify(*s))return e;
       if(inject(6))return error(StoreErrorCode::StorageFailure,EIO);
-      if(::unlinkat(dir(),s->name.data(),0)<0)return error(StoreErrorCode::StorageFailure,errno);
+      if(nativeResult(8,::unlinkat(dir(),s->name.data(),0),s->fd.value,s->id)<0)return error(StoreErrorCode::StorageFailure,errno);
     }
     // Consumed name is never interpreted as authority to unlink primary.
     s->fd.reset();s->id=0;s->consumed=false;return {};
@@ -186,6 +197,9 @@ class LinuxCheckpointProvider final : public CheckpointStoreProvider {
  private:
 #ifdef OPENHDK_ENABLE_TEST_SEAMS
   friend struct LinuxCheckpointProviderTestAccess;
+  bool tracing_=false,traceOverflow_=false;
+  std::size_t traceCount_=0;
+  std::array<LinuxProviderReceipt,256> trace_{};
   bool bypass_=false;
   bool readInterrupted_=false,writeInterrupted_=false,shortIo_=false;
   unsigned readCalls_=0,writeCalls_=0;
@@ -199,12 +213,30 @@ class LinuxCheckpointProvider final : public CheckpointStoreProvider {
     return false;
 #endif
   }
-  bool inject(int fault) const noexcept {
+  bool inject(int fault) noexcept {
 #ifdef OPENHDK_ENABLE_TEST_SEAMS
-    return static_cast<int>(fault_)==fault;
+    const bool active=static_cast<int>(fault_)==fault;
+    if(active)nativeResult(10,-1,-1,static_cast<std::uint64_t>(fault),true,EIO);
+    return active;
 #else
     (void)fault;return false;
 #endif
+  }
+  // Test-only fixed records; no output, allocation, callback or lock here.
+  // Capture errno only on failure. Explicit injected records are not OS returns.
+  std::int64_t nativeResult(int tag,std::int64_t rc,int fd=-1,std::uint64_t cap=0,
+      bool injected=false,int injectedError=0) noexcept {
+#ifdef OPENHDK_ENABLE_TEST_SEAMS
+    if(tracing_) {
+      const int code=rc<0?(injected?injectedError:errno):0;
+      if(traceCount_==trace_.size())traceOverflow_=true;
+      else {auto& e=trace_[traceCount_++];e={};e.call=static_cast<LinuxProviderCall>(tag);
+        e.result=rc;e.nativeError=code;e.fd=fd;e.capability=cap;e.injected=injected;}
+    }
+#else
+    (void)tag;(void)fd;(void)cap;(void)injected;(void)injectedError;
+#endif
+    return rc;
   }
   static std::optional<StoreProviderError> error(StoreErrorCode c,std::int64_t n=0) noexcept {return StoreProviderError{c,n};}
 #ifdef __linux__
@@ -229,16 +261,35 @@ class LinuxCheckpointProvider final : public CheckpointStoreProvider {
         S_ISREG(x.st_mode) && S_ISREG(y.st_mode) && x.st_nlink==1 && y.st_nlink==1 &&
         LinuxCheckpointLease::identity(x)==LinuxCheckpointLease::identity(y);
   }
+  void cleanupSnapshot(const Slot& s) noexcept {
+#ifdef OPENHDK_ENABLE_TEST_SEAMS
+    if(tracing_) {
+      const int saved=errno;struct stat st{};const int rc=::fstat(s.fd.value,&st);
+      const auto before=traceCount_;nativeResult(9,rc,s.fd.value,s.id);
+      if(before<traceCount_) {auto& e=trace_[before];e.name=s.name;e.consumed=s.consumed;
+        if(rc==0){e.device=static_cast<std::uint64_t>(st.st_dev);e.inode=static_cast<std::uint64_t>(st.st_ino);
+          e.links=static_cast<std::uint64_t>(st.st_nlink);e.bytes=st.st_size;
+          if(st.st_size>=0 && st.st_size<=static_cast<off_t>(e.wire.size())) {
+            ssize_t n;do{n=::pread(s.fd.value,e.wire.data(),static_cast<std::size_t>(st.st_size),0);}while(n<0 && errno==EINTR);
+            e.capturedBytes=n;e.captureError=n<0?errno:0;
+          } else e.captureError=EFBIG;
+        }}
+      errno=saved;
+    }
+#else
+    (void)s;
+#endif
+  }
   std::optional<StoreProviderError> verify(const Slot& s) const noexcept {
     if(!lease_.held() || s.consumed || !named(s.fd.value,s.name.data()))return error(StoreErrorCode::SourceChanged);
     return {};
   }
   struct Opened {Fd fd;std::optional<StoreProviderError> error;};
-  Opened openRead(const char* name) const noexcept {
+  Opened openRead(const char* name) noexcept {
     struct stat before{};
     if(::fstatat(dir(),name,&before,AT_SYMLINK_NOFOLLOW)<0)return {Fd{},error(errno==ENOENT?StoreErrorCode::NotFound:StoreErrorCode::StorageFailure,errno)};
     if(!S_ISREG(before.st_mode) || before.st_nlink!=1)return {Fd{},error(StoreErrorCode::SourceChanged)};
-    Fd fd(::openat(dir(),name,O_RDONLY|O_NOFOLLOW|O_NONBLOCK|O_CLOEXEC));struct stat after{};
+    Fd fd(static_cast<int>(nativeResult(11,::openat(dir(),name,O_RDONLY|O_NOFOLLOW|O_NONBLOCK|O_CLOEXEC))));struct stat after{};
     if(fd.value<0 || ::fstat(fd.value,&after)<0)return {std::move(fd),error(StoreErrorCode::StorageFailure,errno)};
     if(!named(fd.value,name) || LinuxCheckpointLease::identity(before)!=LinuxCheckpointLease::identity(after))
       return {std::move(fd),error(StoreErrorCode::SourceChanged)};
@@ -264,26 +315,26 @@ class LinuxCheckpointProvider final : public CheckpointStoreProvider {
   }
   ssize_t readNative(int fd,void* data,std::size_t size,off_t offset) noexcept {
 #ifdef OPENHDK_ENABLE_TEST_SEAMS
-    ++readCalls_;if(readInterrupted_){readInterrupted_=false;errno=EINTR;return -1;}
+    ++readCalls_;if(readInterrupted_){readInterrupted_=false;errno=EINTR;return static_cast<ssize_t>(nativeResult(3,-1,fd,0,true,EINTR));}
     if(shortIo_)size=std::min<std::size_t>(size,7);
 #endif
-    return ::pread(fd,data,size,offset);
+    return static_cast<ssize_t>(nativeResult(3,::pread(fd,data,size,offset),fd));
   }
   ssize_t writeNative(int fd,const void* data,std::size_t size,off_t offset) noexcept {
 #ifdef OPENHDK_ENABLE_TEST_SEAMS
-    ++writeCalls_;if(writeInterrupted_){writeInterrupted_=false;errno=EINTR;return -1;}
+    ++writeCalls_;if(writeInterrupted_){writeInterrupted_=false;errno=EINTR;return static_cast<ssize_t>(nativeResult(2,-1,fd,0,true,EINTR));}
     if(shortIo_)size=std::min<std::size_t>(size,7);
 #endif
-    return ::pwrite(fd,data,size,offset);
+    return static_cast<ssize_t>(nativeResult(2,::pwrite(fd,data,size,offset),fd));
   }
-  static std::optional<StoreProviderError> sync(int fd) noexcept {
-    int rc;do{rc=::fsync(fd);}while(rc<0 && errno==EINTR);
+  std::optional<StoreProviderError> sync(int fd) noexcept {
+    int rc;do{rc=static_cast<int>(nativeResult(fd==dir()?5:4,::fsync(fd),fd));}while(rc<0 && errno==EINTR);
     if(rc<0)return error(StoreErrorCode::StorageFailure,errno);
     return {};
   }
-  int noReplace(const char* from,const char* to) const noexcept {
+  int noReplace(const char* from,const char* to) noexcept {
 #ifdef SYS_renameat2
-    return static_cast<int>(::syscall(SYS_renameat2,dir(),from,dir(),to,1U)); // RENAME_NOREPLACE
+    return static_cast<int>(nativeResult(6,::syscall(SYS_renameat2,dir(),from,dir(),to,1U))); // RENAME_NOREPLACE
 #else
     (void)from;(void)to;errno=ENOSYS;return -1;
 #endif
@@ -311,6 +362,9 @@ class LinuxCheckpointProvider final : public CheckpointStoreProvider {
 };
 #ifdef OPENHDK_ENABLE_TEST_SEAMS
 struct LinuxCheckpointProviderTestAccess {
+  static void receipts(LinuxCheckpointProvider& p) noexcept {p.tracing_=true;p.traceCount_=0;p.traceOverflow_=false;}
+  static std::span<const LinuxProviderReceipt> records(const LinuxCheckpointProvider& p) noexcept {return {p.trace_.data(),p.traceCount_};}
+  static bool overflow(const LinuxCheckpointProvider& p) noexcept {return p.traceOverflow_;}
   static void shortIo(LinuxCheckpointProvider& p) noexcept {p.shortIo_=true;p.readInterrupted_=true;p.writeInterrupted_=true;}
   static std::pair<unsigned,unsigned> calls(const LinuxCheckpointProvider& p) noexcept {return {p.readCalls_,p.writeCalls_};}
 #ifdef __linux__
