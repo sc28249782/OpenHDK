@@ -200,6 +200,40 @@ provider. Process termination does not simulate power loss. A fresh pinned ext4
 run and explicit review remain Pending. The 2026-10-09 logs above are immutable
 and must not be backfilled with observations from this target.
 
+## Matrix receipt extension (new pinned run required)
+
+The development evidence target now adds per-case observations for the four
+remaining groups. The received `9310ab3` bundle predates this extension and must
+not be relabeled as having executed it. The same collector builds the extended
+target; after review, pin its new merge revision and collect a fresh ext4 bundle.
+
+| Group | New cases and observations |
+| --- | --- |
+| Ownership/path | Same provider/second store, same-process provider and fresh-exec contender report Busy while the original owner remains usable; child-owner termination records OS release and unchanged stable lock identity. Primary/lock symlink, hard link and FIFO, symlink ancestor, and replaced directory record rejection and preserved primary/sentinel bytes. |
+| Short-I/O/allocation | Seven-byte requests plus one injected read/write EINTR each are retried to exact bytes; a new seam fails the second write after a real seven-byte prefix. Captured partial bytes precede cleanup. A bounded allocation-failure sweep records each injected throw/result and unchanged primary until the first successful budget. |
+| External replacement | Replace primary after provider read and before publication identity check: SourceChanged/NotCommitted with old and replacement bytes retained. Create an actual primary after ExpectedAbsent staging: renameat2 EEXIST with no overwrite. Replace a staged pathname: cleanup rejects it and preserves both held original and unrelated replacement. |
+| Invalid/missing primary | Invalid magic and schema 0/2 are rejected without projection/token or repair, even beside a valid stage. Missing primary after injected uncertainty reports NotFound/Reconcile, retains faulted state and does not promote stages; explicit restoration permits validated reopen. |
+
+PROVIDER_CASE/OPEN_CASE/PUBLISH_CASE record policy/coordinator outcomes; errno 0
+means no failed native return is being claimed. OWNERSHIP_CHILD/OWNER_DEATH retain
+fresh-exec packet and bounded wait results. PRESERVED emits before/after SHA-256
+and byte equality, followed by actual file identity/wire observations. SHORT_IO,
+PARTIAL_WRITE and ALLOCATION distinguish test-controlled requests/injected faults
+from real OS behavior. The additional partial-write seam is excluded from
+production builds and performs no allocation or formatting in writeNative.
+
+A seven-byte request is forced by the test; it is not proof of a spontaneous OS
+short write. Injected EIO/EINTR and allocator failures are not physical disk or
+memory-failure measurements. External replacement occurs before the provider's
+final pathname identity check; the test does not close the later check-to-rename
+window or assert hostile-writer isolation. Lease outcomes are aggregate provider
+receipts, not a complete trace of every walk/stat/flock call.
+
+This expands observability for representative matrix cases, not every possible
+interleaving or platform. Current local execution uses the private overlay
+bypass; fresh native ext4 execution, per-row completeness review and explicit
+acceptance remain Pending. Existing submitted logs and their hashes stay fixed.
+
 ## Acceptance record (receipt run populated; gate open)
 
 | Required evidence | State |

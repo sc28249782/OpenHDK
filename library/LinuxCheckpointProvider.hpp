@@ -203,6 +203,7 @@ class LinuxCheckpointProvider final : public CheckpointStoreProvider {
   bool bypass_=false;
   bool readInterrupted_=false,writeInterrupted_=false,shortIo_=false;
   unsigned readCalls_=0,writeCalls_=0;
+  std::optional<std::uint64_t> writeFailureAt_;
   LinuxProviderFault fault_=LinuxProviderFault::None;
   void (*afterPublication_)() noexcept=nullptr;
 #endif
@@ -322,6 +323,9 @@ class LinuxCheckpointProvider final : public CheckpointStoreProvider {
   }
   ssize_t writeNative(int fd,const void* data,std::size_t size,off_t offset) noexcept {
 #ifdef OPENHDK_ENABLE_TEST_SEAMS
+    if(writeFailureAt_ && static_cast<std::uint64_t>(offset)>=*writeFailureAt_) {
+      errno=EIO;return static_cast<ssize_t>(nativeResult(2,-1,fd,0,true,EIO));
+    }
     ++writeCalls_;if(writeInterrupted_){writeInterrupted_=false;errno=EINTR;return static_cast<ssize_t>(nativeResult(2,-1,fd,0,true,EINTR));}
     if(shortIo_)size=std::min<std::size_t>(size,7);
 #endif
@@ -366,6 +370,7 @@ struct LinuxCheckpointProviderTestAccess {
   static std::span<const LinuxProviderReceipt> records(const LinuxCheckpointProvider& p) noexcept {return {p.trace_.data(),p.traceCount_};}
   static bool overflow(const LinuxCheckpointProvider& p) noexcept {return p.traceOverflow_;}
   static void shortIo(LinuxCheckpointProvider& p) noexcept {p.shortIo_=true;p.readInterrupted_=true;p.writeInterrupted_=true;}
+  static void partialWrite(LinuxCheckpointProvider& p,std::uint64_t failAt) noexcept {p.shortIo_=true;p.writeFailureAt_=failAt;}
   static std::pair<unsigned,unsigned> calls(const LinuxCheckpointProvider& p) noexcept {return {p.readCalls_,p.writeCalls_};}
 #ifdef __linux__
   static std::string nextArtifactName() {return ".ohk-stage-"+std::to_string(::getpid())+"-"+std::to_string(LinuxCheckpointProvider::identities_.load()+1);}

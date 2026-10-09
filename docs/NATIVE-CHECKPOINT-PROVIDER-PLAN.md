@@ -398,3 +398,16 @@ bytes. It is not a complete syscall trace or a completed section 6 matrix:
 regression-only rows still need explicit completeness review. Acceptance remains
 Pending. Original logs are unchanged; no Windows API gate, live wiring or storage
 roadmap item is completed by this documentation update.
+
+
+## 14. Remaining matrix case receipts
+
+The evidence target now extends the four regression-only groups with bounded
+case outcomes, file/identity and preservation observations: ownership/path,
+short-I/O/partial write/allocation, external replacement and invalid/missing
+primary. See [the extension boundary](NATIVE-LINUX-CHECKPOINT-EVIDENCE.md).
+Production behavior and the native acceptance decision are unchanged. In
+particular, external replacement is exercised before the publication identity
+check, not as an atomic pathname compare-and-swap. New instrumentation requires
+review and a fresh pinned ext4 run; the 9310ab3 bundle cannot supply those new
+observations retroactively. Windows synchronization remains unresolved.

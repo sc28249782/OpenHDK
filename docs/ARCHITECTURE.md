@@ -194,7 +194,10 @@ and adds no callback-visible file, lock, decode, or recovery operation.
 The separate evidence target records bounded selected-call and artifact receipts
 before cleanup. A pinned collector retains explicit compiler/test/overall exit
 codes. A pinned WSL2 ext4 receipt run is recorded; full-matrix review and
-reviewer acceptance remain Pending.
+reviewer acceptance remain Pending. The extended evidence target adds
+case preservation observations for ownership/path, short-I/O/allocation, external
+replacement and invalid/missing primary; a fresh pinned run is required for those
+new observations.
 
 The audio callback owns no filesystem, database, text-decoding, or UI work.
 Backend progress publication uses its accepted real-time-safe handoff contract.
