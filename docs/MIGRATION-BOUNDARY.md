@@ -32,3 +32,14 @@ Code, build files, UI assets, dependency wrappers, and API patterns that are
 specific to the BASS family or Qt MUST NOT be copied from that reference. Any
 future source port remains subject to the port record requirement and this
 migration boundary.
+
+## SoundCraft source-study boundary
+
+[SOUNDCRAFT-REFERENCE.md](SOUNDCRAFT-REFERENCE.md) pins the separate mixer/DSP
+study. No SoundCraft source, asset or dependency is imported by that reference.
+Covered code offers MIT OR Apache-2.0; inspect the actual file, selected license,
+NOTICE and separately licensed material for each proposed port. C++ translation
+of source-derived logic still needs the port record above. Independently written
+algorithm work should cite primary formulas and tests; language translation is
+not a clean-room claim. ArtCraft brand marks have restricted separate terms and
+must not be imported or used to imply endorsement.

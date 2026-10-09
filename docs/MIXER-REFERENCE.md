@@ -11,6 +11,11 @@ Qt implementation.
 `SPECIFICATION.md` remains the normative authority for implemented OpenHDK
 behavior. `ROADMAP.md` assigns future work but does not make it available.
 
+The complementary [SoundCraft reference](SOUNDCRAFT-REFERENCE.md) studies mixer,
+DSP and rendering architecture. This Buai reference supplies karaoke-domain and
+routing UX requirements. Neither reference accepts detailed OpenHDK contracts
+or replaces FluidSynth/miniaudio.
+
 **Initial snapshot:** HandyMixer `main` commit `8b730d2`, reviewed on
 2026-10-05. The repository is now named Buai-Music-Mixer. The original URL
 redirects to the renamed repository.

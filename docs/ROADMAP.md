@@ -133,6 +133,10 @@ hardware-free tests; no BASS-family API or asset enters the repository.
 
 ## 0.5.0 — mixer and bus engine
 
+Use [SoundCraft source lessons](SOUNDCRAFT-REFERENCE.md) alongside the Buai mixer
+feature reference when proposing contracts. These references do not select code,
+dependencies or detailed semantics, and do not change 0.3.0 work order.
+
 - Specify backend-independent mixer strips, instrument groups, named groups,
   mute/solo/gain/pan, and a directed bus-routing graph before implementation.
 - Add configurable buses incrementally, beginning with a small deterministic
@@ -143,11 +147,21 @@ hardware-free tests; no BASS-family API or asset enters the repository.
 - Specify a separate master-gain stage before master DSP/limiting, including
   migration from the existing synth gain without applying gain twice.
 - Preserve the real-time callback boundary while applying mixer changes.
+  Specify off-callback graph preparation and retirement, separate immutable
+  topology from DSP state, and define mono pan versus stereo balance.
+- Define processor latency units and bounded compensation preparation before
+  adding latency-bearing routes; full compensation may remain a later slice.
 
 Exit gate: graph validity, routing, mute/solo semantics, and state changes have
 deterministic regression coverage; Windows output is manually validated.
 
 ## 0.6.0 — DSP and effects
+
+Study the pinned [DSP reference](SOUNDCRAFT-REFERENCE.md). Define processor
+lifecycle, parameter validation/smoothing, bypass, latency/tail and metering
+placement before implementation. Use independent numerical fixtures and explicit
+realtime/offline comparison tolerances; upstream feature names prove no standard
+conformance or callback safety.
 
 - Specify insert, send, return, parameter, bypass, and preset contracts before
   adding effects.

@@ -37,6 +37,7 @@ continue to apply independently of feature plans.
 | [RELEASE-CHECKLIST](RELEASE-CHECKLIST.md) | Reusable signed source-release procedure. |
 | [CHANGELOG](../CHANGELOG.md) | Historical release scope; released sections remain unchanged. |
 | [ROADMAP](ROADMAP.md) | Completed milestones, future ordering, and exit gates. |
+| [SOUNDCRAFT-REFERENCE](SOUNDCRAFT-REFERENCE.md) | Pinned mixer/DSP source lessons for 0.5/0.6; planning only, no dependency or accepted detailed contract. |
 | [MIXER-REFERENCE](MIXER-REFERENCE.md) | Pinned Buai Music Mixer snapshots, update lessons, and planning decisions. |
 | [MIGRATION-BOUNDARY](MIGRATION-BOUNDARY.md) | Source-port provenance and excluded legacy artifacts. |
 | [DEPENDENCY-POLICY](DEPENDENCY-POLICY.md) | Approved pins, deferred candidates, and redistribution rules. |
