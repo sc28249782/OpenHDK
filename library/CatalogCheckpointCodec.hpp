@@ -42,7 +42,7 @@ enum class CheckpointErrorCode {
   InvalidConfiguration, InvalidCheckpoint, UnsupportedSchema, UnsupportedProfile,
   UnsupportedRepresentation, InvalidText, LimitExceeded, StorageFailure
 };
-enum class CheckpointOperation { Encode, Decode, Restore };
+enum class CheckpointOperation { Encode, Decode, Restore, Capture };
 enum class CheckpointField {
   None, Header, Digest, Sequence, Counter, Id, Generation, Policy, Hint,
   Locator, Title, Artist, Ordering

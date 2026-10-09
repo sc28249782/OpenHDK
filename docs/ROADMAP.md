@@ -103,7 +103,8 @@ occurs when a SoundFont or audio device is unavailable.
   provider/test revision `6a6337d` on WSL2 `/dev/sdd` ext4 after PR #65 review and
   explicit maintainer confirmation. It does not approve broader environments or
   power-loss guarantees. The Windows synchronization gate remains BLOCKED;
-  live capture and durable-first wiring still prevent completing this checkbox.
+  Live checkpoint capture now owns matching snapshot/counter/root context;
+  commit-before-publish mutation wiring still prevents completing this checkbox.
 - [ ] Integrate library preparation and lyric observation without changing
   released MIDI, mixer, or limiter semantics; validate Windows playback.
 - Research staged runtime layout and installers separately; this proposal

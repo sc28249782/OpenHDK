@@ -188,7 +188,10 @@ reviewed Windows synchronization sequence before
 acknowledged storage support. An experimental Linux provider implements artifact slots, bounded I/O,
 renameat2 no-replace creation, renameat update, file/parent fsync and explicit
 reconciliation. The coordinator includes retained provider bytes in its existing
-ledger. Scoped WSL2 ext4 acceptance is recorded; live capture adapters remain pending. It approves no database package
+ledger. Scoped WSL2 ext4 acceptance is recorded; live checkpoint capture is implemented.
+Capture acquires one serialized owner snapshot/counters/root mapping into a
+const owning projection/context, without I/O. It preserves historical captures
+after owner changes. Durable-first mutation publication remains pending. It approves no database package
 and adds no callback-visible file, lock, decode, or recovery operation.
 
 The evidence target records bounded selected-call and artifact receipts before

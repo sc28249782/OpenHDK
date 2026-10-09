@@ -1,6 +1,6 @@
 # Test coverage and failure diagnostics
 
-The hardware-free configuration registers twenty-four CTest suites: catalog checkpoint codec/restore/store protocol,
+The hardware-free configuration registers twenty-five CTest suites: catalog checkpoint codec/restore/store protocol,
 parser fixtures, MIDI diagnostics CLI, runtime mixer console, velocity curves, mixer presets,
 stereo peak limiter, song catalog core, filesystem discovery, lyric text
 decoding, KAR lyric extraction, media-clock consumption, media-clock
@@ -8,9 +8,9 @@ publication, generation-bound lyric observation, single-song preparation,
 root reattachment, pure catalog metadata/policy models, and catalog metadata
 scan/preparation integration, and override/display transactions.
 The audio-enabled test configuration adds FluidSynth headless
-playback, CLI help, and diagnostics error cases, for twenty-seven suites.
+playback, CLI help, and diagnostics error cases, for twenty-eight suites.
 These counts describe the development tree; v0.2.0 has six/nine respectively.
-Linux core CI runs twenty-four hardware-free suites; Windows bootstrap runs all twenty-seven.
+Linux core CI runs twenty-five hardware-free suites; Windows bootstrap runs all twenty-eight.
 
 ## Planned 0.3.0 acceptance
 
@@ -216,7 +216,7 @@ explicit reconciliation and native process-interruption recovery. Provider tests
 must distinguish file synchronization from namespace/durability acknowledgment.
 Windows behavior requires Windows fixtures. Fake failure tests do not prove
 physical power-loss survival. The pure `catalog-checkpoint-codec` suite is now
-registered alongside `catalog-checkpoint-restore` (twenty-four core / twenty-seven
+registered alongside `catalog-checkpoint-restore` (twenty-five core / twenty-eight
 audio-enabled); native stores and durable-first wiring remain pending.
 
 The codec suite compares production output with checked-in independent Python
@@ -258,7 +258,7 @@ blocking allocations at publish tests the acknowledgment path.
 
 These simulations do not prove native OS locking, path capability validation,
 crash recovery or durability. The test adds no filesystem provider and does not
-complete the storage release gate. There are 24 core / 27 audio-enabled suites.
+complete the storage release gate. There are 25 core / 28 audio-enabled suites.
 
 ## Planned native checkpoint provider evidence
 
@@ -266,7 +266,7 @@ The [accepted native provider plan](../docs/NATIVE-CHECKPOINT-PROVIDER-PLAN.md)
 records an API/fault/interruption matrix and per-platform evidence fields.
 The ownership primitive has a dedicated suite; the experimental provider adds
 publication regression tests without native acceptance claims. The baseline is
-24 core / 27 audio-enabled suites. Fake-provider successes do not prove native
+25 core / 28 audio-enabled suites. Fake-provider successes do not prove native
 lock ownership, namespace synchronization or durability.
 
 Future native tests must verify the filesystem used by the test directory and
@@ -302,7 +302,7 @@ removed. Publication, synchronization and durability tests remain pending.
 CMake enables OPENHDK_ENABLE_TEST_SEAMS for this target only. Linux regression
 uses real openat/flock/rename/fsync in a harness-owned temporary directory, with
 filesystem eligibility bypass when native ext4 is unavailable. Non-Linux builds
-check UnsupportedStorage without filesystem access. This is 24 core / 27 audio
+check UnsupportedStorage without filesystem access. This is 25 core / 28 audio
 suites, not a storage acceptance claim.
 
 Checks cover create/update/reopen/no-op/stale tickets, bounded artifact reads,
@@ -328,7 +328,7 @@ Use `bash tests/run-linux-checkpoint-evidence.sh FULL_COMMIT_SHA EXT4_PARENT`
 from a clean pinned checkout for a new native collection. The script records
 compiler/test/overall exit codes and log hashes, keeping failure bundles too.
 See [receipt semantics and pending gates](../docs/NATIVE-LINUX-CHECKPOINT-EVIDENCE.md).
-There are 24 core / 27 audio-enabled suites. The six seam targets require
+There are 25 core / 28 audio-enabled suites. The six seam targets require
 OPENHDK_ENABLE_TEST_SEAMS=1 when compiled directly; CMake sets it per target.
 
 
@@ -348,3 +348,24 @@ that exact revision/environment after PR #65 review; see the
 [scoped decision](../docs/NATIVE-LINUX-CHECKPOINT-EVIDENCE.md#explicit-scoped-acceptance--2026-10-09).
 This acceptance does not alter submitted logs, expand platform coverage or close
 Windows/live-wiring gates.
+
+## Live checkpoint capture
+
+`catalog-checkpoint-capture` exercises serialized acquisition from a live
+SongDiscovery owner. The acquired value retains the owner snapshot and an
+immutable complete detached projection. It checks allocator gaps/exhaustion,
+root policy/generation and attached/restored hints, exact override bytes,
+codec/restore roundtrip, reattachment and override edits after acquisition,
+retained lifetime, count/text/wire/coexistence limits and allocation failures.
+Deleting an attached fixture directory before capture proves that acquisition
+uses retained mappings rather than probing or reading source files.
+
+The adapter accepts no arbitrary acquired-snapshot argument. Callers acquire
+through the adapter before later saving that historical projection; it never
+reads newer counters or bindings on that projection's behalf. Owner access
+must be serialized. Windows hint preflight reserves three UTF-8 bytes per
+UTF-16 unit and may conservatively reject a boundary. Logical payload accounting
+includes retained catalog metadata once per shared record and output copies;
+it is not a whole-process memory cap. Capture performs no save, durability
+acknowledgment, mutation publication or automatic root attachment. Commit-before-
+publish mutation wiring remains a separate slice; Windows save stays gated.

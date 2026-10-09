@@ -74,6 +74,7 @@ v0.2.0 behavior.
 | **source key** | A registered RootId and normalized relative primary-MIDI locator. |
 | **catalog snapshot** | An immutable reader view of one committed catalog revision. |
 | **Display metadata** | Owning resolved title/artist text with UserOverride, SourceTitle or FilenameFallback origin. Prepared display uses effective extraction and acquired overrides; it does not populate source title. |
+| **Captured catalog checkpoint** | An owning const detached projection plus the current serialized owner snapshot context, acquired with matching counters/root bindings; capture performs no I/O or durability acknowledgment. |
 | **Catalog checkpoint** | Accepted complete identity/root-policy/user-override checkpoint projection; the pure codec is implemented under OHK-STORE-030. It does not persist Ready authority, source metadata, timelines or playback state. |
 | **Store expectation** | Private store-object-bound ExpectedAbsent or sequence/digest ticket; not proof of live catalog snapshot provenance. |
 | **Store sequence** | Positive uint64 wire counter for actual checkpoint publications; a detached coordinator enforces sequencing with fake-provider tests; native enforcement is pending. It is separate from catalog revision, RootId attachment generation and backend playback generation. |

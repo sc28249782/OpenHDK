@@ -19,6 +19,7 @@ namespace OpenHDK {
 // Library-owned identifiers; no path/content conversion is available.
 class SongCatalog;
 class CatalogCheckpointRestore;
+class CatalogCheckpointCapture;
 struct CatalogCheckpointProjection;
 class RootId {
  public:
@@ -27,6 +28,7 @@ class RootId {
   explicit RootId(std::uint64_t value) : value_(value) {}
   std::uint64_t value_;
   friend class SongCatalog;
+  friend class CatalogCheckpointCapture;
 };
 class SongId {
  public:
@@ -35,6 +37,7 @@ class SongId {
   explicit SongId(std::uint64_t value) : value_(value) {}
   std::uint64_t value_;
   friend class SongCatalog;
+  friend class CatalogCheckpointCapture;
 };
 
 enum class CatalogState { Ready, Invalid, Missing, UnsupportedProfile };
@@ -399,6 +402,7 @@ class SongCatalog {
  private:
   friend class SongDiscovery;
   friend class CatalogCheckpointRestore;
+  friend class CatalogCheckpointCapture;
   // Defined by the validated restore adapter, never exposed as raw-ID construction.
   void restoreCheckpointProjection(const CatalogCheckpointProjection& projection);
 #ifdef OPENHDK_ENABLE_TEST_SEAMS
