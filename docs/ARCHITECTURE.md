@@ -196,8 +196,10 @@ before cleanup. A pinned collector retains explicit compiler/test/overall exit
 codes. A pinned WSL2 ext4 receipt run is recorded; full-matrix review and
 reviewer acceptance remain Pending. The extended evidence target adds
 case preservation observations for ownership/path, short-I/O/allocation, external
-replacement and invalid/missing primary; a fresh pinned run is required for those
-new observations.
+replacement and invalid/missing primary. A second pinned WSL2 ext4 run at
+`6a6337d` records those cases; per-row completeness and explicit reviewer
+acceptance remain Pending. See the
+[matrix run bundle](evidence/linux-checkpoint/2026-10-09-matrix/README.md).
 
 The audio callback owns no filesystem, database, text-decoding, or UI work.
 Backend progress publication uses its accepted real-time-safe handoff contract.

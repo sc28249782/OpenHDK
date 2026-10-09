@@ -1,6 +1,6 @@
 # Linux checkpoint provider evidence
 
-**Status:** Pinned WSL2 ext4 receipt run recorded; full-matrix review and acceptance Pending.
+**Status:** Pinned WSL2 ext4 receipts and extended matrix run recorded; completeness review and acceptance Pending.
 **Contracts:** [OHK-STORE-030](CATALOG-PERSISTENCE-CONTRACT.md) and
 [OHK-NATIVE-030](NATIVE-CHECKPOINT-PROVIDER-PLAN.md).
 **Scope:** Experimental LinuxCheckpointProvider; not released v0.2.0 support.
@@ -200,12 +200,13 @@ provider. Process termination does not simulate power loss. A fresh pinned ext4
 run and explicit review remain Pending. The 2026-10-09 logs above are immutable
 and must not be backfilled with observations from this target.
 
-## Matrix receipt extension (new pinned run required)
+## Matrix receipt extension (fresh run now recorded)
 
 The development evidence target now adds per-case observations for the four
 remaining groups. The received `9310ab3` bundle predates this extension and must
 not be relabeled as having executed it. The same collector builds the extended
-target; after review, pin its new merge revision and collect a fresh ext4 bundle.
+target. A separate run at PR #64 merge `6a6337d` is now recorded below; it does
+not alter the earlier bundle.
 
 | Group | New cases and observations |
 | --- | --- |
@@ -231,23 +232,53 @@ receipts, not a complete trace of every walk/stat/flock call.
 
 This expands observability for representative matrix cases, not every possible
 interleaving or platform. Current local execution uses the private overlay
-bypass; fresh native ext4 execution, per-row completeness review and explicit
-acceptance remain Pending. Existing submitted logs and their hashes stay fixed.
+bypass. Fresh native WSL2 ext4 execution is now recorded below; per-row
+completeness review and explicit acceptance remain Pending. Existing submitted
+logs and their hashes stay fixed.
 
-## Acceptance record (receipt run populated; gate open)
+## Received matrix execution on 2026-10-09
+
+The [new matrix bundle](evidence/linux-checkpoint/2026-10-09-matrix/README.md)
+records exact revision `6a6337df03fb69326cc5096eb2ef34b6e32bac11`, clean source
+before/after, DIFF_CHECK exit=0 and 24 compiler/test exits=0, OVERALL exit=0.
+It is a maintainer-supplied direct-g++ run without sanitizers or CTest on the
+same WSL2 /dev/sdd ext4 environment. Production eligibility passed with bypass
+0. All 51 original manifest hashes and 384 full-wire hashes match. Three published
+logs redact the local username; their public manifest was recomputed, with
+original/published hash mapping recorded separately. Independent checks
+find 280 valid checkpoints/projections, 4 acknowledgments, 106 non-overflow
+traces (1,250 actual / 11 injected records), 137 complete artifact captures,
+61 preservation hash receipts and 6 pathname-identity receipts. The eight
+interruption results match the earlier receipt run's 9,9 / 9,9 / 10,11 / 12,13.
+
+The four extended groups now have native-run observations: ownership/path,
+short/partial I/O and allocation, external replacement, invalid/missing primary.
+The allocation sweep records 31 failed budgets then success. Missing primary
+retains faulted=1; explicit restoration/reopen records faulted=0. The bundle
+lists each case and its limits. PUBLISH_CASE outcome=1 means NotCommitted in
+StorePublication; SAVE outcome=1 means Uncertain in StoreOutcome.
+
+This records representative matrix execution, not an acceptance decision or
+independent run authentication. Selected-call traces are not complete syscall
+traces, injected errors are not OS fault measurements, and child termination
+is not power loss. Per-row completeness and explicit reviewer acceptance remain
+Pending for this exact revision/platform. Earlier logs are unchanged.
+
+## Acceptance record (matrix run populated; gate open)
 
 | Required evidence | State |
 | --- | --- |
-| Exact provider/test revision | Recorded at 9310ab3 with clean/diff labels, matching after-run revision and successful collector. |
+| Exact provider/test revision | Recorded at 6a6337d with clean/diff labels, matching after-run revision and successful collector; prior 9310ab3 retained. |
 | Native OS/kernel/compiler and local ext4 mount/options | Recorded for the WSL2 environment; no other environment claimed. |
 | Regression execution | 24 explicit compiler and 24 test exits=0, overall=0; no sanitizers or CTest in this run. |
 | Process-interruption observations | Four cuts × two repeats; child packets/waits, wire and expected revisions recorded. |
-| Full fault/interruption matrix | Selected detailed cases recorded; per-row completeness and remaining evidence require review. |
+| Full fault/interruption matrix | Representative cases, including all four extended groups, recorded at 6a6337d; per-row completeness requires review. |
 | Native returns, sequence/digest/projection and artifact capture | Selected returns and bounded captures recorded and independently checked; not a complete syscall trace. |
 | Capability probe and pre/post-publication sync | Selected successful/failed probe and create/update sync returns recorded. |
 | Explicit reviewer acceptance for that revision/platform | Pending. |
 
-The receipt collector and both submitted run bundles remain unmodified. Do not
+The receipt collector and earlier submitted bundles remain unmodified. The new
+matrix bundle publishes explicitly documented username-redacted copies. Do not
 backfill the earlier logs or substitute new-run observations into their record.
 Any future instrumentation change requires another pinned run and review.
 

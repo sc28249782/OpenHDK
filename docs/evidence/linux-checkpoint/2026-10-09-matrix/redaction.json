@@ -1,0 +1,25 @@
+{
+  "policy": "Replace the literal local username with maintainer in three submitted logs. No result/numeric/wire bytes changed. SHA256SUMS covers published logs; original hashes were checked privately before redaction.",
+  "original_manifest_sha256": "5d49202f8a6f981d82a9150c25a12005ade86204e74a1c61d461088fcbad7628",
+  "published_manifest_sha256": "2b36cde9aa3ba9793cb0faebbf7788ad4625bdb26428fb3c279f587f971a6c45",
+  "changed_logs": [
+    {
+      "path": "linux_checkpoint_evidence_tests.run.log",
+      "replacements": 1,
+      "original_sha256": "94eb32625b6d0196a17d9cda0ff158806a7eb83a6e84a5e817653c5d2d3327dd",
+      "published_sha256": "795ae1c6c43fa17d58730872b8b9396faac6e507b5caa22f034466e5eaa86787"
+    },
+    {
+      "path": "linux_checkpoint_provider_tests.run.log",
+      "replacements": 1,
+      "original_sha256": "719784c3a1680794c4649110231cdb57539a402f0de06295e05bdc0a53765bbe",
+      "published_sha256": "6d80fe0a5285a20ef8272d0b4051a73a609e45cca7eb430f9164de823129059a"
+    },
+    {
+      "path": "environment.log",
+      "replacements": 3,
+      "original_sha256": "0b8f1b4d53faf75caa5837f767e53142a23c162a7e292af1d67b00f634e1a670",
+      "published_sha256": "b8a6031489452f77135e5d513262e045393aac4073637e48dccc6699bbf62eff"
+    }
+  ]
+}
