@@ -105,10 +105,11 @@ occurs when a SoundFont or audio device is unavailable.
   power-loss guarantees. The Windows synchronization gate remains BLOCKED;
   Live checkpoint capture now owns matching snapshot/counter/root context;
   commit-before-publish mutation wiring still prevents completing this checkbox.
-  The [proposed durable service contract](DURABLE-LIBRARY-SERVICE-CONTRACT.md)
-  defines exclusive owner/store admission and override-first staging. Review it
-  before implementation; native binding/containment and other durable mutations
-  remain separate slices.
+  The [accepted durable service contract](DURABLE-LIBRARY-SERVICE-CONTRACT.md)
+  defines exclusive owner/store admission and override-first staging. The service
+  primitive and fake-provider lifecycle/commit tests are implemented; construction
+  is test-only. Native binding/containment and other durable mutations remain
+  separate slices. This does not complete the storage checkbox.
 - [ ] Integrate library preparation and lyric observation without changing
   released MIDI, mixer, or limiter semantics; validate Windows playback.
 - Research staged runtime layout and installers separately; this proposal

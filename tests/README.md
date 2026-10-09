@@ -1,16 +1,16 @@
 # Test coverage and failure diagnostics
 
-The hardware-free configuration registers twenty-five CTest suites: catalog checkpoint codec/restore/store protocol,
+The hardware-free configuration registers twenty-six CTest suites: catalog checkpoint codec/restore/store protocol,
 parser fixtures, MIDI diagnostics CLI, runtime mixer console, velocity curves, mixer presets,
 stereo peak limiter, song catalog core, filesystem discovery, lyric text
 decoding, KAR lyric extraction, media-clock consumption, media-clock
 publication, generation-bound lyric observation, single-song preparation,
 root reattachment, pure catalog metadata/policy models, and catalog metadata
-scan/preparation integration, and override/display transactions.
+scan/preparation integration, and override/display transactions, plus durable override service protocol.
 The audio-enabled test configuration adds FluidSynth headless
-playback, CLI help, and diagnostics error cases, for twenty-eight suites.
+playback, CLI help, and diagnostics error cases, for twenty-nine suites.
 These counts describe the development tree; v0.2.0 has six/nine respectively.
-Linux core CI runs twenty-five hardware-free suites; Windows bootstrap runs all twenty-eight.
+Linux core CI runs twenty-six hardware-free suites; Windows bootstrap runs all twenty-nine.
 
 ## Planned 0.3.0 acceptance
 
@@ -216,7 +216,7 @@ explicit reconciliation and native process-interruption recovery. Provider tests
 must distinguish file synchronization from namespace/durability acknowledgment.
 Windows behavior requires Windows fixtures. Fake failure tests do not prove
 physical power-loss survival. The pure `catalog-checkpoint-codec` suite is now
-registered alongside `catalog-checkpoint-restore` (twenty-five core / twenty-eight
+registered alongside `catalog-checkpoint-restore` (twenty-six core / twenty-nine
 audio-enabled); native stores and durable-first wiring remain pending.
 
 The codec suite compares production output with checked-in independent Python
@@ -258,7 +258,7 @@ blocking allocations at publish tests the acknowledgment path.
 
 These simulations do not prove native OS locking, path capability validation,
 crash recovery or durability. The test adds no filesystem provider and does not
-complete the storage release gate. There are 25 core / 28 audio-enabled suites.
+complete the storage release gate. There are 26 core / 29 audio-enabled suites.
 
 ## Planned native checkpoint provider evidence
 
@@ -266,7 +266,7 @@ The [accepted native provider plan](../docs/NATIVE-CHECKPOINT-PROVIDER-PLAN.md)
 records an API/fault/interruption matrix and per-platform evidence fields.
 The ownership primitive has a dedicated suite; the experimental provider adds
 publication regression tests without native acceptance claims. The baseline is
-25 core / 28 audio-enabled suites. Fake-provider successes do not prove native
+26 core / 29 audio-enabled suites. Fake-provider successes do not prove native
 lock ownership, namespace synchronization or durability.
 
 Future native tests must verify the filesystem used by the test directory and
@@ -302,7 +302,7 @@ removed. Publication, synchronization and durability tests remain pending.
 CMake enables OPENHDK_ENABLE_TEST_SEAMS for this target only. Linux regression
 uses real openat/flock/rename/fsync in a harness-owned temporary directory, with
 filesystem eligibility bypass when native ext4 is unavailable. Non-Linux builds
-check UnsupportedStorage without filesystem access. This is 25 core / 28 audio
+check UnsupportedStorage without filesystem access. This is 26 core / 29 audio
 suites, not a storage acceptance claim.
 
 Checks cover create/update/reopen/no-op/stale tickets, bounded artifact reads,
@@ -328,7 +328,7 @@ Use `bash tests/run-linux-checkpoint-evidence.sh FULL_COMMIT_SHA EXT4_PARENT`
 from a clean pinned checkout for a new native collection. The script records
 compiler/test/overall exit codes and log hashes, keeping failure bundles too.
 See [receipt semantics and pending gates](../docs/NATIVE-LINUX-CHECKPOINT-EVIDENCE.md).
-There are 25 core / 28 audio-enabled suites. The six seam targets require
+There are 26 core / 29 audio-enabled suites. The six seam targets require
 OPENHDK_ENABLE_TEST_SEAMS=1 when compiled directly; CMake sets it per target.
 
 
@@ -370,13 +370,17 @@ it is not a whole-process memory cap. Capture performs no save, durability
 acknowledgment, mutation publication or automatic root attachment. Commit-before-
 publish mutation wiring remains a separate slice; Windows save stays gated.
 
-## Proposed durable service tests
+## Durable override service tests
 
 [OHK-DURABLE-030](../docs/DURABLE-LIBRARY-SERVICE-CONTRACT.md#9-required-tests-and-implementation-order)
-defines the next slice 5 test requirements; no service suite exists yet. Planned
-fake-provider tests observe old memory during publication and require confirmed
+defines slice 5 requirements. The new durable-library-service target has 64
+numbered checks using an independent two-slot fake namespace. Tests observe old
+memory during publication and require confirmed
 sync before the memory swap. They cover baseline admission, complete override
 staging, rollback, no-op, cleanup warnings, uncertainty/recovery, allocation
 prohibition after publication and shared-ledger boundaries. Native binding and
 reciprocal store/root containment need separate reviewed integration/evidence.
-Current suite counts and historical provider receipts remain unchanged.
+The target requires OPENHDK_ENABLE_TEST_SEAMS=1, configured only for this target
+in CMake and included in the collector seam list. Factories accept only the test
+provider category; they cannot admit a native Linux provider. Current counts are
+26 core / 29 audio-enabled. Historical provider receipts remain unchanged.

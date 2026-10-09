@@ -388,11 +388,13 @@ root policy/generation/hints, allocator high water and user overrides without
 filesystem access. It does not persist Ready authority or make mutations durable.
 Limits and conservative Windows UTF-8 hint preflight are specified in
 [OHK-STORE-030](CATALOG-PERSISTENCE-CONTRACT.md#current-live-checkpoint-capture-boundary).
-Commit-before-publish wiring remains pending; released v0.2.0 behavior is unchanged.
-The [proposed durable service contract](DURABLE-LIBRARY-SERVICE-CONTRACT.md)
+Native durable service admission remains pending; released v0.2.0 behavior is unchanged.
+The [accepted durable service contract](DURABLE-LIBRARY-SERVICE-CONTRACT.md)
 defines exclusive owner/store admission, an acknowledged baseline and override-first
-staging before implementation. Its service states and APIs are not implemented.
-It changes no existing in-memory mutation, provider or playback behavior.
+staging. The service primitive has fake-provider lifecycle and commit-before-memory
+publication tests. Construction is available only through the test provider category
+under test seams; no native service factory is implemented. Existing in-memory
+mutation, provider acceptance and playback behavior are unchanged.
 
 ## 10. Deferred work and change control
 
