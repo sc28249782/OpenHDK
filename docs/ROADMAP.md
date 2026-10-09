@@ -99,12 +99,11 @@ occurs when a SoundFont or audio device is unavailable.
   Linux ownership/publication tests first and separates Windows API/synchronization
   review from native acceptance. Linux ownership/lease tests are implemented;
   an experimental Linux provider now implements staging/publication/sync/reconciliation.
-  [Native ext4 acceptance](NATIVE-LINUX-CHECKPOINT-EVIDENCE.md) remains pending.
-  A pinned WSL2 ext4 receipt run is recorded with explicit exits and artifact
-  bytes; full-matrix review and acceptance remain pending.
-  A second pinned native run records the extended matrix cases; per-row
-  completeness and explicit reviewer acceptance remain pending.
-  The Windows gate stays open.
+  [Scoped Linux acceptance](NATIVE-LINUX-CHECKPOINT-EVIDENCE.md) is recorded for
+  provider/test revision `6a6337d` on WSL2 `/dev/sdd` ext4 after PR #65 review and
+  explicit maintainer confirmation. It does not approve broader environments or
+  power-loss guarantees. The Windows synchronization gate remains BLOCKED;
+  live capture and durable-first wiring still prevent completing this checkbox.
 - [ ] Integrate library preparation and lyric observation without changing
   released MIDI, mixer, or limiter semantics; validate Windows playback.
 - Research staged runtime layout and installers separately; this proposal

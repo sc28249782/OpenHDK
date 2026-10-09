@@ -1,9 +1,13 @@
 # Linux checkpoint provider evidence
 
-**Status:** Pinned WSL2 ext4 receipts and extended matrix run recorded; completeness review and acceptance Pending.
+**Status:** Accepted for revision 6a6337d on the recorded WSL2 /dev/sdd ext4 environment; broader platforms and live wiring remain gated.
 **Contracts:** [OHK-STORE-030](CATALOG-PERSISTENCE-CONTRACT.md) and
 [OHK-NATIVE-030](NATIVE-CHECKPOINT-PROVIDER-PLAN.md).
 **Scope:** Experimental LinuxCheckpointProvider; not released v0.2.0 support.
+
+The decision in the final section is the current acceptance state. Pending
+statements in earlier run narratives describe their state before that decision;
+the submitted logs and derived bundle records are historical and unchanged.
 
 ## Current regression observations
 
@@ -264,7 +268,7 @@ traces, injected errors are not OS fault measurements, and child termination
 is not power loss. Per-row completeness and explicit reviewer acceptance remain
 Pending for this exact revision/platform. Earlier logs are unchanged.
 
-## Acceptance record (matrix run populated; gate open)
+## Acceptance record (scoped Linux decision recorded)
 
 | Required evidence | State |
 | --- | --- |
@@ -272,10 +276,10 @@ Pending for this exact revision/platform. Earlier logs are unchanged.
 | Native OS/kernel/compiler and local ext4 mount/options | Recorded for the WSL2 environment; no other environment claimed. |
 | Regression execution | 24 explicit compiler and 24 test exits=0, overall=0; no sanitizers or CTest in this run. |
 | Process-interruption observations | Four cuts × two repeats; child packets/waits, wire and expected revisions recorded. |
-| Full fault/interruption matrix | Representative cases, including all four extended groups, recorded at 6a6337d; per-row completeness requires review. |
+| Full fault/interruption matrix | Representative cases, including all four extended groups, reviewed and accepted within the documented limits; no exhaustive-interleaving claim. |
 | Native returns, sequence/digest/projection and artifact capture | Selected returns and bounded captures recorded and independently checked; not a complete syscall trace. |
 | Capability probe and pre/post-publication sync | Selected successful/failed probe and create/update sync returns recorded. |
-| Explicit reviewer acceptance for that revision/platform | Pending. |
+| Explicit reviewer acceptance for that revision/platform | Somchai Pongkasem explicitly accepted revision 6a6337d on WSL2 /dev/sdd ext4 on 2026-10-09; see decision below. |
 
 The receipt collector and earlier submitted bundles remain unmodified. The new
 matrix bundle publishes explicitly documented username-redacted copies. Do not
@@ -285,3 +289,37 @@ Any future instrumentation change requires another pinned run and review.
 A passing hosted job or ext4 label alone does not close this record. No universal
 power-loss claim is intended. Keep the storage roadmap checkbox open until the
 accepted contracts' remaining platform, live wiring and validation gates close.
+
+## Explicit scoped acceptance — 2026-10-09
+
+After the PR #65 review, Somchai Pongkasem explicitly authorized its merge and
+accepted the Linux checkpoint provider for revision
+`6a6337df03fb69326cc5096eb2ef34b6e32bac11` on WSL2 `/dev/sdd` ext4, within the
+recorded evidence scope. The confirmation was received at 18:54 +07:00.
+PR #65 was merged as `06f8cf6ec3ef7c44204cad66c706df35191f232e`.
+This merge publishes the evidence; it is not the tested provider revision.
+
+| Decision field | Accepted boundary |
+| --- | --- |
+| Provider/test revision | Exact full SHA 6a6337df03fb69326cc5096eb2ef34b6e32bac11. |
+| Environment | WSL2 Linux 6.18.40.1-microsoft-standard-WSL2, Ubuntu GCC 13.3.0, x86_64; /dev/sdd ext4, rw,relatime,discard,errors=remount-ro,data=ordered. |
+| Evidence basis | PR #65 review and the pinned matrix bundle, 24 compile/run exits=0, production eligibility passed with bypass=0, representative matrix cases and selected-call receipts. |
+| Accepted use | Reviewed Linux checkpoint ownership/staging/publication/synchronization/reconciliation protocol within its trusted-directory and recorded process-interruption limits. |
+| Acceptance authority | Explicit maintainer confirmation after review; recorded decision, not independent execution by the documentation editor. |
+
+The confirmation closes the explicit Linux evidence acceptance gate for this
+revision/environment. It accepts the representative coverage and its stated
+limits, not a complete syscall trace, every interleaving, hostile-writer
+isolation or atomic pathname compare-and-swap. Injected faults remain injections;
+process termination remains different from power loss. Captured artifact bytes
+remain in logs only. Username redaction and its original/public hash mapping
+remain as documented in the matrix bundle.
+
+Acceptance does not extend to bare-metal Linux, another mount/kernel or native
+Windows/NTFS, cross-OS/DrvFS, network/cloud/removable storage or universal
+power-loss durability. Provider/test changes require a new pinned run and review
+under the native plan. Documentation-only follow-ups do not relabel the tested
+revision. Windows publication synchronization remains BLOCKED by the unresolved
+API/evidence gate. Live capture/durable-first wiring, NCN evidence, application
+orchestration and manual Windows device/lyric validation remain separate work.
+The overall persistence roadmap checkbox remains open.
