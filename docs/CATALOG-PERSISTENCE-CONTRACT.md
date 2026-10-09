@@ -1,7 +1,7 @@
 # Catalog persistence contract
 
 **Contract ID:** OHK-STORE-030
-**Status:** Accepted by review and merge of PR #54; pure codec, fresh-owner restore and detached fake-provider store protocol implemented; experimental Linux provider and live capture implemented; scoped WSL2 ext4 acceptance recorded; Windows and durable-first wiring pending.
+**Status:** Accepted by review and merge of PR #54; pure codec, fresh-owner restore and detached fake-provider store protocol implemented; experimental Linux provider and live capture implemented; scoped WSL2 ext4 acceptance recorded; override service primitive has fake-provider tests; Windows and native durable admission pending.
 **Target:** 0.3.0; not part of released OpenHDK v0.2.0.
 
 This contract supplements [OHK-LIB-030](KARAOKE-LIBRARY-CONTRACT.md),
@@ -662,17 +662,18 @@ store. Commit-before-memory-publication, scoped native revalidation for provider
 test changes, Windows synchronization, NCN/application integration and manual
 release validation remain separate gates. The storage checkbox stays open.
 
-## Proposed durable service integration
+## Accepted durable service integration
 
-[OHK-DURABLE-030](DURABLE-LIBRARY-SERVICE-CONTRACT.md) proposes the exclusive
-service and acknowledged baseline needed for slice 5. Its first planned mutation
+[OHK-DURABLE-030](DURABLE-LIBRARY-SERVICE-CONTRACT.md) defines the exclusive
+service and acknowledged baseline needed for slice 5. Its first implemented primitive
 is user override replacement. It requires private staging, confirmed storage
 commit and a non-throwing memory swap. Uncertainty or baseline mismatch blocks
 writes and requires explicit recovery into a fresh owner. No mutable owner/store
-or arbitrary caller token is exposed through the planned service.
+or arbitrary caller token is exposed through the service primitive.
 
 The native provider interface does not yet supply the retained directory binding
 capability needed for service/root admission. Fake-provider tests and native
-factory/containment evidence are separate implementation slices. The proposal
-changes no implemented API, checkpoint schema, provider acceptance or roadmap
-completion state. Other persistent mutations require their own staging work.
+factory/containment evidence are separate implementation slices. The accepted contract
+changes no checkpoint schema, provider acceptance or roadmap
+completion state. The override primitive now has fake-provider lifecycle/commit
+tests and test-only factories. Other persistent mutations require their own staging work.

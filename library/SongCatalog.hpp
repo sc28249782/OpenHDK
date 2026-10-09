@@ -400,6 +400,10 @@ class SongCatalog {
   }
 
  private:
+  friend class DurableLibraryService;
+  SongCatalog(std::shared_ptr<const CatalogSnapshot> snapshot, std::uint64_t nextRoot,
+              std::uint64_t nextSong) noexcept
+      : nextRoot_(nextRoot), nextSong_(nextSong), snapshot_(std::move(snapshot)) {}
   friend class SongDiscovery;
   friend class CatalogCheckpointRestore;
   friend class CatalogCheckpointCapture;

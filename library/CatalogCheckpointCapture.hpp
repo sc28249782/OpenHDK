@@ -17,6 +17,7 @@ class CapturedCatalogCheckpoint {
   std::shared_ptr<const CatalogSnapshot> snapshot_;
   CatalogCheckpointProjection projection_;
   friend class CatalogCheckpointCapture;
+  friend class DurableLibraryService;
 };
 struct CatalogCaptureResult {
   std::shared_ptr<const CapturedCatalogCheckpoint> captured;

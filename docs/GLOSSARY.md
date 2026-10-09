@@ -96,5 +96,5 @@ v0.2.0 behavior.
 | **VST2/VST3 integration** | A future, separate integration workstream. |
 | **physical MIDI hardware I/O** | Future input/output device integration. It is not part of the current SMF foundation. |
 
-- **Durable library service**: Proposed exclusive owner/store boundary that stages a mutation and publishes memory only after confirmed storage commit. It is not implemented and does not make existing in-memory APIs durable.
-- **Acknowledged baseline**: In the proposed durable service, the matching owner snapshot/counter/root context and internal store expectation established by confirmed initialization or mutation. A store token alone does not establish this association.
+- **Durable library service**: Accepted exclusive owner/store boundary that stages a mutation and publishes memory only after confirmed storage commit. The override primitive has fake-provider tests; native construction is pending. Existing in-memory APIs remain separate.
+- **Acknowledged baseline**: In the durable service primitive, the matching owner snapshot/counter/root context and internal store expectation established by confirmed initialization or mutation. A store token alone does not establish this association.

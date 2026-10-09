@@ -1,7 +1,9 @@
 # Durable library service contract
 
 **Contract:** OHK-DURABLE-030
-**Status:** Proposed; requires review and acceptance.
+**Status:** Accepted by review and merge of PR #69; override service primitive
+and fake-provider lifecycle/commit tests implemented. Native admission and other
+durable mutations remain pending.
 **Target:** 0.3.0 storage slice 5, after immutable live capture.
 
 ## 1. Purpose and scope
@@ -12,7 +14,7 @@ cannot enforce this rule for a caller's library. Its expectation identifies a
 store object, not a library owner. The live capture adapter acquires matching
 snapshot, counter and root context, but it does not stage or persist a mutation.
 
-This proposal defines the service that joins those boundaries. The first
+This contract defines the service that joins those boundaries. The first
 implementation slice MUST support complete user title/artist override replacement
 only. It MUST reuse the accepted metadata validation and display rules. It MUST
 NOT change checkpoint schema 1, source files, source validation state, root
@@ -20,7 +22,7 @@ policy/generation, allocator counters, lyric selection or playback bindings.
 
 Durable root registration, scanning, relocation, removal and reattachment require
 later staging slices. Existing in-memory APIs retain their current behavior.
-This proposal does not make those APIs durable. It adds no CLI, audio callback,
+This contract does not make those APIs durable. It adds no CLI, audio callback,
 NCN support, database package or Windows synchronization sequence.
 
 ## 2. Exclusive service ownership
@@ -249,7 +251,7 @@ required.
 - Test-only store/root capabilities cannot enable native writes. Native factory
   tests later cover store-inside-root and reciprocal root admission.
 
-Implement in reviewable slices after this proposal is accepted:
+Implement in reviewable slices under this accepted contract:
 
 1. Private override staging/projection and fake-provider service lifecycle,
    baseline admission and confirmed-commit publication.
@@ -260,4 +262,61 @@ Implement in reviewable slices after this proposal is accepted:
 4. Application/CLI wiring and manual validation under the release checklist.
 
 Do not expose a partial first slice as a complete persistent song library. This
-proposal completes no roadmap checkbox and changes no released v0.2.0 behavior.
+contract completes no roadmap checkbox and changes no released v0.2.0 behavior.
+
+## 10. Current override service implementation boundary
+
+`library/DurableLibraryService.hpp` implements the service state/result types,
+exclusive owner/provider/coordinator lifetimes, same-lineage override staging,
+private projection association and acknowledgment-before-memory publication.
+It exposes snapshot/state queries, override replacement and close. It exposes
+no mutable owner/store, arbitrary candidate projection or expectation input.
+The query surface does not yet add library/application preparation orchestration.
+
+There is no production construction factory. Under OPENHDK_ENABLE_TEST_SEAMS,
+`DurableLibraryServiceTestAccess` admits only an owned
+`DurableLibraryTestProvider`, an in-memory test provider category. A native
+LinuxCheckpointProvider cannot be passed to these factories. This is a protocol
+primitive tested with an independent two-slot namespace model, not native durable
+library support. Native binding/root containment admission remains slice 2.
+
+Create consumes an owner, opens ExpectedAbsent and saves its current capture.
+Open validates/reconciles a primary, restores a fresh unattached owner and
+compares its capture with the opened projection excluding sequence. Factories
+return no writable service or success receipt on failure. There is no reopening
+of a faulted owner in place; close followed by a separate open returns a new owner.
+
+Override staging uses a private SongCatalog view of the current snapshot/counters.
+The existing metadata transaction writes only that view. Its snapshot retains
+lineage, source records and validation state. The private projector uses the
+baseline's retained root mapping/counters and verifies unchanged roots and source
+keys. It does not convert current paths again or accept a caller snapshot.
+A confirmed Saved receipt with the matching revision precedes one noexcept swap.
+Receipt and expectation transfers have compile-time nothrow assertions. NoChange
+requires the store's confirmed Unchanged result. Protocol mismatch or stale/uncertain
+storage enters RecoveryRequired and leaves the live snapshot unchanged.
+
+The operation ledger charges the baseline projection and retained registered
+paths during metadata staging. Private projection staging charges current/staged
+locator copies and shared source/override records once per identity, paths,
+baseline strings, output strings and validation temporaries. At save handoff,
+provider bytes and candidate projection input strings are charged by the
+coordinator, not again by adapter alreadyOwned. NoChange/create share the same
+baseline/input projection and do not charge a second projection copy. New owning
+results retained beyond the operation are caller-retained payload in later work.
+Descriptor counts remain bounded; this is not a total process-memory ceiling.
+
+The new CTest target defines test seams only for its translation unit. Its 64
+numbered checks include complete field replacement, Thai/BOM/combining bytes,
+factory and mutation allocation sweeps, exact/beyond coexistence bounds, Ready
+source/prepared lifetime retention, old memory at publish/sync, cleanup warning,
+late cancellation, allocation prohibition starting at namespace publication,
+uncertainty with old/new primary, explicit recovery, no-op/exhaustion and reentry.
+A test-only malformed acknowledgment confirms protocol-fault handling without
+claiming that a native provider produces that behavior.
+
+The evidence collector adds this target to its seam list. Historical receipts,
+provider implementation/tests and the accepted revision/environment are unchanged.
+A future collector run must pin its own new revision; this change does not relabel
+`6a6337d` or prove native service acceptance. Windows synchronization, other durable
+mutation staging, NCN, application wiring and manual validation remain open.
