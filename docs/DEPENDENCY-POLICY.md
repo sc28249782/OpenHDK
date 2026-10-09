@@ -63,3 +63,12 @@ SQLite remains deferred; this contract does not approve SQLite, Qt SQL or a
 legacy database format. A later engine or copied-code choice must record the
 exact pin, source, license, notices and update/test plan before implementation.
 Native providers still require reviewed API/failure behavior and platform tests.
+
+## Design references are not dependencies
+
+[SOUNDCRAFT-REFERENCE.md](SOUNDCRAFT-REFERENCE.md) records pinned mixer/DSP study
+material only. SoundCraft and its Rust crates, cpal, egui and hosted-plugin stack
+are not approved or acquired dependencies. A future source port or dependency
+proposal requires its own exact pin, selected license/notices, integration model
+and validation under this policy and the migration boundary. The reference does
+not authorize redistribution of upstream assets or restricted brand marks.

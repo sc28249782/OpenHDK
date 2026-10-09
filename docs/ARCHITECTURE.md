@@ -218,6 +218,13 @@ stages when buses are added. Drum-tuning filters require an explicit playback
 policy that preserves source events and defines destination scope. These are
 planning boundaries, not implemented features or accepted detailed contracts.
 
+The pinned [SoundCraft reference](SOUNDCRAFT-REFERENCE.md) adds mixer/DSP study
+inputs for 0.5/0.6. Its render/sync allocation behavior is not an OpenHDK callback
+pattern. Future graph designs must prepare and retire resources off-callback,
+separate topology from mutable DSP state, and specify latency independently of
+committed media position. Processor, pan and meter policies require accepted
+contracts before implementation. FluidSynth/miniaudio remain the adapter path.
+
 ## Deferred layers
 
 Multi-SoundFont layers and mappings, instrument grouping, bus routing, effects,

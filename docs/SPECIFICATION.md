@@ -384,6 +384,11 @@ committed unless their redistribution rights are verified.
 
 ## 10. Deferred work and change control
 
+[SOUNDCRAFT-REFERENCE.md](SOUNDCRAFT-REFERENCE.md) supplies pinned source-study
+inputs for future mixer/DSP contracts. It adds no implemented behavior, accepted
+processor/graph API or dependency and does not change 0.3.0 gates. Existing
+synth gain, limiter, playback and committed-clock semantics remain unchanged.
+
 The following require separate designs and acceptance before they may be
 claimed as supported: multi-SoundFont libraries and mappings, instrument
 classification, mixer groups and bus routing, versioned whole-system Mixer
