@@ -379,6 +379,22 @@ The separate linux-checkpoint-evidence target and
 selected-call, token/wire, artifact and child-cut receipts before fixture cleanup.
 Instrumentation is test-only and adds no production storage API. The collector
 records explicit command exit codes and preserves failure bundles. This is not
-a full syscall trace or completion of the matrix. Fresh pinned native execution
-and explicit reviewer acceptance remain Pending; historical logs stay unchanged.
+a full syscall trace or completion of the matrix. A fresh pinned WSL2 ext4 receipt run is now recorded; explicit reviewer
+acceptance and full-matrix completeness remain Pending. Historical logs stay unchanged.
 Windows synchronization and durable-first application wiring remain pending.
+
+
+## 13. Received pinned ext4 receipts
+
+The [receipt run](NATIVE-LINUX-CHECKPOINT-EVIDENCE.md) records the PR #62 merge
+revision on WSL2 /dev/sdd ext4 with filesystem bypass disabled. The submitted
+manifest verifies all 51 logs; compiler/test/overall exits are explicitly zero.
+Independent checks cover 256 wire hashes, synthetic projection fields, token
+consistency, selected native versus injected returns, artifact capture and eight
+owned-child cut receipts. This is direct g++ without sanitizers, not CTest.
+
+Selected evidence is now inspectable after harness cleanup through recorded
+bytes. It is not a complete syscall trace or a completed section 6 matrix:
+regression-only rows still need explicit completeness review. Acceptance remains
+Pending. Original logs are unchanged; no Windows API gate, live wiring or storage
+roadmap item is completed by this documentation update.

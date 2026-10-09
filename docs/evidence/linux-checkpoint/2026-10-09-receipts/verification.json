@@ -1,0 +1,80 @@
+{
+  "verification": "Passed for submitted receipts; not native acceptance",
+  "revision": "9310ab3384c478d8e05bede3a2b20c3098dcf2ee",
+  "manifest_entries": 51,
+  "compile_exit_zero": 24,
+  "run_exit_zero": 24,
+  "overall_exit": 0,
+  "wire_count": 256,
+  "valid_checkpoint_wires": 189,
+  "empty_probe_wires": 67,
+  "projection_receipts": 189,
+  "ack_receipts": 3,
+  "trace_count": 42,
+  "overflow_traces": 0,
+  "native_record_counts": {
+    "actual": 713,
+    "injected": 7
+  },
+  "artifact_records": 79,
+  "cut_results": [
+    {
+      "phase": 0,
+      "repeat": 0,
+      "prior": 9,
+      "observed": 9
+    },
+    {
+      "phase": 0,
+      "repeat": 1,
+      "prior": 9,
+      "observed": 9
+    },
+    {
+      "phase": 1,
+      "repeat": 0,
+      "prior": 9,
+      "observed": 9
+    },
+    {
+      "phase": 1,
+      "repeat": 1,
+      "prior": 9,
+      "observed": 9
+    },
+    {
+      "phase": 2,
+      "repeat": 0,
+      "prior": 9,
+      "observed": 10
+    },
+    {
+      "phase": 2,
+      "repeat": 1,
+      "prior": 10,
+      "observed": 11
+    },
+    {
+      "phase": 3,
+      "repeat": 0,
+      "prior": 11,
+      "observed": 12
+    },
+    {
+      "phase": 3,
+      "repeat": 1,
+      "prior": 12,
+      "observed": 13
+    }
+  ],
+  "checks": [
+    "Python hashlib full-wire/footer verification",
+    "Independent struct unpack of synthetic header/root/song fields",
+    "Projection and acknowledgement digest consistency",
+    "All trace counts and overflow flags",
+    "Actual versus injected error classification",
+    "Successful create/update pre/post-rename sync order",
+    "Complete artifact captures and owned-child exit receipts"
+  ],
+  "scope": "Selected-call instrumentation and WSL2 virtual ext4 disk only; full matrix/reviewer acceptance remain Pending"
+}
