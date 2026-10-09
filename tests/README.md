@@ -343,5 +343,8 @@ not repair or select staged alternatives. Aggregate lease errors do not constitu
 a full syscall trace. This extends the existing target; suite counts are unchanged.
 The stored 9310ab3 receipts predate these cases. The separate
 [6a6337d matrix run](../docs/evidence/linux-checkpoint/2026-10-09-matrix/README.md)
-records their native WSL2 ext4 execution; completeness review and explicit
-reviewer acceptance remain Pending.
+records their native WSL2 ext4 execution. The maintainer explicitly accepted
+that exact revision/environment after PR #65 review; see the
+[scoped decision](../docs/NATIVE-LINUX-CHECKPOINT-EVIDENCE.md#explicit-scoped-acceptance--2026-10-09).
+This acceptance does not alter submitted logs, expand platform coverage or close
+Windows/live-wiring gates.

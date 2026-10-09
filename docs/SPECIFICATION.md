@@ -297,17 +297,17 @@ bounded artifact I/O, no-replace create, same-directory update, artifact/parent
 synchronization and validated reconciliation. Unknown publication failures and
 post-rename sync failures MUST remain Uncertain. Cleanup MUST NOT remove the
 primary or another artifact. The coordinator MUST include provider-retained
-logical bytes in its existing staged allowance. Native ext4 acceptance remains
-[Pending](NATIVE-LINUX-CHECKPOINT-EVIDENCE.md), not supported storage.
-The separate evidence target records bounded selected-call and artifact receipts
-before cleanup. A pinned collector retains explicit compiler/test/overall exit
-codes. A pinned WSL2 ext4 receipt run is recorded; full-matrix review and
-reviewer acceptance remain Pending. The extended evidence target adds
-case preservation observations for ownership/path, short-I/O/allocation, external
-replacement and invalid/missing primary. A second pinned WSL2 ext4 run at
-`6a6337d` records those cases; per-row completeness and explicit reviewer
-acceptance remain Pending. See the
-[matrix run bundle](evidence/linux-checkpoint/2026-10-09-matrix/README.md).
+logical bytes in its existing staged allowance. Scoped WSL2 ext4 acceptance is
+[recorded](NATIVE-LINUX-CHECKPOINT-EVIDENCE.md); broader storage support remains gated.
+The evidence target records bounded selected-call and artifact receipts before
+cleanup. The maintainer reviewed the pinned WSL2 ext4 matrix run and explicitly
+accepted provider/test revision `6a6337df03fb69326cc5096eb2ef34b6e32bac11` on the
+recorded `/dev/sdd` ext4 environment. See the
+[scoped decision](NATIVE-LINUX-CHECKPOINT-EVIDENCE.md#explicit-scoped-acceptance--2026-10-09).
+This closes that Linux evidence gate only; representative coverage retains its
+trusted-directory, selected-call and process-interruption limits. Windows
+synchronization remains BLOCKED; other platforms and live durable-first wiring
+remain separate gates. Evidence bundles and tested revision are unchanged.
 
 Its Windows synchronization question remains open.
 The native provider and durable-first mutation gates require separate evidence;

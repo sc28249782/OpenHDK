@@ -1,7 +1,7 @@
 # Catalog persistence contract
 
 **Contract ID:** OHK-STORE-030
-**Status:** Accepted by review and merge of PR #54; pure codec, fresh-owner restore and detached fake-provider store protocol implemented; experimental Linux provider implemented; native acceptance and live wiring pending.
+**Status:** Accepted by review and merge of PR #54; pure codec, fresh-owner restore and detached fake-provider store protocol implemented; experimental Linux provider implemented; scoped WSL2 ext4 acceptance recorded; Windows and live wiring pending.
 **Target:** 0.3.0; not part of released OpenHDK v0.2.0.
 
 This contract supplements [OHK-LIB-030](KARAOKE-LIBRARY-CONTRACT.md),
@@ -326,7 +326,8 @@ external edits or prove freshness against a deliberately restored old file.
 The [native provider plan](NATIVE-CHECKPOINT-PROVIDER-PLAN.md) proposes API
 choices and an evidence matrix for slice 4, accepted by review/merge of PR #58.
 A Linux ownership lease and experimental staging/publication provider are
-implemented. Native ext4 acceptance remains [Pending](NATIVE-LINUX-CHECKPOINT-EVIDENCE.md). Its Windows synchronization gate remains open.
+implemented. Acceptance is [recorded](NATIVE-LINUX-CHECKPOINT-EVIDENCE.md) only for revision
+6a6337d on WSL2 /dev/sdd ext4. Its Windows synchronization gate remains BLOCKED.
 
 An atomic namespace update and a durable acknowledgment are different claims.
 The provider review must identify exact open/lock/publication/flush APIs, handle
@@ -609,5 +610,5 @@ Cleanup of a consumed candidate closes its handle and never unlinks primary.
 Identity-mismatched/unconfirmed entries are preserved with an error/warning.
 Failed cleanup can occupy a slot until explicit close/reopen; release preserves
 abandoned entries and never scans suffixes. These are trusted-directory checks,
-not hostile-writer isolation. Native ext4 acceptance, Windows synchronization,
+not hostile-writer isolation. The scoped Linux acceptance is recorded separately; Windows synchronization,
 live capture and durable-first mutations remain outside this implementation.

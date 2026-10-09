@@ -1,14 +1,15 @@
 # Native checkpoint provider plan
 
 **Plan ID:** OHK-NATIVE-030
-**Status:** Accepted by review and merge of PR #58; Linux lease and experimental provider implemented; native acceptance and Windows synchronization pending.
+**Status:** Accepted by review and merge of PR #58; Linux lease and experimental provider implemented; scoped WSL2 ext4 acceptance recorded; Windows synchronization remains BLOCKED.
 **Target:** OHK-STORE-030 slice 4; not part of released v0.2.0.
 **Source review date:** 2026-10-08.
 
 This plan supplements the accepted [persistence contract](CATALOG-PERSISTENCE-CONTRACT.md).
 [SPECIFICATION.md](SPECIFICATION.md) remains the authority for implemented behavior.
 The codec, restore factory, detached coordinator, Linux ownership primitive and
-experimental Linux provider are implemented. Native platform acceptance is pending. This document records API candidates,
+experimental Linux provider are implemented. Scoped WSL2 ext4 acceptance is recorded in section 16. Other native platform
+acceptance remains pending. This document records API candidates,
 required tests and unresolved decisions. It adds no dependency or storage support.
 
 ## 1. Scope and implementation order
@@ -259,7 +260,8 @@ A hosted runner may supply native evidence only if the record verifies its
 actual filesystem/environment and runs the required native cases. Existing
 Linux core and Windows bootstrap jobs continue to guard regressions; their
 current tests do not close either provider gate. The ownership suite passes native Linux lock/path tests using a test-only
-filesystem bypass when needed; ext4 publication acceptance remains pending. Windows listening/lyric validation, NCN evidence, application
+filesystem bypass when needed; those regression runs do not establish acceptance.
+The scoped WSL2 ext4 decision is recorded in section 16. Windows listening/lyric validation, NCN evidence, application
 orchestration and source-release gates remain separate.
 
 ## 8. Primary API references
@@ -427,3 +429,20 @@ or accept the provider. Per-row completeness and explicit reviewer acceptance
 remain Pending. Test-controlled I/O/faults and selected-call instrumentation
 retain their limits. Windows synchronization and durable-first wiring remain
 unresolved; no broader storage or power-loss support is implied.
+
+## 16. Scoped Linux acceptance decision
+
+On 2026-10-09, after PR #65 review, the maintainer explicitly accepted provider/test
+revision `6a6337df03fb69326cc5096eb2ef34b6e32bac11` on the recorded WSL2 `/dev/sdd`
+ext4 environment. See the [decision and limits](NATIVE-LINUX-CHECKPOINT-EVIDENCE.md#explicit-scoped-acceptance--2026-10-09).
+Earlier Pending statements record the sequence before this decision; they do not
+widen it. The evidence bundles remain unchanged.
+
+This closes the explicit evidence acceptance gate for that Linux revision and
+environment only. Representative coverage retains selected-call, trusted-directory,
+injected-fault and process-interruption limits. Other environments, provider/test
+changes and universal power-loss claims require separate evidence and review.
+Windows acknowledgment remains BLOCKED: section 4's unprivileged NTFS publication
+synchronization protocol is unresolved. Do not implement acknowledged Windows
+saves by substituting an unconditional success or by weakening OHK-STORE-030.
+Live capture and durable-first wiring remain separate slices.
