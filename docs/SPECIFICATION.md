@@ -389,6 +389,10 @@ filesystem access. It does not persist Ready authority or make mutations durable
 Limits and conservative Windows UTF-8 hint preflight are specified in
 [OHK-STORE-030](CATALOG-PERSISTENCE-CONTRACT.md#current-live-checkpoint-capture-boundary).
 Commit-before-publish wiring remains pending; released v0.2.0 behavior is unchanged.
+The [proposed durable service contract](DURABLE-LIBRARY-SERVICE-CONTRACT.md)
+defines exclusive owner/store admission, an acknowledged baseline and override-first
+staging before implementation. Its service states and APIs are not implemented.
+It changes no existing in-memory mutation, provider or playback behavior.
 
 ## 10. Deferred work and change control
 

@@ -661,3 +661,18 @@ durable, write a checkpoint, publish a staged mutation or reconcile a faulted
 store. Commit-before-memory-publication, scoped native revalidation for provider/
 test changes, Windows synchronization, NCN/application integration and manual
 release validation remain separate gates. The storage checkbox stays open.
+
+## Proposed durable service integration
+
+[OHK-DURABLE-030](DURABLE-LIBRARY-SERVICE-CONTRACT.md) proposes the exclusive
+service and acknowledged baseline needed for slice 5. Its first planned mutation
+is user override replacement. It requires private staging, confirmed storage
+commit and a non-throwing memory swap. Uncertainty or baseline mismatch blocks
+writes and requires explicit recovery into a fresh owner. No mutable owner/store
+or arbitrary caller token is exposed through the planned service.
+
+The native provider interface does not yet supply the retained directory binding
+capability needed for service/root admission. Fake-provider tests and native
+factory/containment evidence are separate implementation slices. The proposal
+changes no implemented API, checkpoint schema, provider acceptance or roadmap
+completion state. Other persistent mutations require their own staging work.
