@@ -341,4 +341,7 @@ uncertainty. Each refusal checks byte preservation or explicit absence before
 harness cleanup. The partial-write seam is test-only. Source-corruption tests do
 not repair or select staged alternatives. Aggregate lease errors do not constitute
 a full syscall trace. This extends the existing target; suite counts are unchanged.
-The stored 9310ab3 receipts predate these cases; a new pinned native run is required.
+The stored 9310ab3 receipts predate these cases. The separate
+[6a6337d matrix run](../docs/evidence/linux-checkpoint/2026-10-09-matrix/README.md)
+records their native WSL2 ext4 execution; completeness review and explicit
+reviewer acceptance remain Pending.

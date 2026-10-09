@@ -102,7 +102,8 @@ occurs when a SoundFont or audio device is unavailable.
   [Native ext4 acceptance](NATIVE-LINUX-CHECKPOINT-EVIDENCE.md) remains pending.
   A pinned WSL2 ext4 receipt run is recorded with explicit exits and artifact
   bytes; full-matrix review and acceptance remain pending.
-  Extended matrix case receipts require review and a fresh pinned native run.
+  A second pinned native run records the extended matrix cases; per-row
+  completeness and explicit reviewer acceptance remain pending.
   The Windows gate stays open.
 - [ ] Integrate library preparation and lyric observation without changing
   released MIDI, mixer, or limiter semantics; validate Windows playback.

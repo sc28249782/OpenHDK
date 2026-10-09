@@ -411,3 +411,19 @@ particular, external replacement is exercised before the publication identity
 check, not as an atomic pathname compare-and-swap. New instrumentation requires
 review and a fresh pinned ext4 run; the 9310ab3 bundle cannot supply those new
 observations retroactively. Windows synchronization remains unresolved.
+
+## 15. Received pinned matrix run
+
+The maintainer supplied a fresh collector bundle at PR #64 merge
+`6a6337df03fb69326cc5096eb2ef34b6e32bac11`. The
+[matrix record](evidence/linux-checkpoint/2026-10-09-matrix/README.md) retains all
+52-entry archive as public copies with username redaction documented, and separate checks of its 51 original manifest
+hashes, 24 compiler/test exits, selected traces, wire/token/artifact receipts and
+four extended groups. Production ext4 eligibility passed without filesystem
+bypass on the recorded WSL2 /dev/sdd virtual ext4 disk.
+
+This supplies the new run requested in section 14; it does not backfill 9310ab3
+or accept the provider. Per-row completeness and explicit reviewer acceptance
+remain Pending. Test-controlled I/O/faults and selected-call instrumentation
+retain their limits. Windows synchronization and durable-first wiring remain
+unresolved; no broader storage or power-loss support is implied.

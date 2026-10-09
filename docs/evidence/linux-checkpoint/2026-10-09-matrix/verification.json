@@ -1,0 +1,105 @@
+{
+  "verification": "Passed for submitted receipts; not native acceptance",
+  "revision": "6a6337df03fb69326cc5096eb2ef34b6e32bac11",
+  "archive_sha256": "82844a77a07d83b5cb8ea150dd5895908ef207b42d8377c08e81fa24d4cf90d3",
+  "manifest_entries": 51,
+  "compile_exit_zero": 24,
+  "run_exit_zero": 24,
+  "overall_exit": 0,
+  "wire_count": 384,
+  "wire_classes": {
+    "empty": 99,
+    "valid": 280,
+    "partial": 2,
+    "invalid_magic": 1,
+    "unsupported_schema": 2
+  },
+  "projection_receipts": 280,
+  "ack_receipts": 4,
+  "trace_count": 106,
+  "overflow_traces": 0,
+  "native_record_counts": {
+    "actual": 1250,
+    "injected": 11
+  },
+  "artifact_records": 137,
+  "preservation_receipts": 61,
+  "path_identity_receipts": 6,
+  "allocation_failed_budgets": 31,
+  "cut_results": [
+    {
+      "phase": 0,
+      "repeat": 0,
+      "prior_revision": 9,
+      "observed_revision": 9,
+      "expected_revision": 9
+    },
+    {
+      "phase": 0,
+      "repeat": 1,
+      "prior_revision": 9,
+      "observed_revision": 9,
+      "expected_revision": 9
+    },
+    {
+      "phase": 1,
+      "repeat": 0,
+      "prior_revision": 9,
+      "observed_revision": 9,
+      "expected_revision": 9
+    },
+    {
+      "phase": 1,
+      "repeat": 1,
+      "prior_revision": 9,
+      "observed_revision": 9,
+      "expected_revision": 9
+    },
+    {
+      "phase": 2,
+      "repeat": 0,
+      "prior_revision": 9,
+      "observed_revision": 10,
+      "expected_revision": 10
+    },
+    {
+      "phase": 2,
+      "repeat": 1,
+      "prior_revision": 10,
+      "observed_revision": 11,
+      "expected_revision": 11
+    },
+    {
+      "phase": 3,
+      "repeat": 0,
+      "prior_revision": 11,
+      "observed_revision": 12,
+      "expected_revision": 12
+    },
+    {
+      "phase": 3,
+      "repeat": 1,
+      "prior_revision": 12,
+      "observed_revision": 13,
+      "expected_revision": 13
+    }
+  ],
+  "matrix_groups": [
+    "ownership/path",
+    "short-I/O/allocation",
+    "external replacement",
+    "invalid/missing primary"
+  ],
+  "checks": [
+    "Python hashlib full-wire/footer and 51 manifest hashes",
+    "Independent struct unpack of valid synthetic header/root/song fields",
+    "Projection and acknowledgment consistency",
+    "All trace counts and overflow flags",
+    "Complete artifact capture sizes/errors",
+    "Preservation hash equality and pathname identities",
+    "Owned-child results, short/partial I/O, allocation sweep, missing/recovery states",
+    "Compiler/test/overall exits and pinned revision before/after"
+  ],
+  "scope": "Maintainer-supplied WSL2 virtual ext4 evidence, selected-call instrumentation and representative matrix cases only. Not source/run authentication, exhaustive interleavings, bare-metal/NTFS/DrvFS or power-loss evidence. Explicit reviewer acceptance Pending.",
+  "publication": "Redacted copies: three logs replace local username with maintainer; all other logs byte-identical. Recomputed SHA256SUMS verified separately; redaction.json links original and published hashes."
+}
