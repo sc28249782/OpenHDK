@@ -156,6 +156,7 @@ class SongDiscovery {
 
  private:
   friend class CatalogCheckpointRestore;
+  friend class CatalogCheckpointCapture;
 #ifdef OPENHDK_ENABLE_TEST_SEAMS
   friend struct RootReattachmentTestAccess;
 #endif

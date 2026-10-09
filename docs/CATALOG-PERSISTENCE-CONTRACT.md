@@ -1,7 +1,7 @@
 # Catalog persistence contract
 
 **Contract ID:** OHK-STORE-030
-**Status:** Accepted by review and merge of PR #54; pure codec, fresh-owner restore and detached fake-provider store protocol implemented; experimental Linux provider implemented; scoped WSL2 ext4 acceptance recorded; Windows and live wiring pending.
+**Status:** Accepted by review and merge of PR #54; pure codec, fresh-owner restore and detached fake-provider store protocol implemented; experimental Linux provider and live capture implemented; scoped WSL2 ext4 acceptance recorded; Windows and durable-first wiring pending.
 **Target:** 0.3.0; not part of released OpenHDK v0.2.0.
 
 This contract supplements [OHK-LIB-030](KARAOKE-LIBRARY-CONTRACT.md),
@@ -10,7 +10,8 @@ This contract supplements [OHK-LIB-030](KARAOKE-LIBRARY-CONTRACT.md),
 [SPECIFICATION.md](SPECIFICATION.md) remains the authority for implemented
 behavior. The types and wire fields below are accepted design obligations.
 A pure detached projection codec and fresh-owner restore factory are implemented.
-A detached store coordinator is implemented with fake-provider tests. There is no native storage provider, live checkpoint capture adapter, or new dependency today.
+A detached store coordinator is implemented with fake-provider tests. The experimental Linux provider and a live checkpoint capture adapter are implemented.
+Durable-first mutation wiring remains pending; no new dependency is introduced.
 
 ## 1. Storage selection and scope
 
@@ -535,8 +536,8 @@ Open acquires the provider lease, validates the primary if present, and requires
 provider reconciliation before enabling writes. Missing primary is an explicit
 ExpectedAbsent ticket. Tickets retain a private store-object identity; foreign
 store tickets and stale sequence/digest expectations fail before staging.
-This identity is NOT SongDiscovery snapshot provenance. Live capture, matching
-root bindings, same-library admission and durable-first mutations remain slice 5.
+This identity is NOT SongDiscovery snapshot provenance. Live capture now acquires matching owner context; durable-first mutations remain
+a separate slice 5 integration obligation.
 A provider must outlive its coordinator. Calls and queries use a serialized
 control path; recursive operations return Busy without releasing its lease.
 
@@ -580,7 +581,8 @@ tickets, no-op/exhaustion, history rejection, uncertainty with old/new primary,
 explicit reconciliation, cleanup warnings, exact coexistence bounds and injected
 allocation failures. A publish-time allocation prohibition tests the no-allocation
 acknowledgment path. These tests prove coordinator behavior, not OS semantics.
-NCN evidence, native provider acceptance, live capture/durable-first wiring, application
+Scoped WSL2 ext4 provider acceptance and live capture are recorded below. NCN
+evidence, Windows provider acceptance, durable-first wiring, application
 orchestration and manual Windows acceptance remain open. No storage roadmap
 checkbox is completed by this slice.
 
@@ -610,5 +612,52 @@ Cleanup of a consumed candidate closes its handle and never unlinks primary.
 Identity-mismatched/unconfirmed entries are preserved with an error/warning.
 Failed cleanup can occupy a slot until explicit close/reopen; release preserves
 abandoned entries and never scans suffixes. These are trusted-directory checks,
-not hostile-writer isolation. The scoped Linux acceptance is recorded separately; Windows synchronization,
-live capture and durable-first mutations remain outside this implementation.
+not hostile-writer isolation. The scoped Linux acceptance is recorded separately.
+Windows synchronization and durable-first mutations remain pending; live capture
+is provided by the separate adapter below.
+
+## Current live checkpoint capture boundary
+
+`CatalogCheckpointCapture::acquire(owner, limits, alreadyOwned)` acquires the
+current owner's snapshot, allocator high-water counters and matching registered
+root mapping in one serialized control-path operation. It returns an owning
+`CapturedCatalogCheckpoint` with const projection/context access. It accepts
+no arbitrary snapshot argument, constructs no public RootId/SongId and performs
+no filesystem probe/read/hash, callback or audio work. Concurrent owner access
+is not supported; the caller must serialize acquisition with owner mutations.
+
+Attached roots copy the retained canonical path as a UTF-8 advisory hint.
+Unattached restored roots preserve their saved hint or absence. Root policy and
+attachment generation come from the same acquired snapshot. Songs copy only
+persistent identity/member locator and exact user override bytes. Ready/state,
+source tokens/metadata, compiled timelines and runtime lineage are not encoded.
+The acquired context owns the snapshot but does not import its token into wire.
+
+The projection retains the exact current counters, including removed-ID gaps
+and exhaustion. Its sequence 1 is a codec-valid placeholder; the store controls
+actual publication sequence admission. Later edits, rescans, reattachment or
+owner destruction do not rewrite a captured projection. Capture does not accept
+an old snapshot and combine it with newer mappings/counters. Saving a captured
+projection remains detached and must obey the store's stale/history checks.
+
+Preflight validates limits/counts before projection copies. The shared logical
+ledger charges caller-owned bytes, retained snapshot locators/source metadata/
+user overrides (shared records once by identity), registered native path/saved
+hint bytes, per-row output text and two largest-field temporaries. Windows
+reserves three UTF-8 bytes per UTF-16 hint unit before conversion. This is a
+conservative bound: it can reject a text/byte boundary even if the eventual
+UTF-8 hint would fit. Fixed descriptors are count-bounded; allocator overhead
+is not a process-memory guarantee. Complete codec shape/semantic checks enforce
+wire capacity without producing a wire buffer.
+
+Failures return no acquired value and preserve the live owner. Errors identify
+CheckpointOperation::Capture; allocation failure is StorageFailure and native
+path conversion failure is UnsupportedRepresentation/Hint. Historical acquired
+values remain usable. The adapter is an internal numeric-ID export boundary,
+not authentication of detached values that a caller later copies/modifies.
+
+This closes live capture only. It does not make scans/overrides/reattachment
+durable, write a checkpoint, publish a staged mutation or reconcile a faulted
+store. Commit-before-memory-publication, scoped native revalidation for provider/
+test changes, Windows synchronization, NCN/application integration and manual
+release validation remain separate gates. The storage checkbox stays open.

@@ -382,6 +382,14 @@ Manual validation with a user-supplied MIDI and SoundFont remains required for
 audible balance changes and audio-device behavior. Such assets MUST NOT be
 committed unless their redistribution rights are verified.
 
+The development live checkpoint capture adapter acquires a const projection and
+snapshot context from one serialized SongDiscovery owner. It copies matching
+root policy/generation/hints, allocator high water and user overrides without
+filesystem access. It does not persist Ready authority or make mutations durable.
+Limits and conservative Windows UTF-8 hint preflight are specified in
+[OHK-STORE-030](CATALOG-PERSISTENCE-CONTRACT.md#current-live-checkpoint-capture-boundary).
+Commit-before-publish wiring remains pending; released v0.2.0 behavior is unchanged.
+
 ## 10. Deferred work and change control
 
 [SOUNDCRAFT-REFERENCE.md](SOUNDCRAFT-REFERENCE.md) supplies pinned source-study
