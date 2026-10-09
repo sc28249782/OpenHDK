@@ -354,3 +354,19 @@ primary revision observations are printed. These are process-interruption tests,
 not power-loss tests. Native ext4 acceptance is still Pending. The separate
 evidence document specifies how to run without the filesystem bypass and how
 to bind logs to an exact commit/environment for review.
+
+## 11. Received WSL2 ext4 execution record
+
+The maintainer's 2026-10-09 [run record](NATIVE-LINUX-CHECKPOINT-EVIDENCE.md)
+reports the PR #60 merge revision on WSL2 /dev/sdd ext4, production eligibility
+and filesystem bypass disabled for the provider. Original environment/test logs
+are retained with hashes. All 23 suite headers and four cut points repeated
+twice appear without a reported failure diagnostic. This was a direct g++ build,
+not CTest or sanitizers. The configure attempt that required unavailable Ninja
+is separate and contributes no test result.
+
+The record partially populates section 7; it does not close acceptance. Explicit
+exit-code receipts, detailed native return/token/artifact observations and the
+remaining matrix coverage require a follow-up evidence/test slice before review.
+No log may be retroactively filled with unobserved values. WSL2 virtual-disk
+observations do not approve native Windows/NTFS or cross-OS/DrvFS storage.

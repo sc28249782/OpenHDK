@@ -1,0 +1,59 @@
+
+=== catalog_checkpoint_codec_tests ===
+
+=== catalog_checkpoint_restore_tests ===
+
+=== catalog_checkpoint_store_tests ===
+checkpoint protocol checks passed
+
+=== catalog_metadata_integration_tests ===
+
+=== catalog_metadata_tests ===
+
+=== catalog_override_display_tests ===
+
+=== kar_lyric_timeline_tests ===
+
+=== linux_checkpoint_lease_tests ===
+Linux lease ownership checks passed; native ext4 publication evidence pending
+
+=== linux_checkpoint_provider_tests ===
+Environment kernel=6.18.40.1-microsoft-standard-WSL2 compiler=13.3.0 parent="/home/somchaip/openhdk-evidence-20261009-135237/openhdk-provider-VBoci3" ext4-eligibility=1 test-filesystem-bypass=0
+Interruption phase=0 repeat=0 revision=3
+Interruption phase=0 repeat=1 revision=3
+Interruption phase=1 repeat=0 revision=3
+Interruption phase=1 repeat=1 revision=3
+Interruption phase=2 repeat=0 revision=4
+Interruption phase=2 repeat=1 revision=5
+Interruption phase=3 repeat=0 revision=6
+Interruption phase=3 repeat=1 revision=7
+Linux provider syscall/coordinator tests passed; native ext4 acceptance requires recorded review.
+
+=== lyric_clock_observer_tests ===
+
+=== lyric_media_consumer_tests ===
+
+=== lyric_text_decoder_tests ===
+
+=== media_clock_publication_tests ===
+
+=== midi_diagnostics_cli_tests ===
+
+=== midi_mixer_preset_tests ===
+
+=== midi_velocity_curve_tests ===
+
+=== root_reattachment_tests ===
+
+=== runtime_mixer_console_tests ===
+
+=== smf_parser_tests ===
+SMF parser fixtures passed
+
+=== song_catalog_tests ===
+
+=== song_discovery_tests ===
+
+=== song_preparation_tests ===
+
+=== stereo_peak_limiter_tests ===
