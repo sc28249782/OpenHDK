@@ -100,8 +100,8 @@ occurs when a SoundFont or audio device is unavailable.
   review from native acceptance. Linux ownership/lease tests are implemented;
   an experimental Linux provider now implements staging/publication/sync/reconciliation.
   [Native ext4 acceptance](NATIVE-LINUX-CHECKPOINT-EVIDENCE.md) remains pending.
-  A bounded receipt collector is available for a fresh pinned run; historical
-  logs and acceptance status remain unchanged.
+  A pinned WSL2 ext4 receipt run is recorded with explicit exits and artifact
+  bytes; full-matrix review and acceptance remain pending.
   The Windows gate stays open.
 - [ ] Integrate library preparation and lyric observation without changing
   released MIDI, mixer, or limiter semantics; validate Windows playback.

@@ -1,0 +1,10 @@
+Environment kernel=6.18.40.1-microsoft-standard-WSL2 compiler=13.3.0 parent="/home/somchaip/openhdk-native-ext4-GNbUvb/openhdk-provider-bk2uF9" ext4-eligibility=1 test-filesystem-bypass=0
+Interruption phase=0 repeat=0 revision=3
+Interruption phase=0 repeat=1 revision=3
+Interruption phase=1 repeat=0 revision=3
+Interruption phase=1 repeat=1 revision=3
+Interruption phase=2 repeat=0 revision=4
+Interruption phase=2 repeat=1 revision=5
+Interruption phase=3 repeat=0 revision=6
+Interruption phase=3 repeat=1 revision=7
+Linux provider syscall/coordinator tests passed; native ext4 acceptance requires recorded review.

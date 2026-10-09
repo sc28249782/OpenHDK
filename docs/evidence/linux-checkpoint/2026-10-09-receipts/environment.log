@@ -1,0 +1,16 @@
+REVISION 9310ab3384c478d8e05bede3a2b20c3098dcf2ee
+SOURCE /home/somchaip/openhdk-receipts-src-EiFJKw
+PARENT /home/somchaip/openhdk-native-ext4-GNbUvb
+STATUS clean=1
+DIFF_CHECK exit=0
+SANITIZERS 0
+Linux SC28249782-NB67 6.18.40.1-microsoft-standard-WSL2 #1 SMP PREEMPT_DYNAMIC Fri Jul 31 22:12:15 UTC 2026 x86_64 x86_64 x86_64 GNU/Linux
+g++ (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0
+Copyright (C) 2023 Free Software Foundation, Inc.
+This is free software; see the source for copying conditions.  There is NO
+warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+TARGET SOURCE   FSTYPE OPTIONS
+/      /dev/sdd ext4   rw,relatime,discard,errors=remount-ro,data=ordered
+FLAGS -std=c++20 -Wall -Wextra -Werror -pedantic -O1 -g -pthread -I/home/somchaip/openhdk-receipts-src-EiFJKw
+TIMEOUT compile=180s run=120s

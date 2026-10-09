@@ -301,7 +301,8 @@ logical bytes in its existing staged allowance. Native ext4 acceptance remains
 [Pending](NATIVE-LINUX-CHECKPOINT-EVIDENCE.md), not supported storage.
 The separate evidence target records bounded selected-call and artifact receipts
 before cleanup. A pinned collector retains explicit compiler/test/overall exit
-codes; fresh native execution and reviewer acceptance remain Pending.
+codes. A pinned WSL2 ext4 receipt run is recorded; full-matrix review and
+reviewer acceptance remain Pending.
 
 Its Windows synchronization question remains open.
 The native provider and durable-first mutation gates require separate evidence;

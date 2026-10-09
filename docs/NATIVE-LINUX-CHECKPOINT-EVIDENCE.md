@@ -1,6 +1,6 @@
 # Linux checkpoint provider evidence
 
-**Status:** WSL2 ext4 provider run recorded; supplemental evidence and acceptance review Pending.
+**Status:** Pinned WSL2 ext4 receipt run recorded; full-matrix review and acceptance Pending.
 **Contracts:** [OHK-STORE-030](CATALOG-PERSISTENCE-CONTRACT.md) and
 [OHK-NATIVE-030](NATIVE-CHECKPOINT-PROVIDER-PLAN.md).
 **Scope:** Experimental LinuxCheckpointProvider; not released v0.2.0 support.
@@ -72,6 +72,48 @@ WSL2 ext4 virtual disk. They do not establish bare-metal Linux behavior, native
 Windows/NTFS behavior, cross-OS/DrvFS support or power-loss durability. The lease
 suite's generic pending message does not negate the provider's explicit native
 mode; its own test helper remains a separate ownership test boundary.
+
+## Pinned receipt execution on 2026-10-09
+
+The maintainer supplied [the receipt bundle](evidence/linux-checkpoint/2026-10-09-receipts/README.md)
+after using the reviewed collector at PR #62 merge
+`9310ab3384c478d8e05bede3a2b20c3098dcf2ee`. This is a separate run from the earlier
+PR #60 evidence. Original archive entries and its 51-log manifest are preserved;
+all hashes match. The received archive contains no binaries or source assets.
+
+| Field | Recorded and checked observation |
+| --- | --- |
+| Source | Exact merge revision before/after; labeled clean=1, DIFF_CHECK exit=0; overall collector exit=0. |
+| Environment | WSL2 Linux 6.18.40.1-microsoft-standard-WSL2, GCC 13.3.0; /dev/sdd ext4, rw,relatime,discard,errors=remount-ro,data=ordered. |
+| Native mode | Provider ext4-eligibility=1 and test-filesystem-bypass=0; evidence target filesystem-bypass=0. |
+| Build/test | Direct g++ strict C++20 flags; 24 compile exits=0, 24 run exits=0; SANITIZERS 0, not CTest. |
+| Selected calls | 42 non-overflow traces; 713 actual returns and 7 injected EIO boundary records, checked separately. |
+| Wire/token | All 256 full-wire SHA-256 values match; 189 complete checkpoints have valid footers and independently unpacked fields; 189 projections and 3 acknowledgments agree. |
+| Artifacts | 79 captures before cleanup, complete and error-free: 12 checkpoints and 67 empty entries. Identity/capability/consumed state and captured bytes retained in log. |
+| Sync | Successful create/update traces record file/parent sync before rename and parent sync after rename. |
+| Process interruption | Four phases, two repetitions each, complete child packets and SIGKILL wait receipts; cuts preserve expected old/new revision. |
+
+| Evidence cut | Before → reopened revision (two repeats) |
+| --- | --- |
+| CandidateVerified | 9 → 9; 9 → 9 |
+| PriorVerified | 9 → 9; 9 → 9 |
+| Rename before parent sync | 9 → 10; 10 → 11 |
+| Confirmed acknowledgment | 11 → 12; 12 → 13 |
+
+Injected write/read/sync/publication/reconcile failures remain injections, not
+proof of real OS faults. Cleanup failure records Saved with a warning; the
+create-collision receipt records actual EEXIST/NotCommitted. Empty probe wires
+have expected decode errors; they are not accepted checkpoints. The filesystem
+artifacts are gone after harness cleanup, but their captured bytes remain in the
+log. The derived verification.json documents editor checks, not a runtime claim.
+
+This closes the missing exit-code/selected-receipt observations for this run. It
+does not itself close section 6 of the native plan. Some ownership/path,
+allocation/short-I/O, external-replacement and invalid/missing-primary cases have
+regression assertions and suite exit receipts rather than detailed per-case
+native/token/artifact receipts. Review those distinctions before accepting the
+full matrix. Explicit reviewer acceptance is still Pending. Windows synchronization,
+durable-first wiring and broader release gates remain unchanged.
 
 ## Native ext4 execution
 
@@ -158,27 +200,22 @@ provider. Process termination does not simulate power loss. A fresh pinned ext4
 run and explicit review remain Pending. The 2026-10-09 logs above are immutable
 and must not be backfilled with observations from this target.
 
-## Acceptance record (partially populated; gate open)
+## Acceptance record (receipt run populated; gate open)
 
 | Required evidence | State |
 | --- | --- |
-| Exact provider/test revision | Recorded in environment.log; labeled clean-tree/diff and exit-code receipts Pending |
-| Native OS/kernel/compiler and local ext4 mount/options | Recorded for the WSL2 environment above; no other environment claimed |
-| Regression execution | 23 suites listed, no reported diagnostics; explicit compile/run receipts Pending |
-| Process-interruption observations | Four cut points, two repetitions each, catalog revisions recorded |
-| Full fault/interruption matrix and logs | Partially exercised by existing suite; detailed per-row receipts Pending |
-| Native returns, sequence/digest/projection and retained artifacts | Existing assertions cover selected behavior, but detailed evidence output Pending |
-| Capability probe and pre/post-publication sync observations | Covered by provider calls/assertions; explicit native-call receipts Pending |
-| Explicit reviewer acceptance for that revision/platform | Pending |
+| Exact provider/test revision | Recorded at 9310ab3 with clean/diff labels, matching after-run revision and successful collector. |
+| Native OS/kernel/compiler and local ext4 mount/options | Recorded for the WSL2 environment; no other environment claimed. |
+| Regression execution | 24 explicit compiler and 24 test exits=0, overall=0; no sanitizers or CTest in this run. |
+| Process-interruption observations | Four cuts × two repeats; child packets/waits, wire and expected revisions recorded. |
+| Full fault/interruption matrix | Selected detailed cases recorded; per-row completeness and remaining evidence require review. |
+| Native returns, sequence/digest/projection and artifact capture | Selected returns and bounded captures recorded and independently checked; not a complete syscall trace. |
+| Capability probe and pre/post-publication sync | Selected successful/failed probe and create/update sync returns recorded. |
+| Explicit reviewer acceptance for that revision/platform | Pending. |
 
-The current test harness removes its owned temporary directories at the end.
-Do not claim that retained-artifact bytes can still be inspected from this run.
-A follow-up test/evidence slice must emit bounded per-case receipts before
-harness cleanup: operation, injected versus real native return/error, primary
-sequence/digest/projection and candidate/prior identity/state. It must include
-explicit compiler/test exit codes and cover the remaining section 6 matrix rows.
-Changes to test instrumentation require a fresh pinned run and review. Do not
-rewrite these submitted logs to fill missing observations or mark acceptance.
+The receipt collector and both submitted run bundles remain unmodified. Do not
+backfill the earlier logs or substitute new-run observations into their record.
+Any future instrumentation change requires another pinned run and review.
 
 A passing hosted job or ext4 label alone does not close this record. No universal
 power-loss claim is intended. Keep the storage roadmap checkbox open until the
