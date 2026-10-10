@@ -9,7 +9,7 @@ struct NativeStoreAdmissionLimits {
   std::size_t activeRoots=32,pathBytes=4096,components=32,parentSteps=32,
       descriptors=45,stagedBytes=64U*1024U*1024U;
 };
-enum class NativeBindingOperation { Export, Admit, Recheck };
+enum class NativeBindingOperation { Export, Admit, Recheck, Stage };
 enum class NativeBindingErrorCode { InvalidConfiguration, Unbound, ForeignBinding,
   StaleBinding, RootOverlap, SourceChanged, UnsupportedStorage, LimitExceeded, StorageFailure };
 struct NativeBindingError {
@@ -70,7 +70,7 @@ class NativeStoreAdmission {
   std::size_t retainedBytes() const noexcept {
     auto bytes=binding_->retainedBytes();
 #ifdef __linux__
-    for(std::size_t i=0;i<count_;++i)bytes+=roots_[i].path.size();
+    for(std::size_t i=0;i<count_;++i)bytes+=roots_[i]->path.size();
 #endif
     return bytes;
   }
@@ -118,7 +118,7 @@ class NativeStoreAdmission {
   using Fd=LinuxCheckpointLease::Fd;
   using Identity=LinuxCheckpointLease::Identity;
   struct Root {Fd directory;Identity identity{};std::uint64_t mount=0;std::string path;};
-  std::array<Root,32> roots_{};
+  std::array<std::shared_ptr<const Root>,32> roots_{};
   std::size_t count_=0;
   struct Observation {Identity identity{};std::uint64_t mount=0;std::optional<NativeBindingError> error;};
   static Observation observe(int fd,NativeBindingOperation op,std::optional<std::size_t> root={}) noexcept {
@@ -155,7 +155,7 @@ class NativeStoreAdmission {
       record({NativeAdmissionCall::Ancestor,op,child.identity.device,child.identity.inode,child.mount,step,0,false,false,false,skipLexical_});
 #endif
       for(std::size_t i=0;i<count_;++i)
-        if(child.identity==roots_[i].identity && child.mount==roots_[i].mount)
+        if(child.identity==roots_[i]->identity && child.mount==roots_[i]->mount)
           return error(NativeBindingErrorCode::RootOverlap,op,i);
       if(step>=limits_.parentSteps)return error(NativeBindingErrorCode::LimitExceeded,op);
       Fd parent(::openat(current,"..",O_RDONLY|O_DIRECTORY|O_NOFOLLOW|O_CLOEXEC));
@@ -253,11 +253,12 @@ class NativeStoreAdmission {
       for(std::size_t i=0;i<paths.size();++i) {
         auto opened=LinuxCheckpointLease::walk(paths[i]);
         if(opened.error)return {{},error(NativeBindingErrorCode::SourceChanged,op,i,opened.error)};
-        auto& root=a->roots_[i];root.directory=std::move(opened.fd);
-        const auto observed=observe(root.directory.value,op,i);if(observed.error)return {{},observed.error};
+        auto root=std::make_shared<Root>();root->directory=std::move(opened.fd);
+        const auto observed=observe(root->directory.value,op,i);if(observed.error)return {{},observed.error};
         if(observed.mount!=a->binding_->mount_)return {{},error(NativeBindingErrorCode::UnsupportedStorage,op,i)};
-        root.identity=observed.identity;root.mount=observed.mount;root.path=paths[i];++a->count_;
-        bool lexical=contains(root.path,a->binding_->parent_);
+        root->identity=observed.identity;root->mount=observed.mount;root->path=paths[i];
+        a->roots_[i]=root;++a->count_;
+        bool lexical=contains(root->path,a->binding_->parent_);
 #ifdef OPENHDK_ENABLE_TEST_SEAMS
         if(skipLexical_)lexical=false;
 #endif
@@ -275,18 +276,107 @@ class NativeStoreAdmission {
     (void)paths;return {{},error(NativeBindingErrorCode::UnsupportedStorage,op)};
 #endif
   }
+  // One privately associated prospective set: each unchanged root selects its
+  // original guard by index; only the designated changed root may be retired.
+  // The owning service must retain current through commit/rollback and map
+  // these indices to its RootIds/generations. There is no public caller factory.
+  struct ProspectiveRoot { std::string_view path; std::optional<std::size_t> previous; };
+  static NativeStoreAdmissionResult stage(const LinuxCheckpointLease& lease,
+      const NativeStoreAdmission& current, std::span<const ProspectiveRoot> roots,
+      std::optional<std::size_t> retired={},NativeStoreAdmissionLimits l={},std::size_t alreadyOwned=0) {
+    constexpr auto op=NativeBindingOperation::Stage;
+    if(!valid(l) || alreadyOwned>l.stagedBytes)return {{},error(NativeBindingErrorCode::InvalidConfiguration,op)};
+    if(auto e=authority(lease,current.binding_,op))return {{},e};
+#ifdef __linux__
+    if(roots.size()>std::min(l.activeRoots,current.limits_.activeRoots))
+      return {{},error(NativeBindingErrorCode::LimitExceeded,op)};
+    if(retired && *retired>=current.count_)return {{},error(NativeBindingErrorCode::InvalidConfiguration,op)};
+    std::array<bool,32> retained{};std::size_t fresh=0;
+    // Validate correspondence and count unique old+new guards before opening
+    // any candidate descriptor. Binding/unchanged path storage is paid once.
+    auto used=alreadyOwned;
+    if(!charge(used,current.retainedBytes(),l.stagedBytes))
+      return {{},error(NativeBindingErrorCode::LimitExceeded,op)};
+    for(std::size_t i=0;i<roots.size();++i) {
+      const auto& row=roots[i];
+      if(!validPath(row.path,l))return {{},error(NativeBindingErrorCode::InvalidConfiguration,op,i)};
+      if(row.previous) {
+        const auto index=*row.previous;
+        if(index>=current.count_ || retained[index] || retired==index || current.roots_[index]->path!=row.path)
+          return {{},error(NativeBindingErrorCode::InvalidConfiguration,op,i)};
+        retained[index]=true;
+      } else {
+        ++fresh;
+        if(retired && row.path==current.roots_[*retired]->path)
+          return {{},error(NativeBindingErrorCode::SourceChanged,op,i)};
+        if(!charge(used,row.path.size(),l.stagedBytes))return {{},error(NativeBindingErrorCode::LimitExceeded,op,i)};
+      }
+    }
+    for(std::size_t i=0;i<current.count_;++i)
+      if(!retained[i] && retired!=i)return {{},error(NativeBindingErrorCode::InvalidConfiguration,op)};
+    if(fresh>1 || (retired && fresh!=1))return {{},error(NativeBindingErrorCode::InvalidConfiguration,op)};
+    if(13U+current.count_+fresh>std::min(l.descriptors,current.limits_.descriptors))
+      return {{},error(NativeBindingErrorCode::LimitExceeded,op)};
+    // Never refresh unchanged identities from path text. The designated old
+    // target alone may be missing/replaced; an already faulted service must not
+    // use this primitive as a recovery bypass.
+    for(std::size_t i=0;i<roots.size();++i)if(roots[i].previous)
+      if(auto e=current.checkRoot(*roots[i].previous,op)) {
+        e->rootIndex=i;return {{},e}; // Stage indices always name candidate rows.
+      }
+    try {
+      auto a=std::shared_ptr<NativeStoreAdmission>(new NativeStoreAdmission);
+      a->binding_=current.binding_;a->limits_=l;
+      a->limits_.descriptors=std::min(l.descriptors,current.limits_.descriptors);
+      a->limits_.activeRoots=std::min(l.activeRoots,current.limits_.activeRoots);
+      for(std::size_t i=0;i<roots.size();++i) {
+        const auto& row=roots[i];
+        if(row.previous)a->roots_[i]=current.roots_[*row.previous];
+        else {
+          auto opened=LinuxCheckpointLease::walk(row.path);
+          if(opened.error)return {{},error(NativeBindingErrorCode::SourceChanged,op,i,opened.error)};
+          auto root=std::make_shared<Root>();root->directory=std::move(opened.fd);
+          const auto observed=observe(root->directory.value,op,i);if(observed.error)return {{},observed.error};
+          if(observed.mount!=a->binding_->mount_)return {{},error(NativeBindingErrorCode::UnsupportedStorage,op,i)};
+          root->path=row.path;root->identity=observed.identity;root->mount=observed.mount;a->roots_[i]=std::move(root);
+        }
+        ++a->count_;
+        const auto& root=*a->roots_[i];
+        if(contains(root.path,a->binding_->parent_))return {{},error(NativeBindingErrorCode::RootOverlap,op,i)};
+        for(std::size_t j=0;j<i;++j) {
+          const auto& other=*a->roots_[j];
+          if(contains(root.path,other.path) || contains(other.path,root.path)
+              || (root.identity==other.identity && root.mount==other.mount))
+            return {{},error(NativeBindingErrorCode::RootOverlap,op,i)};
+        }
+      }
+#ifdef OPENHDK_ENABLE_TEST_SEAMS
+      if(afterRoots_)afterRoots_(); // No lease/service re-entry.
+#endif
+      if(auto e=a->recheckImpl(lease,op))return {{},e};
+      return {std::move(a),{}};
+    } catch(const std::bad_alloc&) {return {{},error(NativeBindingErrorCode::StorageFailure,op)};}
+#else
+    (void)current;(void)roots;(void)retired;return {{},error(NativeBindingErrorCode::UnsupportedStorage,op)};
+#endif
+  }
+#ifdef __linux__
+  std::optional<NativeBindingError> checkRoot(std::size_t i,NativeBindingOperation op) const noexcept {
+    auto observed=LinuxCheckpointLease::walk(roots_[i]->path);
+    if(observed.error)return error(NativeBindingErrorCode::SourceChanged,op,i,observed.error);
+    const auto named=observe(observed.fd.value,op,i);if(named.error)return named.error;
+    if(named.identity!=roots_[i]->identity || named.mount!=roots_[i]->mount)
+      return error(NativeBindingErrorCode::SourceChanged,op,i);
+    return {};
+  }
+#endif
   std::optional<NativeBindingError> recheck(const LinuxCheckpointLease& lease) const noexcept {
     return recheckImpl(lease,NativeBindingOperation::Recheck);
   }
   std::optional<NativeBindingError> recheckImpl(const LinuxCheckpointLease& lease,NativeBindingOperation op) const noexcept {
     if(auto e=authority(lease,binding_,op))return e;
 #ifdef __linux__
-    for(std::size_t i=0;i<count_;++i) {
-      auto observed=LinuxCheckpointLease::walk(roots_[i].path);
-      if(observed.error)return error(NativeBindingErrorCode::SourceChanged,op,i,observed.error);
-      const auto named=observe(observed.fd.value,op,i);if(named.error)return named.error;
-      if(named.identity!=roots_[i].identity || named.mount!=roots_[i].mount)return error(NativeBindingErrorCode::SourceChanged,op,i);
-    }
+    for(std::size_t i=0;i<count_;++i)if(auto e=checkRoot(i,op))return e;
     return ancestors(op);
 #else
     return error(NativeBindingErrorCode::UnsupportedStorage,op);
@@ -311,6 +401,17 @@ struct NativeStoreBindingTestAccess {
       std::span<const std::string_view> paths,NativeStoreAdmissionLimits limits={},std::size_t owned=0) {
     return NativeStoreAdmission::admit(l,std::move(b),paths,limits,owned);
   }
+  using ProspectiveRoot=NativeStoreAdmission::ProspectiveRoot;
+  static NativeStoreAdmissionResult stage(const LinuxCheckpointLease& l,const NativeStoreAdmission& current,
+      std::span<const ProspectiveRoot> roots,std::optional<std::size_t> retired={},
+      NativeStoreAdmissionLimits limits={},std::size_t owned=0) {
+    return NativeStoreAdmission::stage(l,current,roots,retired,limits,owned);
+  }
+#ifdef __linux__
+  static bool shared(const NativeStoreAdmission& a,std::size_t i,const NativeStoreAdmission& b,std::size_t j) noexcept {
+    return a.roots_[i]==b.roots_[j];
+  }
+#endif
   static std::optional<NativeBindingError> recheck(const NativeStoreAdmission& a,const LinuxCheckpointLease& l) noexcept {return a.recheck(l);}
 #ifdef __linux__
   static int descriptor(const NativeStoreBinding& b) noexcept {return b.directory_.value;}

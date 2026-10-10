@@ -234,3 +234,13 @@ test seam can call registration; native services reject it before filesystem
 work. Prospective native guards/fencing and remaining lifecycle operations are
 pending. Counts stay 28 core / 31 audio-enabled; prior native acceptances do not
 extend to this slice.
+
+## Prospective root guard primitive
+
+[OHK-DURABLE-ROOT-030 slice 3.2](docs/DURABLE-ROOT-LIFECYCLE-PLAN.md#11-current-prospective-guard-primitive)
+now has private immutable shared guards and prospective admission. Unchanged
+roots retain their original handles/identities; one designated changed root may
+be retired while the old context stays retained for rollback. Peak old-plus-new
+descriptors share the existing limit. This primitive has no service fence or
+native mutation entry point. Fresh affected native evidence/acceptance is still
+required; previous tested revisions remain pinned.

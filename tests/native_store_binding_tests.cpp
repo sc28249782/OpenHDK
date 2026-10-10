@@ -183,7 +183,124 @@ int main() {
   OPENHDK_FAIL_IF(74,!Access::overflow() || Access::records().size()!=256);
   Access::receipts(false);
   std::cout<<"ADMISSION_OVERFLOW_TEST capacity=256 detected=1 synthetic=1\n";
-  std::cout<<"binding checks=74 factory=experimental native-acceptance=Pending\n";
+  {
+  // Prospective primitives only; no service fence/mutation publication yet.
+  // Run against harness-owned directories with the same eligibility choice.
+  const auto prospectiveStore=temp.path/"prospective-store";fs::create_directory(prospectiveStore);
+  OPENHDK_FAIL_IF(75,acquire(l,prospectiveStore));b=Access::binding(l).binding;
+  auto current=Access::admit(l,b,std::span<const std::string_view>(paths).first(1));
+  OPENHDK_FAIL_IF(76,current.error || !current.admission);
+  using Row=Access::ProspectiveRoot;
+  std::array<Row,2> add{{{paths[0],0},{paths[1],{}}}};
+  const auto currentFds=fdCount();
+  auto staged=Access::stage(l,*current.admission,add);
+  OPENHDK_FAIL_IF(77,staged.error || !staged.admission || fdCount()!=currentFds+1
+      || !Access::shared(*current.admission,0,*staged.admission,0)
+      || staged.admission->retainedBytes()!=b->retainedBytes()+names[0].size()+names[1].size());
+  OPENHDK_FAIL_IF(78,Access::recheck(*current.admission,l) || Access::recheck(*staged.admission,l));
+  staged.admission.reset();OPENHDK_FAIL_IF(79,fdCount()!=currentFds);
+  NativeStoreAdmissionLimits peak;peak.descriptors=14;
+  OPENHDK_FAIL_IF(80,!code(Access::stage(l,*current.admission,add,{},peak).error,NativeBindingErrorCode::LimitExceeded)
+      || fdCount()!=currentFds);
+  auto paid=b->retainedBytes()+names[0].size()+names[1].size();
+  NativeStoreAdmissionLimits payload;payload.stagedBytes=paid;
+  auto exact=Access::stage(l,*current.admission,add,{},payload);
+  OPENHDK_FAIL_IF(81,exact.error || !exact.admission);exact.admission.reset();
+  OPENHDK_FAIL_IF(82,!code(Access::stage(l,*current.admission,add,{},payload,1).error,NativeBindingErrorCode::LimitExceeded));
+  std::array<Row,2> duplicates{{{paths[0],0},{paths[0],0}}};
+  std::array<Row,1> forgotten{{{paths[1],{}}}};
+  OPENHDK_FAIL_IF(83,!code(Access::stage(l,*current.admission,duplicates).error,NativeBindingErrorCode::InvalidConfiguration)
+      || !code(Access::stage(l,*current.admission,forgotten).error,NativeBindingErrorCode::InvalidConfiguration));
+  std::array<Row,1> sameTarget{{{paths[0],{}}}};
+  OPENHDK_FAIL_IF(84,!code(Access::stage(l,*current.admission,sameTarget,0).error,NativeBindingErrorCode::SourceChanged)
+      || !code(Access::stage(l,*current.admission,sameTarget,1).error,NativeBindingErrorCode::InvalidConfiguration));
+  std::array<Row,2> overlapRows{{{paths[0],0},{b->parentMapping(),{}}}};
+  OPENHDK_FAIL_IF(85,!code(Access::stage(l,*current.admission,overlapRows).error,NativeBindingErrorCode::RootOverlap)
+      || fdCount()!=currentFds);
+  Access::differentRootMount(true);auto different=Access::stage(l,*current.admission,add);Access::differentRootMount(false);
+  OPENHDK_FAIL_IF(86,!code(different.error,NativeBindingErrorCode::SourceChanged)
+      || different.admission || fdCount()!=currentFds);
+  bool stagedSuccess=false;unsigned stageThrows=0;
+  for(std::ptrdiff_t n=0;n<128;++n) {
+    failAfter=n;auto v=Access::stage(l,*current.admission,add);failAfter=-1;
+    if(v.admission){stagedSuccess=true;break;}
+    OPENHDK_FAIL_IF(87,!code(v.error,NativeBindingErrorCode::StorageFailure) || fdCount()!=currentFds);++stageThrows;
+  }
+  OPENHDK_FAIL_IF(88,!stagedSuccess || stageThrows==0 || fdCount()!=currentFds);
+  hookPath=fs::path(names[1]);hookSaved=temp.path/"prior-candidate";
+  Access::afterRoots(replaceRoot);auto changedTarget=Access::stage(l,*current.admission,add);Access::afterRoots(nullptr);
+  OPENHDK_FAIL_IF(89,!code(changedTarget.error,NativeBindingErrorCode::SourceChanged) || changedTarget.admission
+      || Access::recheck(*current.admission,l) || fdCount()!=currentFds);
+  // Existing root replacement cannot be silently adopted by fresh staging.
+  hookPath=fs::path(names[0]);hookSaved=temp.path/"retired-root";replaceRoot();
+  auto unrelated=Access::stage(l,*current.admission,add);
+  OPENHDK_FAIL_IF(90,!code(unrelated.error,NativeBindingErrorCode::SourceChanged) || unrelated.error->rootIndex!=0);
+  fs::remove(fs::path(names[0])); // Old mapping is now missing; retained FD lives.
+  std::array<Row,1> repair{{{paths[1],{}}}};
+  auto repaired=Access::stage(l,*current.admission,repair,0);
+  OPENHDK_FAIL_IF(91,repaired.error || !repaired.admission || fdCount()!=currentFds+1
+      || !code(Access::recheck(*current.admission,l),NativeBindingErrorCode::SourceChanged)
+      || Access::recheck(*repaired.admission,l));
+  repaired.admission.reset();current.admission.reset();fs::rename(hookSaved,fs::path(names[0]));
+  // A retired target does not exempt an unrelated root. Reordered candidate
+  // failures report candidate indices for the owning service's RootId mapping.
+  const std::array<std::string_view,2> oldPaths{paths[0],paths[2]};current=Access::admit(l,b,oldPaths);
+  OPENHDK_FAIL_IF(92,current.error);const auto twoFds=fdCount();
+  fs::rename(fs::path(names[0]),temp.path/"missing-old");
+  std::array<Row,2> changed{{{paths[2],1},{paths[1],{}}}};
+  auto sharedRepair=Access::stage(l,*current.admission,changed,0);
+  OPENHDK_FAIL_IF(93,sharedRepair.error || !sharedRepair.admission || fdCount()!=twoFds+1
+      || !Access::shared(*current.admission,1,*sharedRepair.admission,0));
+  sharedRepair.admission.reset();hookPath=fs::path(names[2]);hookSaved=temp.path/"other-prior";replaceRoot();
+  auto unrelatedRepair=Access::stage(l,*current.admission,changed,0);
+  OPENHDK_FAIL_IF(94,!code(unrelatedRepair.error,NativeBindingErrorCode::SourceChanged)
+      || unrelatedRepair.error->rootIndex!=0 || unrelatedRepair.admission || fdCount()!=twoFds);
+  fs::remove(fs::path(names[2]));fs::rename(hookSaved,fs::path(names[2]));
+  // Final recheck still observes replacement of a shared unchanged guard.
+  hookPath=fs::path(names[2]);hookSaved=temp.path/"late-other-prior";
+  Access::afterRoots(replaceRoot);auto lateOther=Access::stage(l,*current.admission,changed,0);Access::afterRoots(nullptr);
+  OPENHDK_FAIL_IF(95,!code(lateOther.error,NativeBindingErrorCode::SourceChanged) || lateOther.error->rootIndex!=0
+      || lateOther.admission || fdCount()!=twoFds);
+  fs::remove(fs::path(names[2]));fs::rename(hookSaved,fs::path(names[2]));
+  current.admission.reset();fs::rename(temp.path/"missing-old",fs::path(names[0]));
+  // Peak 31 -> 32 shares old descriptors; 32 + a replacement cannot fit 45.
+  current=Access::admit(l,b,std::span<const std::string_view>(paths).first(31));
+  std::array<Row,32> atCapacity;
+  for(std::size_t i=0;i<31;++i){atCapacity[i]={paths[i],i};}
+  atCapacity[31]={paths[31],{}};
+  const auto capacityFds=fdCount();auto full=Access::stage(l,*current.admission,atCapacity);
+  OPENHDK_FAIL_IF(96,full.error || !full.admission || fdCount()!=capacityFds+1);
+  current.admission.reset();current.admission=std::move(full.admission);const auto fullFds=fdCount();
+  atCapacity[31].previous=31;atCapacity[0]={paths[32],{}};
+  auto tooManyGuards=Access::stage(l,*current.admission,atCapacity,0);
+  OPENHDK_FAIL_IF(97,!code(tooManyGuards.error,NativeBindingErrorCode::LimitExceeded)
+      || tooManyGuards.admission || fdCount()!=fullFds || Access::recheck(*current.admission,l));
+  // Candidate lifetime independently retains shared guards and binding.
+  std::array<Row,32> noChange;
+  for(std::size_t i=0;i<32;++i)noChange[i]={paths[i],i};
+  auto independent=Access::stage(l,*current.admission,noChange);
+  OPENHDK_FAIL_IF(98,independent.error || !independent.admission || fdCount()!=fullFds);
+  current.admission.reset();OPENHDK_FAIL_IF(99,fdCount()!=fullFds || Access::recheck(*independent.admission,l));
+  l.release();OPENHDK_FAIL_IF(100,!code(Access::recheck(*independent.admission,l),NativeBindingErrorCode::StaleBinding));
+  OPENHDK_FAIL_IF(101,acquire(l,prospectiveStore));auto freshBinding=Access::binding(l);
+  OPENHDK_FAIL_IF(102,!code(Access::stage(l,*independent.admission,noChange).error,NativeBindingErrorCode::StaleBinding));
+  // Foreign owner cannot borrow these identically shaped retained guards.
+  LinuxCheckpointLease foreignLease;const auto foreignStore=temp.path/"foreign-stage-store";fs::create_directory(foreignStore);
+  OPENHDK_FAIL_IF(104,acquire(foreignLease,foreignStore)
+      || !code(Access::stage(foreignLease,*independent.admission,noChange).error,NativeBindingErrorCode::ForeignBinding));
+  foreignLease.release();
+  independent.admission.reset();b.reset();l.release();freshBinding.binding.reset();
+  OPENHDK_FAIL_IF(103,fdCount()!=initialFds);
+  OPENHDK_FAIL_IF(105,acquire(l,prospectiveStore));b=Access::binding(l).binding;
+  auto emptyCurrent=Access::admit(l,b,{});std::array<Row,1> firstRoot{{{paths[1],{}}}};
+  Access::differentRootMount(true);auto newDifferentMount=Access::stage(l,*emptyCurrent.admission,firstRoot);Access::differentRootMount(false);
+  OPENHDK_FAIL_IF(106,!code(newDifferentMount.error,NativeBindingErrorCode::UnsupportedStorage) || newDifferentMount.admission);
+  const auto emptyFds=fdCount();hookPath=fs::path(names[1]);hookSaved=temp.path/"new-root-prior";
+  Access::afterRoots(replaceRoot);auto noSilentFirstRoot=Access::stage(l,*emptyCurrent.admission,firstRoot);Access::afterRoots(nullptr);
+  OPENHDK_FAIL_IF(107,!code(noSilentFirstRoot.error,NativeBindingErrorCode::SourceChanged) || fdCount()!=emptyFds);
+  emptyCurrent.admission.reset();l.release();b.reset();OPENHDK_FAIL_IF(108,fdCount()!=initialFds);
+  }
+  std::cout<<"binding checks=108 factory=experimental native-acceptance=Pending\n";
   std::cout<<"mount-alias namespace case=Skipped reason=private-namespace-harness-not-implemented\n";
   std::cout<<"filesystem-bypass="<<(std::getenv("OPENHDK_NATIVE_CHECKPOINT_DIR")?0:1)<<"\n";
 #endif

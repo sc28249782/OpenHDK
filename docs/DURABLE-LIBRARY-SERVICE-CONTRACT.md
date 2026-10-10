@@ -394,3 +394,13 @@ token acknowledgment precedes a nonthrowing whole-owner publication. Failed
 operations expose no staged identities or receipt; recovery rules remain intact.
 Only test access can invoke registration, and native services reject that path.
 No prospective native admission or public lifecycle mutation is implemented.
+
+## Prospective guard primitive before service integration
+
+[OHK-DURABLE-ROOT-030](DURABLE-ROOT-LIFECYCLE-PLAN.md#11-current-prospective-guard-primitive)
+now provides private prospective admission using immutable shared unchanged
+guards and one new/replacement guard. The service must still associate prior
+indices with owned RootIds/generations and retain the old admission through
+commit/rollback. Its current fence and fake-only registration path are unchanged.
+No native registration/reattachment or recovery bypass is enabled by this
+primitive. Fresh affected receipts/run/acceptance remain required.

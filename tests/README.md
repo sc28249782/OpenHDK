@@ -472,3 +472,22 @@ require OPENHDK_ENABLE_TEST_SEAMS=1 through CMake. Counts remain 28 core /
 31 audio-enabled. [Next native staging work](../docs/DURABLE-ROOT-LIFECYCLE-PLAN.md#10-current-slice-31-boundary)
 requires prospective guards/fencing and fresh scoped evidence. Historical
 receipts and accepted tested revisions are not relabeled.
+
+## Prospective native guard primitive tests
+
+The [binding suite](native_store_binding_tests.cpp) now has 108 numbered checks
+(74 previously). New cases verify guard identity sharing, exactly one added FD,
+old/candidate lifetimes, exact/beyond payload accounting, duplicate/missing prior
+indices, same-path rejection, missing targeted-root repair, unrelated/late root
+replacement, candidate replacement, injected mount mismatch, allocation-failure
+FD cleanup, 31-to-32 sharing, 32-plus-replacement rejection and stale/foreign epochs.
+They use harness-owned paths and the existing eligibility selection: local overlay
+bypass is regression coverage, not native ext4 acceptance. Namespace aliases
+remain Skipped. Current native service tests still reject registration.
+
+There are still 28 core / 31 audio-enabled suites. Existing receipt/verifier
+coverage remains separate from new prospective cases, which do not emit a
+complete acceptance record. Shared-guard representation changes require fresh
+affected native evidence before extending support claims. No historical bundle
+is edited. [Service fence integration](../docs/DURABLE-ROOT-LIFECYCLE-PLAN.md#11-current-prospective-guard-primitive)
+follows this primitive.
