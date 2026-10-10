@@ -230,8 +230,8 @@ NCN evidence and manual validation remain open. No storage release checkbox chan
 [OHK-DURABLE-ROOT-030](docs/DURABLE-ROOT-LIFECYCLE-PLAN.md#10-current-slice-31-boundary)
 is accepted. Complete-owner staging and fake-provider registration now preserve
 lineage, mappings and allocator history until confirmed storage commit. Experimental service `registerRoot` and `reattachRoot` now use prospective
-guards and an operation-aware fence. Durable scan/song lifecycle and fresh
-mutation receipts/run/acceptance remain pending. Counts stay 28 core / 31 audio-enabled; prior native acceptances do not
+guards and an operation-aware fence. Experimental `scan`, `relocateSong` and `removeSong` now stage complete owners and
+share the operation-aware fence. Fresh mutation receipts/run/acceptance remain pending. Counts stay 28 core / 31 audio-enabled; prior native acceptances do not
 extend to this slice.
 
 ## Prospective root guard primitive

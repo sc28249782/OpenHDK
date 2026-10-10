@@ -7,10 +7,10 @@
 
 namespace OpenHDK {
 enum class DurableServiceState { Unbound, Ready, RecoveryRequired, Closed };
-enum class DurableServiceOperation { Create, Open, ReplaceOverrides, Close, RegisterRoot, ReattachRoot };
+enum class DurableServiceOperation { Create, Open, ReplaceOverrides, Close, RegisterRoot, ReattachRoot, Scan, RelocateSong, RemoveSong };
 enum class DurableServiceErrorCode {
   InvalidConfiguration, Busy, RecoveryRequired, MetadataFailure, CheckpointFailure,
-  StoreFailure, StorageFailure, BaselineMismatch, ProtocolFault, NativeAdmissionFailure, DiscoveryFailure
+  StoreFailure, StorageFailure, BaselineMismatch, ProtocolFault, NativeAdmissionFailure, DiscoveryFailure, CatalogFailure
 };
 struct DurableServiceError {
   DurableServiceErrorCode code;
@@ -23,6 +23,7 @@ struct DurableServiceError {
   std::optional<NativeBindingError> binding;
   std::optional<RootId> root;
   std::optional<DiscoveryDiagnostic> discovery;
+  std::optional<CatalogError> catalog;
 };
 enum class DurableOverrideStatus { Updated, NoChange };
 struct DurableCommitReceipt {
@@ -50,6 +51,20 @@ struct DurableRootReattachmentResult {
   std::optional<DurableCommitReceipt> receipt;
   std::optional<DurableServiceError> error;
   bool succeeded() const noexcept { return status && snapshot && receipt && !error; }
+};
+struct DurableCatalogMutationResult {
+  std::shared_ptr<const CatalogSnapshot> snapshot;
+  std::optional<DurableCommitReceipt> receipt;
+  std::optional<DurableServiceError> error;
+  bool succeeded() const noexcept { return snapshot && receipt && !error; }
+};
+struct DurableScanResult {
+  std::shared_ptr<const CatalogSnapshot> snapshot;
+  std::optional<DurableCommitReceipt> receipt;
+  std::size_t candidates = 0U;
+  std::vector<DiscoveryDiagnostic> diagnostics;
+  std::optional<DurableServiceError> error;
+  bool succeeded() const noexcept { return snapshot && receipt && !error; }
 };
 class DurableLibraryService;
 struct DurableServiceOpenResult {
@@ -158,6 +173,71 @@ class DurableLibraryService {
     if (r.succeeded()) status = r.snapshot == old ? RootReattachmentStatus::Unchanged : RootReattachmentStatus::Updated;
     return {status, std::move(r.snapshot), std::move(r.receipt), std::move(r.error)};
   }
+  // Experimental catalog lifecycle. Scan retains the captured root policy;
+  // every complete scan is a changed revision, even with identical wire rows.
+  DurableScanResult scan(RootId root, DiscoveryLimits limits = {},
+      const DiscoveryControl& discovery = {}, const StoreControl& control = {}, std::size_t caller = 0U) {
+    constexpr auto op=DurableServiceOperation::Scan;
+    const auto failure=[](DurableServiceError e) {return DurableScanResult{nullptr,{},0U,{},std::move(e)};};
+    Guard guard(busy_);
+    if(!guard.held)return failure(error(DurableServiceErrorCode::Busy,op));
+    if(auto e=beginCatalogMutation(op))return failure(*e);
+    try {
+      if(!SongDiscovery::validLimits(limits)) {
+        auto e=error(DurableServiceErrorCode::DiscoveryFailure,op);
+        e.discovery=SongDiscovery::diagnostic(DiscoveryError::InvalidConfiguration,DiscoveryOperation::Enumerate);
+        return failure(std::move(e));
+      }
+      cancel(control);
+      auto external=externalBytes(caller,true);
+      CheckpointDetail::add(external,rootPathBytes(*owner_),limits_.stagedBytes);
+      // Discovery pays its own candidate saved hints and all current/staged
+      // catalog strings. The outer allowance pays other retained context only.
+      external-=owner_->savedHintBytes();
+      if(external>=limits_.stagedBytes)
+        CheckpointDetail::fail(CheckpointErrorCode::LimitExceeded,CheckpointField::None);
+      limits.catalog.stagedLocatorBytes=std::min(limits.catalog.stagedLocatorBytes,limits_.stagedBytes-external);
+      limits.catalog.locatorBytes=std::min(limits.catalog.locatorBytes,limits_.textBytes);
+      auto preflight=MetadataPayloadBudget::create(limits.catalog.stagedLocatorBytes,owner_->savedHintBytes());
+      if(!preflight || !chargeCatalogPayload(*preflight,*snapshot(),2U))
+        CheckpointDetail::fail(CheckpointErrorCode::LimitExceeded,CheckpointField::None);
+      StagedOwner staged{std::unique_ptr<SongDiscovery>(new SongDiscovery(*owner_)),{},nativeAdmission_,admissionRoots_};
+      DiscoveryControl combined{[&]{return (discovery.cancelled && discovery.cancelled())
+          || (control.cancelled && control.cancelled());},discovery.checkpoint};
+      auto scanned=staged.owner->scan(root,limits,combined);
+      if(!scanned.succeeded()) {
+        auto e=error(DurableServiceErrorCode::DiscoveryFailure,op);e.discovery=std::move(scanned.error);
+        // Source-level changes are not necessarily root identity drift. Recheck
+        // native authority separately instead of adopting new path identities.
+        if(admissionCheck(this)) {state_=DurableServiceState::RecoveryRequired;return failure(admissionError(op));}
+        return failure(std::move(e));
+      }
+      if(auto e=stableRootAssociation(staged,op))return failure(*e);
+      cancel(control);
+      auto retained=caller;
+      for(const auto& diagnostic:scanned.diagnostics)
+        CheckpointDetail::add(retained,diagnostic.locator.size(),limits_.stagedBytes);
+      if(auto e=captureOwner(staged,true,retained,op))return failure(*e);
+      // Own all variable diagnostic storage before coordinator publication.
+      DurableScanResult result{staged.owner->snapshot(),{},scanned.candidates,std::move(scanned.diagnostics),{}};
+      auto committed=commitOwner(staged,true,control,retained,op);
+      if(!committed.succeeded())return failure(std::move(*committed.error));
+      result.receipt=std::move(committed.receipt);return result;
+    } catch(const StoreDetail::Failure& e) {
+      auto f=error(DurableServiceErrorCode::StoreFailure,op);f.store=e.error;return failure(f);
+    } catch(const CheckpointDetail::Failure& e) {
+      auto f=error(DurableServiceErrorCode::CheckpointFailure,op);
+      f.checkpoint=CheckpointError{e.code,CheckpointOperation::Capture,e.field,e.record,e.offset};return failure(f);
+    } catch(const std::bad_alloc&) {return failure(error(DurableServiceErrorCode::StorageFailure,op));}
+  }
+  // Logical catalog changes only; no source move/delete or automatic scan.
+  DurableCatalogMutationResult relocateSong(SongId song,RootId root,std::string locator,
+      const StoreControl& control = {},std::size_t caller = 0U) {
+    return songTransaction(song,root,std::move(locator),control,caller);
+  }
+  DurableCatalogMutationResult removeSong(SongId song,const StoreControl& control = {},std::size_t caller = 0U) {
+    return songTransaction(song,{}, {},control,caller);
+  }
   std::optional<DurableServiceError> close() noexcept {
     Guard guard(busy_);
     if (!guard.held) return error(DurableServiceErrorCode::Busy, DurableServiceOperation::Close);
@@ -248,66 +328,10 @@ class DurableLibraryService {
       }
       if (auto e = associateAdmission(staged, registered, target, changed, op)) return failure(*e);
       cancel();
-      // Capture charges the candidate's complete owner/snapshot and fresh
-      // projection. The old baseline, paths and copied old locator payload
-      // coexist; shared metadata is already charged in the candidate capture.
-      auto retained = externalBytes(caller, true);
-      for (const auto& song : owner_->snapshot()->songs)
-        CheckpointDetail::add(retained, song.locator().size(), limits_.stagedBytes);
-      // Reattachment clears candidate source metadata. Retired records remain
-      // owned by the old snapshot until publication/rollback, so charge them.
-      auto retainedBudget=MetadataPayloadBudget::create(limits_.stagedBytes,retained);
-      std::set<const CatalogSourceMetadata*> sharedMetadata;
-      std::set<const CatalogUserOverrides*> sharedOverrides;
-      for(const auto& song:staged.owner->snapshot()->songs) {
-        if(song.metadata)sharedMetadata.insert(song.metadata.get());
-        if(song.overrides)sharedOverrides.insert(song.overrides.get());
-      }
-      for(const auto& song:owner_->snapshot()->songs)
-        if(!retainedBudget || !chargeSourceMetadata(*retainedBudget,song.metadata,sharedMetadata)
-            || !chargeUserOverrides(*retainedBudget,song.overrides,sharedOverrides))
-          CheckpointDetail::fail(CheckpointErrorCode::LimitExceeded,CheckpointField::None);
-      retained=retainedBudget->used();
-      CheckpointDetail::add(retained, candidateAdmissionBytes(staged), limits_.stagedBytes);
-      auto captured = changed ? CatalogCheckpointCapture::acquire(*staged.owner, limits_, retained)
-          : CatalogCaptureResult{baseline_, {}};
-      if (!captured.succeeded()) {
-        auto e = error(DurableServiceErrorCode::CheckpointFailure, op);
-        e.checkpoint = captured.error; return failure(e);
-      }
-      staged.captured = std::move(captured.captured);
-      // During save, the coordinator charges the candidate projection and the
-      // provider. This ledger charges both owners and only the old projection.
-      auto savedRetained = retainedBytes(caller, staged.owner->snapshot(), true);
-      CheckpointDetail::add(savedRetained, rootPathBytes(*staged.owner), limits_.stagedBytes);
-      CheckpointDetail::add(savedRetained, candidateAdmissionBytes(staged), limits_.stagedBytes);
-      DurableRootRegistrationResult result{registered, changed ? staged.owner->snapshot() : snapshot(), {}, {}};
-      PendingAdmission pending(*this, staged);
-      auto saved = store_.save(staged.captured->projection(), *expectation_, control, savedRetained);
-#ifdef OPENHDK_ENABLE_TEST_SEAMS
-      if (corruptAcknowledgment_ && saved.succeeded()) saved.capturedRevision.reset();
-#endif
-      if (!saved.succeeded()) return failure(*saveFailure(saved, op).error);
-      if (saved.status != (changed ? StoreSaveStatus::Saved : StoreSaveStatus::Unchanged) || saved.capturedRevision != result.snapshot->revision
-          || !saved.expectation->token()) {
-        state_ = DurableServiceState::RecoveryRequired;
-        auto e = error(DurableServiceErrorCode::ProtocolFault, op);
-        e.cleanupWarning = saved.cleanupWarning; e.candidate = saved.candidate; e.prior = saved.prior;
-        return failure(e);
-      }
-      result.receipt = DurableCommitReceipt{*saved.expectation->token(), *saved.capturedRevision, saved.cleanupWarning};
-      // No allocation, I/O, cancellation or hook between confirmed commit and
-      // context installation. Old contexts retire afterward by nonthrowing
-      // destruction. One owner swap installs lineage, maps and both counters.
-      if (changed) {
-        owner_.swap(staged.owner);
-        baseline_.swap(staged.captured);
-        if (staged.admission) {
-          nativeAdmission_.swap(staged.admission); admissionRoots_.swap(staged.roots);
-        }
-      }
-      expectation_ = std::move(saved.expectation);
-      return result;
+      if(auto e=captureOwner(staged,changed,caller,op))return failure(*e);
+      auto committed=commitOwner(staged,changed,control,caller,op);
+      if(!committed.succeeded())return failure(std::move(*committed.error));
+      return {registered,std::move(committed.snapshot),std::move(committed.receipt),{}};
     } catch (const StoreDetail::Failure& e) {
       auto failureError = error(DurableServiceErrorCode::StoreFailure, op);
       failureError.store = e.error; return failure(failureError);
@@ -439,6 +463,125 @@ class DurableLibraryService {
 #endif
     return {};
   }
+  static void cancel(const StoreControl& control) {
+    if(control.cancelled && control.cancelled())StoreDetail::fail(StoreErrorCode::Cancelled,StoreOperation::Save);
+  }
+  std::optional<DurableServiceError> beginCatalogMutation(DurableServiceOperation op) noexcept {
+    if(state_!=DurableServiceState::Ready)return error(state_==DurableServiceState::RecoveryRequired
+        ?DurableServiceErrorCode::RecoveryRequired:DurableServiceErrorCode::InvalidConfiguration,op);
+    lastAdmissionError_.reset();lastAdmissionRoot_.reset();
+    if(!baselineMatches()) {state_=DurableServiceState::RecoveryRequired;return error(DurableServiceErrorCode::BaselineMismatch,op);}
+    if(admissionCheck(this)) {state_=DurableServiceState::RecoveryRequired;return admissionError(op);}
+    return {};
+  }
+  std::optional<DurableServiceError> stableRootAssociation(const StagedOwner& staged,DurableServiceOperation op) {
+    const auto& old=owner_->roots_;const auto& next=staged.owner->roots_;
+    const auto a=owner_->snapshot(),b=staged.owner->snapshot();
+    if(staged.owner->catalog_.nextRoot_!=owner_->catalog_.nextRoot_
+        || !std::equal(old.begin(),old.end(),next.begin(),next.end(),[](const auto& x,const auto& y){
+          return x.id==y.id && x.path==y.path && x.attached==y.attached && x.savedHint==y.savedHint;})
+        || !std::equal(a->roots.begin(),a->roots.end(),b->roots.begin(),b->roots.end(),[](const auto& x,const auto& y){
+          return x.id==y.id && x.policy==y.policy && x.attachmentGeneration==y.attachmentGeneration;})) {
+      state_=DurableServiceState::RecoveryRequired;return error(DurableServiceErrorCode::BaselineMismatch,op);
+    }
+    return {};
+  }
+  std::optional<DurableServiceError> captureOwner(StagedOwner& staged,bool changed,std::size_t caller,DurableServiceOperation op) {
+      // Capture charges the candidate's complete owner/snapshot and fresh
+      // projection. The old baseline, paths and copied old locator payload
+      // coexist; shared metadata is already charged in the candidate capture.
+      auto retained = externalBytes(caller, true);
+      for (const auto& song : owner_->snapshot()->songs)
+        CheckpointDetail::add(retained, song.locator().size(), limits_.stagedBytes);
+      // Reattachment clears candidate source metadata. Retired records remain
+      // owned by the old snapshot until publication/rollback, so charge them.
+      auto retainedBudget=MetadataPayloadBudget::create(limits_.stagedBytes,retained);
+      std::set<const CatalogSourceMetadata*> sharedMetadata;
+      std::set<const CatalogUserOverrides*> sharedOverrides;
+      for(const auto& song:staged.owner->snapshot()->songs) {
+        if(song.metadata)sharedMetadata.insert(song.metadata.get());
+        if(song.overrides)sharedOverrides.insert(song.overrides.get());
+      }
+      for(const auto& song:owner_->snapshot()->songs)
+        if(!retainedBudget || !chargeSourceMetadata(*retainedBudget,song.metadata,sharedMetadata)
+            || !chargeUserOverrides(*retainedBudget,song.overrides,sharedOverrides))
+          CheckpointDetail::fail(CheckpointErrorCode::LimitExceeded,CheckpointField::None);
+      retained=retainedBudget->used();
+      CheckpointDetail::add(retained, candidateAdmissionBytes(staged), limits_.stagedBytes);
+      auto captured = changed ? CatalogCheckpointCapture::acquire(*staged.owner, limits_, retained)
+          : CatalogCaptureResult{baseline_, {}};
+      if (!captured.succeeded()) {
+        auto e = error(DurableServiceErrorCode::CheckpointFailure, op);
+        e.checkpoint = captured.error; return e;
+      }
+      staged.captured = std::move(captured.captured);
+      return {};
+  }
+  DurableCatalogMutationResult commitOwner(StagedOwner& staged,bool changed,const StoreControl& control,
+      std::size_t caller,DurableServiceOperation op) {
+      // During save, the coordinator charges the candidate projection and the
+      // provider. This ledger charges both owners and only the old projection.
+      auto savedRetained = retainedBytes(caller, staged.owner->snapshot(), true);
+      CheckpointDetail::add(savedRetained, rootPathBytes(*staged.owner), limits_.stagedBytes);
+      CheckpointDetail::add(savedRetained, candidateAdmissionBytes(staged), limits_.stagedBytes);
+      DurableCatalogMutationResult result{changed ? staged.owner->snapshot() : snapshot(), {}, {}};
+      PendingAdmission pending(*this, staged);
+      auto saved = store_.save(staged.captured->projection(), *expectation_, control, savedRetained);
+#ifdef OPENHDK_ENABLE_TEST_SEAMS
+      if (corruptAcknowledgment_ && saved.succeeded()) saved.capturedRevision.reset();
+#endif
+      if (!saved.succeeded()) return {nullptr,{},saveFailure(saved, op).error};
+      if (saved.status != (changed ? StoreSaveStatus::Saved : StoreSaveStatus::Unchanged) || saved.capturedRevision != result.snapshot->revision
+          || !saved.expectation->token()) {
+        state_ = DurableServiceState::RecoveryRequired;
+        auto e = error(DurableServiceErrorCode::ProtocolFault, op);
+        e.cleanupWarning = saved.cleanupWarning; e.candidate = saved.candidate; e.prior = saved.prior;
+        return {nullptr,{},std::move(e)};
+      }
+      result.receipt = DurableCommitReceipt{*saved.expectation->token(), *saved.capturedRevision, saved.cleanupWarning};
+      // No allocation, I/O, cancellation or hook between confirmed commit and
+      // context installation. Old contexts retire afterward by nonthrowing
+      // destruction. One owner swap installs lineage, maps and both counters.
+      if (changed) {
+        owner_.swap(staged.owner);
+        baseline_.swap(staged.captured);
+        if (staged.admission) {
+          nativeAdmission_.swap(staged.admission); admissionRoots_.swap(staged.roots);
+        }
+      }
+      expectation_ = std::move(saved.expectation);
+      return result;
+  }
+  DurableCatalogMutationResult songTransaction(SongId song,std::optional<RootId> root,std::string locator,
+      const StoreControl& control,std::size_t caller) {
+    const auto op=root?DurableServiceOperation::RelocateSong:DurableServiceOperation::RemoveSong;
+    const auto failure=[](DurableServiceError e){return DurableCatalogMutationResult{nullptr,{},std::move(e)};};
+    Guard guard(busy_);
+    if(!guard.held)return failure(error(DurableServiceErrorCode::Busy,op));
+    if(auto e=beginCatalogMutation(op))return failure(*e);
+    try {
+      cancel(control);
+      if(locator.size()>limits_.textBytes)CheckpointDetail::fail(CheckpointErrorCode::LimitExceeded,CheckpointField::Locator);
+      auto held=externalBytes(caller,true);CheckpointDetail::add(held,rootPathBytes(*owner_),limits_.stagedBytes);
+      auto budget=MetadataPayloadBudget::create(limits_.stagedBytes,held);
+      if(!budget || !budget->charge(locator.size()) || !chargeCatalogPayload(*budget,*snapshot(),2U))
+        CheckpointDetail::fail(CheckpointErrorCode::LimitExceeded,CheckpointField::None);
+      StagedOwner staged{std::unique_ptr<SongDiscovery>(new SongDiscovery(*owner_)),{},nativeAdmission_,admissionRoots_};
+      const auto changed=root?staged.owner->catalog_.relocate(song,*root,std::move(locator)):staged.owner->catalog_.remove(song);
+      if(changed!=CatalogError::None) {
+        auto e=error(DurableServiceErrorCode::CatalogFailure,op);e.catalog=changed;return failure(e);
+      }
+      if(auto e=stableRootAssociation(staged,op))return failure(*e);
+      cancel(control);
+      if(auto e=captureOwner(staged,true,caller,op))return failure(*e);
+      return commitOwner(staged,true,control,caller,op);
+    } catch(const StoreDetail::Failure& e) {
+      auto f=error(DurableServiceErrorCode::StoreFailure,op);f.store=e.error;return failure(f);
+    } catch(const CheckpointDetail::Failure& e) {
+      auto f=error(DurableServiceErrorCode::CheckpointFailure,op);
+      f.checkpoint=CheckpointError{e.code,CheckpointOperation::Capture,e.field,e.record,e.offset};return failure(f);
+    } catch(const std::bad_alloc&) {return failure(error(DurableServiceErrorCode::StorageFailure,op));}
+  }
   struct Guard {
     std::atomic_flag& flag; bool held;
     explicit Guard(std::atomic_flag& f) noexcept : flag(f), held(!f.test_and_set(std::memory_order_acquire)) {}
@@ -448,7 +591,7 @@ class DurableLibraryService {
       std::unique_ptr<CheckpointStoreProvider> provider, CatalogCheckpointLimits limits)
       : provider_(std::move(provider)), owner_(std::move(owner)), store_(*provider_), limits_(limits) {}
   static DurableServiceError error(DurableServiceErrorCode code, DurableServiceOperation op) noexcept {
-    return {code, op, {}, {}, {}, {}, {}, {}, {}, {}, {}};
+    return {code, op, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}};
   }
   static DurableOverrideResult failed(DurableServiceError e) noexcept { return {{}, nullptr, {}, e}; }
   DurableOverrideResult saveFailure(const StoreSaveResult& saved, DurableServiceOperation op) noexcept {
@@ -721,6 +864,8 @@ class DurableLibraryService {
   static_assert(std::is_nothrow_swappable_v<std::shared_ptr<const NativeStoreAdmission>>);
   static_assert(std::is_nothrow_swappable_v<decltype(admissionRoots_)>);
   static_assert(std::is_nothrow_move_constructible_v<DurableRootReattachmentResult>);
+  static_assert(std::is_nothrow_move_constructible_v<DurableCatalogMutationResult>);
+  static_assert(std::is_nothrow_move_constructible_v<DurableScanResult>);
   static_assert(std::is_nothrow_swappable_v<std::unique_ptr<SongDiscovery>>);
   static_assert(std::is_nothrow_swappable_v<decltype(baseline_)>);
   static_assert(std::is_nothrow_move_constructible_v<DurableRootRegistrationResult>);

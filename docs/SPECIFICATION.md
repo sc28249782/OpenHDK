@@ -483,8 +483,9 @@ implements complete-owner staging and fake-provider registration tests. A
 confirmed Saved with matching revision/token precedes owner publication. Failed
 registration returns no RootId, snapshot or success receipt and leaves counters
 and mappings unpublished. Uncertain/protocol outcomes require recovery. Experimental native registration/reattachment now extend this staging
-boundary using service-owned prospective guards. Durable scan/song lifecycle,
-fresh mutation receipts/acceptance and application wiring stay pending.
+boundary using service-owned prospective guards. Experimental scan/logical
+relocate/remove now share complete-owner publication. Fresh mutation
+receipts/acceptance and application wiring stay pending.
 
 ## Private prospective admission boundary
 
@@ -497,3 +498,16 @@ owned service RootId mapping. Experimental root registration/reattachment now
 select a scoped candidate fence; the old context remains retained until
 confirmed-save nonthrowing owner/admission/baseline transfers. Earlier native acceptances do not advance to this runtime
 revision without a fresh pinned affected run and scoped review.
+
+
+## Experimental durable scan and song lifecycle
+
+[OHK-DURABLE-ROOT-030 integration](DURABLE-ROOT-LIFECYCLE-PLAN.md#13-experimental-scan-and-logical-song-lifecycle-integration)
+now stages complete owners for `scan`, `relocateSong` and `removeSong` while
+sharing all original native guards. Every complete scan requires a new confirmed
+checkpoint revision. Relocation invalidates source state even for an equal key;
+removal preserves allocator history and never deletes source files. Discovery
+and service staging share one payload allowance; diagnostics/results are owned
+before commit. No fallible work is added between confirmed save and the
+nonthrowing owner swap. New mutation receipts, a pinned native run and scoped
+acceptance remain required. Windows/NCN/manual/application gates stay open.

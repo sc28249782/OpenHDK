@@ -603,4 +603,163 @@ int main() {
   OPENHDK_FAIL_IF(100, historicalPrepared.prepared->lyrics()->cues().size() != 1
       || preparedRootSnapshot->roots.size() != 1 || addedRoot.snapshot->roots.size() != 2);
 
+  // Complete scan / logical relocate / remove share the staged owner protocol.
+  const auto lifecycle = rootPath / "song-lifecycle";
+  std::filesystem::create_directory(lifecycle);
+  { std::ofstream out(lifecycle / "ready.kar", std::ios::binary);
+    out.write(reinterpret_cast<const char*>(midi.data()), static_cast<std::streamsize>(midi.size())); }
+  const auto freshOwner = [&] {
+    auto o = std::make_unique<SongDiscovery>(); auto registered = o->registerRoot(lifecycle);
+    if (!registered.root || !o->scan(*registered.root).succeeded()) std::abort();
+    return o;
+  };
+  Image lifecycleImage; auto lifecycleProvider = std::make_unique<Fake>(lifecycleImage); auto* lifecycleRaw = lifecycleProvider.get();
+  auto lifecycleStarted = Access::create(freshOwner(), std::move(lifecycleProvider));
+  auto& ls = *lifecycleStarted.service; const auto lid = ls.snapshot()->songs[0].id; const auto lroot = ls.snapshot()->songs[0].root;
+  auto history = ls.snapshot(); auto preparedHistory = Access::owner(ls).prepare(history,lid);
+  auto editHistory = ls.replaceUserOverrides(lid,{"Keep ไทย",{}});
+  const auto firstSequence = editHistory.receipt->token.sequence;
+  auto scanned = ls.scan(lroot);
+  OPENHDK_FAIL_IF(101, !scanned.succeeded() || scanned.candidates != 1 || !scanned.diagnostics.empty()
+      || scanned.snapshot->revision != editHistory.snapshot->revision + 1 || scanned.receipt->token.sequence != firstSequence + 1
+      || scanned.snapshot->songs[0].id != lid || scanned.snapshot->songs[0].state != CatalogState::Ready
+      || scanned.snapshot->songs[0].overrides != editHistory.snapshot->songs[0].overrides);
+  auto again = ls.scan(lroot);
+  OPENHDK_FAIL_IF(102, !again.succeeded() || again.snapshot->revision != scanned.snapshot->revision + 1
+      || again.receipt->token.sequence != scanned.receipt->token.sequence + 1);
+  auto relocated = ls.relocateSong(lid,lroot,"ready.kar");
+  OPENHDK_FAIL_IF(103, !relocated.succeeded() || relocated.snapshot->revision != again.snapshot->revision + 1
+      || relocated.snapshot->songs[0].state != CatalogState::Invalid || relocated.snapshot->songs[0].sourceRevision()
+      || relocated.snapshot->songs[0].metadata || relocated.snapshot->songs[0].overrides != editHistory.snapshot->songs[0].overrides);
+  auto moved = ls.relocateSong(lid,lroot,"logical.kar");
+  OPENHDK_FAIL_IF(104, !moved.succeeded() || moved.snapshot->songs[0].locator() != "logical.kar"
+      || !std::filesystem::exists(lifecycle/"ready.kar") || std::filesystem::exists(lifecycle/"logical.kar"));
+  const auto highWater = disk(lifecycleImage).nextSong;
+  auto removed = ls.removeSong(lid);
+  OPENHDK_FAIL_IF(105, !removed.succeeded() || !removed.snapshot->songs.empty() || disk(lifecycleImage).nextSong != highWater
+      || !std::filesystem::exists(lifecycle/"ready.kar"));
+  auto rediscovered = ls.scan(lroot);
+  OPENHDK_FAIL_IF(106, !rediscovered.succeeded() || rediscovered.snapshot->songs[0].id == lid
+      || rediscovered.snapshot->songs[0].overrides || disk(lifecycleImage).nextSong != highWater + 1
+      || !preparedHistory.succeeded() || preparedHistory.prepared->lyrics()->cues().size()!=1
+      || history->songs[0].state != CatalogState::Ready);
+  const auto live = ls.snapshot(); const auto liveWire = *lifecycleImage.primary;
+  auto absentSong = ls.removeSong(lid); auto invalidLocator = ls.relocateSong(live->songs[0].id,lroot,"../escape.kar");
+  OPENHDK_FAIL_IF(107, absentSong.succeeded() || absentSong.error->catalog != CatalogError::NotFound || absentSong.snapshot || absentSong.receipt
+      || invalidLocator.succeeded() || invalidLocator.error->catalog != CatalogError::InvalidLocator
+      || ls.snapshot()!=live || *lifecycleImage.primary!=liveWire);
+  DiscoveryLimits invalidLimits; invalidLimits.depth=0;
+  auto invalidScan = ls.scan(lroot,invalidLimits);
+  OPENHDK_FAIL_IF(108, invalidScan.succeeded() || invalidScan.error->discovery->code!=DiscoveryError::InvalidConfiguration
+      || invalidScan.snapshot || invalidScan.receipt || invalidScan.candidates || !invalidScan.diagnostics.empty());
+  DiscoveryControl stopDiscovery; stopDiscovery.cancelled=[] { return true; };
+  StoreControl stopStore; stopStore.cancelled=[] { return true; };
+  auto cancelScan = ls.scan(lroot,{},stopDiscovery); auto cancelRemove = ls.removeSong(live->songs[0].id,stopStore);
+  OPENHDK_FAIL_IF(109, cancelScan.succeeded() || cancelRemove.succeeded() || ls.snapshot()!=live
+      || *lifecycleImage.primary!=liveWire || ls.state()!=DurableServiceState::Ready);
+  bool afterExtraction=false; DiscoveryControl lateDiscovery;
+  lateDiscovery.checkpoint=[&](DiscoveryCheckpoint point){if(point==DiscoveryCheckpoint::AfterExtraction)afterExtraction=true;};
+  lateDiscovery.cancelled=[&]{return afterExtraction;};
+  OPENHDK_FAIL_IF(110, ls.scan(lroot,{},lateDiscovery).succeeded() || !afterExtraction || ls.snapshot()!=live || *lifecycleImage.primary!=liveWire);
+  // Staged invalid diagnostics become public only after confirmed storage.
+  { std::ofstream out(lifecycle/"broken.kar",std::ios::binary); out<<"bad"; }
+  auto invalidSource = ls.scan(lroot);
+  OPENHDK_FAIL_IF(111, !invalidSource.succeeded() || invalidSource.candidates!=2 || invalidSource.diagnostics.empty()
+      || std::none_of(invalidSource.snapshot->songs.begin(),invalidSource.snapshot->songs.end(),[](const auto& song){return song.state==CatalogState::Invalid;}));
+  std::filesystem::remove(lifecycle/"broken.kar");
+  const auto invoke=[](DurableLibraryService& service,unsigned operation,const StoreControl& control=StoreControl{}) {
+    const auto snap=service.snapshot();
+    if(operation==0) {auto r=service.scan(snap->roots[0].id,{}, {},control);return DurableCatalogMutationResult{std::move(r.snapshot),std::move(r.receipt),std::move(r.error)};}
+    if(operation==1)return service.relocateSong(snap->songs[0].id,snap->roots[0].id,"next.kar");
+    return service.removeSong(snap->songs[0].id);
+  };
+  for(unsigned operation=0;operation<3;++operation) {
+    for(auto phase:{StoreOperation::CreateCandidate,StoreOperation::WriteCandidate,StoreOperation::SyncCandidate,
+        StoreOperation::VerifyCandidate,StoreOperation::CreatePrior,StoreOperation::WritePrior,StoreOperation::SyncPrior,
+        StoreOperation::VerifyPrior}) {
+      Image target;auto provider=std::make_unique<Fake>(target);auto* raw=provider.get();
+      auto admitted=Access::create(freshOwner(),std::move(provider));const auto old=admitted.service->snapshot();const auto wire=*target.primary;
+      raw->fail=phase;auto rejected=invoke(*admitted.service,operation);
+      OPENHDK_FAIL_IF(112,rejected.succeeded() || rejected.snapshot || rejected.receipt || admitted.service->snapshot()!=old
+          || *target.primary!=wire || admitted.service->state()!=DurableServiceState::Ready);
+    }
+    Image target;auto provider=std::make_unique<Fake>(target);auto* raw=provider.get();
+    auto admitted=Access::create(freshOwner(),std::move(provider));auto old=admitted.service->snapshot();const auto wire=*target.primary;
+    raw->outcome=StorePublication::NotCommitted;auto rejected=invoke(*admitted.service,operation);
+    OPENHDK_FAIL_IF(113,rejected.succeeded() || rejected.snapshot || rejected.receipt || admitted.service->snapshot()!=old || *target.primary!=wire);
+    raw->outcome=StorePublication::Published;raw->fail=StoreOperation::SyncPublication;
+    auto uncertain=invoke(*admitted.service,operation);
+    OPENHDK_FAIL_IF(114,uncertain.succeeded() || uncertain.error->store->code!=StoreErrorCode::CommitUncertain
+        || admitted.service->snapshot()!=old || *target.primary==wire || admitted.service->state()!=DurableServiceState::RecoveryRequired);
+    admitted.service.reset();auto recovered=Access::open(std::make_unique<Fake>(target));
+    OPENHDK_FAIL_IF(115,!recovered.succeeded() || recovered.service->snapshot()->revision!=old->revision+1);
+    // Every throwing allocation is swept; failure cannot admit staged IDs/data.
+    Image sweep;auto sweepProvider=std::make_unique<Fake>(sweep);
+    auto ready=Access::create(freshOwner(),std::move(sweepProvider));auto before=ready.service->snapshot();const auto prior=*sweep.primary;
+    bool completed=false;unsigned failures=0;
+    for(std::ptrdiff_t n=0;n<1024;++n) {
+      // Scan filesystem traversal is not swept: this libstdc++ iterator
+      // terminates on injected allocation failure inside its native constructor.
+      // Start injection at coordinator staging, after discovery/capture.
+      StoreControl sweepControl;
+      if(operation==0)sweepControl.checkpoint=[&](StoreCheckpoint point){if(point==StoreCheckpoint::BeforeStaging)failAfter=n;};
+      else failAfter=n;
+      auto r=invoke(*ready.service,operation,sweepControl);failAfter=-1;
+      if(r.succeeded()){completed=true;break;}++failures;
+      OPENHDK_FAIL_IF(116,r.snapshot || r.receipt || ready.service->snapshot()!=before || *sweep.primary!=prior
+          || ready.service->state()!=DurableServiceState::Ready);
+    }
+    OPENHDK_FAIL_IF(117,!completed || failures==0);
+    Image noAlloc;auto noAllocProvider=std::make_unique<Fake>(noAlloc);auto* noAllocRaw=noAllocProvider.get();
+    auto confirmed=Access::create(freshOwner(),std::move(noAllocProvider));auto original=confirmed.service->snapshot();
+    Observe observation{confirmed.service.get(),original};noAllocRaw->observe=Observe::at;noAllocRaw->context=&observation;
+    noAllocRaw->banAllocations=true;auto result=invoke(*confirmed.service,operation);failAfter=-1;
+    OPENHDK_FAIL_IF(118,!result.succeeded() || !observation.publicationOld || !observation.syncOld
+        || confirmed.service->snapshot()!=result.snapshot);
+  }
+  // Bounded retained context is part of the discovery budget, not a new allowance.
+  const auto budgetProbe=[&](std::size_t caller,unsigned operation) {
+    Image target;auto bound=CatalogCheckpointLimits{};bound.stagedBytes=8192;
+    auto ready=Access::create(freshOwner(),std::make_unique<Fake>(target),bound);
+    if(!ready.succeeded())std::abort();
+    const auto before=ready.service->snapshot();const auto wire=*target.primary;
+    DurableCatalogMutationResult result;
+    if(operation==0){auto r=ready.service->scan(before->roots[0].id,{}, {},{},caller);result={std::move(r.snapshot),std::move(r.receipt),std::move(r.error)};}
+    else if(operation==1)result=ready.service->relocateSong(before->songs[0].id,before->roots[0].id,"next.kar",{},caller);
+    else result=ready.service->removeSong(before->songs[0].id,{},caller);
+    if(!result.succeeded() && (result.snapshot || result.receipt || ready.service->snapshot()!=before || *target.primary!=wire))std::abort();
+    return result.succeeded();
+  };
+  for(unsigned operation=0;operation<3;++operation){
+    OPENHDK_FAIL_IF(119,!budgetProbe(0,operation) || budgetProbe(8192,operation));
+    std::size_t lo=0,hi=8192;while(lo+1<hi){auto mid=lo+(hi-lo)/2;if(budgetProbe(mid,operation))lo=mid;else hi=mid;}
+    OPENHDK_FAIL_IF(120,!budgetProbe(lo,operation) || budgetProbe(lo+1,operation));
+  }
+  lifecycleRaw->cleanupWarning=true;auto scanWarning=ls.scan(lroot);
+  OPENHDK_FAIL_IF(121,!scanWarning.succeeded() || !scanWarning.receipt->cleanupWarning);
+
+  lifecycleRaw->cleanupWarning=false; lifecycleRaw->slots={};
+  bool reentered=false; DiscoveryControl reentryDiscovery;
+  reentryDiscovery.checkpoint=[&](DiscoveryCheckpoint point){if(point==DiscoveryCheckpoint::AfterEnumeration){
+    auto nested=ls.removeSong(ls.snapshot()->songs[0].id);reentered=nested.error && nested.error->code==DurableServiceErrorCode::Busy;}};
+  auto reentryScan=ls.scan(lroot,{},reentryDiscovery);
+  OPENHDK_FAIL_IF(122,!reentryScan.succeeded() || !reentered);
+  const auto stableScan=ls.snapshot();const auto stableScanWire=*lifecycleImage.primary;
+  DiscoveryControl sourceChange;
+  sourceChange.checkpoint=[&](DiscoveryCheckpoint point){if(point==DiscoveryCheckpoint::BeforePublication){
+    std::ofstream out(lifecycle/"added.kar",std::ios::binary);out.write(reinterpret_cast<const char*>(midi.data()),static_cast<std::streamsize>(midi.size()));}};
+  auto inconsistentScan=ls.scan(lroot,{},sourceChange);
+  OPENHDK_FAIL_IF(123,inconsistentScan.succeeded() || inconsistentScan.error->discovery->code!=DiscoveryError::SourceChanged
+      || inconsistentScan.candidates || !inconsistentScan.diagnostics.empty() || ls.snapshot()!=stableScan || *lifecycleImage.primary!=stableScanWire
+      || ls.state()!=DurableServiceState::Ready);
+  std::filesystem::remove(lifecycle/"added.kar");
+  Image exhaustedSongs;auto exhaustedProjection=projection();exhaustedProjection.catalogRevision=UINT64_MAX;
+  auto exhaustedService=Access::create(owner(exhaustedProjection),std::make_unique<Fake>(exhaustedSongs));
+  const auto exhaustedOld=exhaustedService.service->snapshot();const auto exhaustedWire=*exhaustedSongs.primary;
+  auto exhaustedRemove=exhaustedService.service->removeSong(exhaustedOld->songs[0].id);
+  auto exhaustedRelocate=exhaustedService.service->relocateSong(exhaustedOld->songs[0].id,exhaustedOld->roots[0].id,"song.kar");
+  OPENHDK_FAIL_IF(124,exhaustedRemove.succeeded() || exhaustedRelocate.succeeded()
+      || exhaustedRemove.error->catalog!=CatalogError::IdExhausted || exhaustedRelocate.error->catalog!=CatalogError::IdExhausted
+      || exhaustedService.service->snapshot()!=exhaustedOld || *exhaustedSongs.primary!=exhaustedWire);
+
 }

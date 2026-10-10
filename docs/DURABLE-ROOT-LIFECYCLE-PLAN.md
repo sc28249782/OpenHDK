@@ -4,7 +4,7 @@
 **Status:** Accepted by review and merge of PR #77; private complete-owner staging
 and fake-provider durable registration implemented. Private prospective shared
 guards and experimental operation-aware register/reattach integration implemented;
-fresh affected mutation evidence and scan/song lifecycle remain pending.
+experimental scan/song lifecycle implemented; fresh affected mutation evidence remains pending.
 **Target:** OHK-DURABLE-030 slice 3, after scoped native factory/fence acceptance.
 
 ## 1. Purpose and current boundary
@@ -346,6 +346,58 @@ bounded mutation receipt matrix. Local overlay bypass is regression coverage;
 namespace alias evidence remains Skipped. Fresh affected receipts, pinned WSL2
 ext4 execution and explicit scoped mutation acceptance remain required. Both
 `6a6337d` and `4f69246` historical decisions and all evidence bundles are unchanged.
-Next: durable scan/song relocation/removal, affected receipts/acceptance, then
-app/CLI wiring. Windows checkpoint acknowledgment remains BLOCKED; NCN and manual
+Next: affected scan/song and root mutation receipts/acceptance, then app/CLI wiring. Windows checkpoint acknowledgment remains BLOCKED; NCN and manual
 validation stay separate. Counts remain 28 core / 31 audio-enabled.
+
+
+## 13. Experimental scan and logical song lifecycle integration
+
+`DurableLibraryService::scan`, `relocateSong` and `removeSong` now stage a complete
+same-lineage owner. They reuse the existing discovery/catalog validation rather
+than introducing another parser, extractor or identity algorithm. All attached
+roots retain their original shared guards. The service verifies unchanged root
+mappings, policies, attachment generations and nextRoot before capture. A scoped
+candidate context invokes the same final admission fence before checkpoint
+publication. Confirmed Saved, revision equality and a token precede nonthrowing
+owner/baseline/admission/expectation installation.
+
+Every successful complete scan increments the revision and checkpoint sequence,
+even when persistent identity rows are identical. Root policy controls extraction;
+source metadata and Ready/source tokens remain volatile. Diagnostics and candidate
+counts are returned only after confirmed commit; failures return no staged
+snapshot or receipt. Discovery and store cancellation both apply before commit.
+Scan limits are reduced by retained service context so discovery does not receive
+a second payload allowance. Returned diagnostic locators remain charged through
+capture/save. Old-only metadata and overrides remain charged while historical
+snapshots coexist with the candidate.
+
+Relocation is logical only: it retains SongId/overrides and invalidates source
+tokens/metadata, including an equal root/locator request. Removal deletes only the
+catalog row; it never deletes the source or lowers allocator high-water. A later
+scan rediscovers existing bytes with a new SongId and no removed overrides.
+Catalog errors are nested in the service error. Neither operation refreshes root
+guards or attaches saved hints.
+
+The fake suite has 124 numbered checks and the native service suite has 78.
+New coverage includes revision-only scans, diagnostics, logical source preservation,
+remove/rediscovery, historical PreparedSong ownership, cancellation, prepublication
+faults, uncertainty/fresh recovery, relocate/remove allocation sweeps and scan save-stage sweeps, shared budget
+boundaries, old memory during publish/sync and allocation bans after publication.
+Native tests cover late original-root drift for all three operations, owned RootId
+mapping, primary/memory retention, pending-context cleanup and FD rollback. These
+are regression assertions, not a completed bounded native mutation receipt matrix.
+Local overlay eligibility bypass does not provide native ext4 acceptance.
+
+Next: bounded receipts for all affected root/song mutation paths, a fresh pinned
+WSL2 ext4 run and explicit scoped acceptance, then application/CLI wiring.
+Historical `6a6337d` and `4f69246` decisions and all supplied evidence bundles stay
+unchanged. Windows checkpoint acknowledgment is BLOCKED; namespace alias evidence
+remains Skipped, and NCN/manual validation remain separate. Suite counts remain
+28 core / 31 audio-enabled; the storage release checkbox stays open.
+
+Scan allocation injection starts at the existing coordinator BeforeStaging
+checkpoint, after filesystem discovery and capture. It does not sweep standard
+library traversal allocations: the local libstdc++ recursive directory iterator
+terminates on an injected allocation failure inside its constructor. Relocate
+and remove are swept from operation entry. These tests do not claim a total
+process-memory bound or comprehensive system-library allocation coverage.

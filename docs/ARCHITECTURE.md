@@ -321,3 +321,16 @@ experimental registration/reattachment only after confirmed storage save.
 The candidate fence uses original unchanged guards and the retained target.
 A designated missing old target may retire; unrelated guards never refresh
 from path text. No audio callback work is added.
+
+
+## Experimental durable scan and song lifecycle
+
+[OHK-DURABLE-ROOT-030 integration](DURABLE-ROOT-LIFECYCLE-PLAN.md#13-experimental-scan-and-logical-song-lifecycle-integration)
+now stages complete owners for `scan`, `relocateSong` and `removeSong` while
+sharing all original native guards. Every complete scan requires a new confirmed
+checkpoint revision. Relocation invalidates source state even for an equal key;
+removal preserves allocator history and never deletes source files. Discovery
+and service staging share one payload allowance; diagnostics/results are owned
+before commit. No fallible work is added between confirmed save and the
+nonthrowing owner swap. New mutation receipts, a pinned native run and scoped
+acceptance remain required. Windows/NCN/manual/application gates stay open.
