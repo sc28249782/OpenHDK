@@ -13,6 +13,8 @@
 #include <unistd.h>
 #endif
 namespace OpenHDK {
+class NativeStoreBinding;
+class NativeStoreAdmission;
 struct LinuxCheckpointLeaseLimits {
   std::size_t pathBytes=4096,components=32,nameBytes=128;
 };
@@ -34,7 +36,7 @@ class LinuxCheckpointLease {
   // Retained logical string bytes; a future provider must charge these together
   // with caller-owned payload. This does not count native handles/map overhead.
   std::size_t ownedBytes() const noexcept {
-    auto bytes=path_.size()+name_.size()+lockName_.size();
+    auto bytes=path_.size()+name_.size()+lockName_.size()+bindingBytes_;
 #ifdef __linux__
     if(key_)bytes+=key_->name.size();
     if(reserved_)bytes+=key_->name.size(); // The registry owns another key copy.
@@ -57,6 +59,8 @@ class LinuxCheckpointLease {
 #endif
   }
   void release() noexcept {
+    // Invalidate exported authority before closing the native writer lease.
+    binding_.reset();bindingEpoch_.reset();bindingBytes_=0;
 #ifdef __linux__
     // Never unlink the stable lock. Close only this lease's descriptors.
     lock_.reset();directory_.reset();
@@ -72,6 +76,8 @@ class LinuxCheckpointLease {
   }
  private:
   friend class LinuxCheckpointProvider;
+  friend class NativeStoreBinding;
+  friend class NativeStoreAdmission;
 #ifdef OPENHDK_ENABLE_TEST_SEAMS
   friend struct LinuxCheckpointLeaseTestAccess;
 #endif
@@ -207,6 +213,9 @@ class LinuxCheckpointLease {
   }
   std::string path_,name_,lockName_;
   bool held_=false;
+  std::shared_ptr<const unsigned char> bindingEpoch_;
+  std::shared_ptr<const NativeStoreBinding> binding_;
+  std::size_t bindingBytes_=0;
 };
 #ifdef OPENHDK_ENABLE_TEST_SEAMS
 struct LinuxCheckpointLeaseTestAccess {

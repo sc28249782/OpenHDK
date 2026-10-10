@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
-#include "library/LinuxCheckpointLease.hpp"
+#include "library/NativeStoreBinding.hpp"
 #ifdef __linux__
 #include <sys/syscall.h>
 #endif
@@ -195,6 +195,7 @@ class LinuxCheckpointProvider final : public CheckpointStoreProvider {
 #endif
   }
  private:
+  friend class NativeStoreAdmission;
 #ifdef OPENHDK_ENABLE_TEST_SEAMS
   friend struct LinuxCheckpointProviderTestAccess;
   bool tracing_=false,traceOverflow_=false;

@@ -220,8 +220,8 @@ file I/O, allocation, parsing, or UI work.
 - External MIDI input and mixer-sidecar mode.
 - Cross-platform work after Windows behaviour is stable.
 
-Native durable service slice 2 has a proposed
-[binding/admission plan](NATIVE-SERVICE-BINDING-PLAN.md): lease-epoch capability,
-bounded same-mount root ancestry and a final prepublication fence. Review the
-plan before implementing its native factory, then collect fresh pinned evidence.
+Native durable service slice 2 now implements the accepted
+[binding/admission primitives](NATIVE-SERVICE-BINDING-PLAN.md): lease-epoch
+capability and bounded same-mount root ancestry. The final prepublication fence
+and native factory remain pending, followed by fresh pinned integration evidence.
 The accepted detached Linux revision and Windows BLOCKED gate remain unchanged.
