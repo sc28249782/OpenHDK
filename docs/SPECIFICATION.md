@@ -439,3 +439,14 @@ The [experimental factory boundary](NATIVE-SERVICE-BINDING-PLAN.md#11-experiment
 records explicit Create/Open, private final and NoChange admission checks, and
 shared binding/guard accounting. Future durable root lifecycle and application
 wiring remain separate slices; new native receipts/run/acceptance remain pending.
+
+## Native admission receipt instrumentation
+
+The binding and experimental native service targets now emit bounded per-case
+[admission receipts](NATIVE-ADMISSION-EVIDENCE.md) for lease epochs, identity/mount checks,
+ancestor termination and the final changed/NoChange fence. The existing collector
+verifies both logs with Python 3 and records its verification exit code. Current
+counts remain 28 core / 31 audio-enabled; binding checks are 74 and native service
+checks are 33. A fresh pinned ext4 run and explicit scoped native factory acceptance
+remain pending. Historical evidence and the `6a6337d` provider acceptance are
+unchanged. Windows checkpoint acknowledgment remains blocked.

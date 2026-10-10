@@ -10,7 +10,7 @@ expected="$1"
 parent="$(realpath -e -- "$2")"
 source_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P)"
 [[ "$expected" =~ ^[0-9a-f]{40}$ ]] || exit 64
-for required in git g++ findmnt timeout sha256sum mktemp uname; do
+for required in git g++ python3 findmnt timeout sha256sum mktemp uname; do
   command -v "$required" >/dev/null || { printf 'Missing program: %s\n' "$required" >&2; exit 69; }
 done
 [[ "$(git -C "$source_root" rev-parse HEAD)" == "$expected" ]] || { printf 'Revision mismatch\n' >&2; exit 65; }
@@ -79,6 +79,7 @@ for src in "$source_root"/tests/*_tests.cpp; do
   run_receipt run "$suite" "$out/$suite.run.log" 120s "$out/bin/$suite"
   count=$((count+1))
 done
+run_receipt verify native-admission "$out/native-admission-verification.log" 120s python3 "$source_root/tests/verify-native-admission-receipts.py" "$out/native_store_binding_tests.run.log" "$out/native_durable_service_tests.run.log"
 {
   printf 'REVISION %s\n' "$(git -C "$source_root" rev-parse HEAD)"
   git -C "$source_root" status --porcelain --untracked-files=all

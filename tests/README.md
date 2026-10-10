@@ -417,3 +417,14 @@ path use production ext4 eligibility, including allocation sweeps.
 
 Current counts are 28 core / 31 audio-enabled; per-case admission receipts and
 fresh native acceptance remain pending. Existing bundles are unchanged.
+
+## Native admission receipt instrumentation
+
+The binding and experimental native service targets now emit bounded per-case
+[admission receipts](../docs/NATIVE-ADMISSION-EVIDENCE.md) for lease epochs, identity/mount checks,
+ancestor termination and the final changed/NoChange fence. The existing collector
+verifies both logs with Python 3 and records its verification exit code. Current
+counts remain 28 core / 31 audio-enabled; binding checks are 74 and native service
+checks are 33. A fresh pinned ext4 run and explicit scoped native factory acceptance
+remain pending. Historical evidence and the `6a6337d` provider acceptance are
+unchanged. Windows checkpoint acknowledgment remains blocked.

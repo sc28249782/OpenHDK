@@ -145,6 +145,7 @@ class DurableLibraryService {
 #ifdef OPENHDK_ENABLE_TEST_SEAMS
   friend struct DurableLibraryServiceTestAccess;
   bool corruptAcknowledgment_ = false;
+  std::uint64_t admissionChecks_=0;
   bool forcedAdmissionFailure_ = false;
 #endif
   struct Guard {
@@ -348,6 +349,7 @@ class DurableLibraryService {
   static std::optional<StoreProviderError> admissionCheck(void* context) noexcept {
     auto& s=*static_cast<DurableLibraryService*>(context);
 #ifdef OPENHDK_ENABLE_TEST_SEAMS
+    ++s.admissionChecks_;
     if(s.forcedAdmissionFailure_) {
       s.lastAdmissionError_=NativeBindingError{NativeBindingErrorCode::SourceChanged,NativeBindingOperation::Recheck,{},{}};
       return StoreProviderError{StoreErrorCode::SourceChanged,0};
@@ -422,6 +424,7 @@ class DurableLibraryService {
 };
 #ifdef OPENHDK_ENABLE_TEST_SEAMS
 struct DurableLibraryServiceTestAccess {
+  static std::uint64_t admissionChecks(const DurableLibraryService& s) noexcept {return s.admissionChecks_;}
   static DurableServiceOpenResult createNative(std::unique_ptr<SongDiscovery> owner,std::string parent,std::string primary,
       CatalogCheckpointLimits limits={},NativeStoreAdmissionLimits admission={},std::size_t caller=0) {
     return DurableLibraryService::nativeFactory(std::move(owner),std::move(parent),std::move(primary),true,limits,admission,caller,true);
