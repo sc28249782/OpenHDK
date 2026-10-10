@@ -369,10 +369,9 @@ NCN evidence and manual validation remain open. No storage release checkbox chan
 ## Private staging follow-up boundary
 
 [OHK-DURABLE-ROOT-030 slice 3.1](DURABLE-ROOT-LIFECYCLE-PLAN.md#10-current-slice-31-boundary)
-now implements complete-owner staging and fake-provider registration. Native
-services explicitly reject that private test entry point before admission or
-filesystem work. Prospective shared guards and the operation-aware fence remain
-the next integration slice. Historical receipts and `4f69246` scoped acceptance
+now implements complete-owner staging and fake-provider registration. Experimental native services now use shared prospective guards and a scoped
+operation-aware fence for registration/reattachment. Fresh affected evidence
+remains pending. Historical receipts and `4f69246` scoped acceptance
 are unchanged; no native root mutation acceptance follows from these fake tests.
 
 ## Prospective shared guard preparation
@@ -382,6 +381,7 @@ shared root guard objects. Private Stage validates prior-index correspondence,
 rechecks unchanged guards against original identities, and admits at most one
 new target under the same lease epoch. One explicitly retired old target may be
 missing; same-path replacement is rejected. Candidate rechecks preserve bounded
-ancestry/mount/containment rules. The service has not installed a prospective
-fence or enabled native mutations. [Details and tests](DURABLE-ROOT-LIFECYCLE-PLAN.md#11-current-prospective-guard-primitive)
+ancestry/mount/containment rules. The service now installs a prospective
+fence for experimental registration/targeted reattachment, while retaining
+the old admission until commit/rollback. [Details and tests](DURABLE-ROOT-LIFECYCLE-PLAN.md#11-current-prospective-guard-primitive)
 keep historical receipts and both accepted tested revisions unchanged.

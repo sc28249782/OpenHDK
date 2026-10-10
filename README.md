@@ -229,10 +229,9 @@ NCN evidence and manual validation remain open. No storage release checkbox chan
 
 [OHK-DURABLE-ROOT-030](docs/DURABLE-ROOT-LIFECYCLE-PLAN.md#10-current-slice-31-boundary)
 is accepted. Complete-owner staging and fake-provider registration now preserve
-lineage, mappings and allocator history until confirmed storage commit. Only the
-test seam can call registration; native services reject it before filesystem
-work. Prospective native guards/fencing and remaining lifecycle operations are
-pending. Counts stay 28 core / 31 audio-enabled; prior native acceptances do not
+lineage, mappings and allocator history until confirmed storage commit. Experimental service `registerRoot` and `reattachRoot` now use prospective
+guards and an operation-aware fence. Durable scan/song lifecycle and fresh
+mutation receipts/run/acceptance remain pending. Counts stay 28 core / 31 audio-enabled; prior native acceptances do not
 extend to this slice.
 
 ## Prospective root guard primitive
@@ -241,6 +240,7 @@ extend to this slice.
 now has private immutable shared guards and prospective admission. Unchanged
 roots retain their original handles/identities; one designated changed root may
 be retired while the old context stays retained for rollback. Peak old-plus-new
-descriptors share the existing limit. This primitive has no service fence or
-native mutation entry point. Fresh affected native evidence/acceptance is still
+descriptors share the existing limit. The service now associates guards with owned RootIds/generations and fences
+experimental root registration/targeted reattachment. See the
+[current integration](docs/DURABLE-ROOT-LIFECYCLE-PLAN.md#12-experimental-root-service-integration). Fresh affected native evidence/acceptance is still
 required; previous tested revisions remain pinned.
