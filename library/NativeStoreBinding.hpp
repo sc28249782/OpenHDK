@@ -17,6 +17,16 @@ struct NativeBindingError {
   std::optional<std::size_t> rootIndex;
   std::optional<StoreProviderError> providerError;
 };
+#ifdef OPENHDK_ENABLE_TEST_SEAMS
+enum class NativeAdmissionCall { Observe, Authority, Ancestor, Terminate, Export, Failure };
+struct NativeAdmissionReceipt {
+  NativeAdmissionCall call;NativeBindingOperation operation;
+  std::uint64_t device=0,inode=0,mount=0;
+  std::size_t index=SIZE_MAX;int nativeError=0;
+  bool ownerMatch=false,held=false,epochMatch=false,injected=false;
+  int errorCode=-1;
+};
+#endif
 // Descriptive ownership only. No public construction, raw handle, serialization,
 // writer lock authority or unlink. A retained value cannot revive a released epoch.
 class NativeStoreBinding {
@@ -74,9 +84,24 @@ class NativeStoreAdmission {
 #ifdef OPENHDK_ENABLE_TEST_SEAMS
   inline static bool missingMount_=false,differentRootMount_=false,skipLexical_=false;
   inline static void (*afterRoots_)() noexcept=nullptr;
+  inline static bool tracing_=false,overflow_=false;
+  inline static std::size_t traceCount_=0;
+  inline static std::array<NativeAdmissionReceipt,256> trace_{};
+  static void record(NativeAdmissionReceipt r) noexcept {
+    if(!tracing_)return;
+    if(traceCount_==trace_.size()){overflow_=true;return;}
+    trace_[traceCount_++]=r;
+  }
 #endif
   static NativeBindingError error(NativeBindingErrorCode c,NativeBindingOperation o,
-      std::optional<std::size_t> i={},std::optional<StoreProviderError> e={}) noexcept {return {c,o,i,e};}
+      std::optional<std::size_t> i={},std::optional<StoreProviderError> e={}) noexcept {
+#ifdef OPENHDK_ENABLE_TEST_SEAMS
+    NativeAdmissionReceipt r{NativeAdmissionCall::Failure,o};r.index=i.value_or(SIZE_MAX);
+    r.nativeError=e?e->nativeError:0;r.errorCode=static_cast<int>(c);
+    r.injected=(c==NativeBindingErrorCode::UnsupportedStorage && (missingMount_ || differentRootMount_));record(r);
+#endif
+    return {c,o,i,e};
+  }
   static bool valid(NativeStoreAdmissionLimits l) noexcept {
     return l.activeRoots>0 && l.activeRoots<=32 && l.pathBytes>0 && l.pathBytes<=4096 &&
       l.components>0 && l.components<=32 && l.parentSteps>0 && l.parentSteps<=32 &&
@@ -109,6 +134,10 @@ class NativeStoreAdmission {
     if(root && differentRootMount_)sx.stx_mnt_id^=1U;
 #endif
     if(!(sx.stx_mask&STATX_MNT_ID))return {{},0,error(NativeBindingErrorCode::UnsupportedStorage,op,root)};
+#ifdef OPENHDK_ENABLE_TEST_SEAMS
+    record({NativeAdmissionCall::Observe,op,static_cast<std::uint64_t>(s.st_dev),static_cast<std::uint64_t>(s.st_ino),sx.stx_mnt_id,
+        root.value_or(SIZE_MAX),0,false,false,false,root.has_value() && differentRootMount_});
+#endif
     return {LinuxCheckpointLease::identity(s),sx.stx_mnt_id,{}};
 #else
     return {{},0,error(NativeBindingErrorCode::UnsupportedStorage,op,root)};
@@ -122,6 +151,9 @@ class NativeStoreAdmission {
     int current=binding_->directory_.value;Fd owned;
     for(std::size_t step=0;;++step) {
       const auto child=observe(current,op);if(child.error)return child.error;
+#ifdef OPENHDK_ENABLE_TEST_SEAMS
+      record({NativeAdmissionCall::Ancestor,op,child.identity.device,child.identity.inode,child.mount,step,0,false,false,false,skipLexical_});
+#endif
       for(std::size_t i=0;i<count_;++i)
         if(child.identity==roots_[i].identity && child.mount==roots_[i].mount)
           return error(NativeBindingErrorCode::RootOverlap,op,i);
@@ -129,13 +161,24 @@ class NativeStoreAdmission {
       Fd parent(::openat(current,"..",O_RDONLY|O_DIRECTORY|O_NOFOLLOW|O_CLOEXEC));
       if(parent.value<0)return error(NativeBindingErrorCode::SourceChanged,op,{},StoreProviderError{StoreErrorCode::SourceChanged,errno});
       const auto next=observe(parent.value,op);if(next.error)return next.error;
-      if(next.mount!=child.mount || next.identity==child.identity)return {};
+      if(next.mount!=child.mount || next.identity==child.identity) {
+#ifdef OPENHDK_ENABLE_TEST_SEAMS
+        // index 0 = mount boundary; 1 = self-parent.
+        record({NativeAdmissionCall::Terminate,op,next.identity.device,next.identity.inode,next.mount,
+            next.mount!=child.mount?0U:1U});
+#endif
+        return {};
+      }
       owned=std::move(parent);current=owned.value;
     }
   }
 #endif
   static std::optional<NativeBindingError> authority(const LinuxCheckpointLease& lease,
       const std::shared_ptr<const NativeStoreBinding>& b,NativeBindingOperation op) noexcept {
+#ifdef OPENHDK_ENABLE_TEST_SEAMS
+    record({NativeAdmissionCall::Authority,op,0,0,0,SIZE_MAX,0,b && b->owner_==&lease,
+        lease.held_,b && b->epoch_==lease.bindingEpoch_});
+#endif
     if(!b)return error(NativeBindingErrorCode::Unbound,op);
     if(b->owner_!=&lease)return error(NativeBindingErrorCode::ForeignBinding,op);
     if(!lease.held_ || b->epoch_!=lease.bindingEpoch_)return error(NativeBindingErrorCode::StaleBinding,op);
@@ -164,6 +207,9 @@ class NativeStoreAdmission {
     if(auto e=lease.check())return {{},error(NativeBindingErrorCode::SourceChanged,op,{},e)};
     if(lease.binding_) {
       if(auto e=authority(lease,lease.binding_,op))return {{},e};
+#ifdef OPENHDK_ENABLE_TEST_SEAMS
+      record({NativeAdmissionCall::Export,op,lease.binding_->identity_.device,lease.binding_->identity_.inode,lease.binding_->mount_,1});
+#endif
       return {lease.binding_,{}};
     }
     const auto observed=observe(lease.directory_.value,op);if(observed.error)return {{},observed.error};
@@ -178,6 +224,9 @@ class NativeStoreAdmission {
       const auto final=observe(lease.directory_.value,op);if(final.error)return {{},final.error};
       if(final.identity!=b->identity_ || final.mount!=b->mount_)return {{},error(NativeBindingErrorCode::SourceChanged,op)};
       lease.bindingEpoch_=b->epoch_;lease.binding_=b;lease.bindingBytes_=b->retainedBytes();
+#ifdef OPENHDK_ENABLE_TEST_SEAMS
+      record({NativeAdmissionCall::Export,op,b->identity_.device,b->identity_.inode,b->mount_,0});
+#endif
       return {std::move(b),{}};
     } catch(const std::bad_alloc&) {return {{},error(NativeBindingErrorCode::StorageFailure,op)};}
 #else
@@ -248,6 +297,9 @@ class NativeStoreAdmission {
 };
 #ifdef OPENHDK_ENABLE_TEST_SEAMS
 struct NativeStoreBindingTestAccess {
+  static void receipts(bool enabled=true) noexcept {NativeStoreAdmission::tracing_=enabled;NativeStoreAdmission::traceCount_=0;NativeStoreAdmission::overflow_=false;}
+  static std::span<const NativeAdmissionReceipt> records() noexcept {return {NativeStoreAdmission::trace_.data(),NativeStoreAdmission::traceCount_};}
+  static bool overflow() noexcept {return NativeStoreAdmission::overflow_;}
   static void missingMount(bool v) noexcept {NativeStoreAdmission::missingMount_=v;}
   static void differentRootMount(bool v) noexcept {NativeStoreAdmission::differentRootMount_=v;}
   static void skipLexical(bool v) noexcept {NativeStoreAdmission::skipLexical_=v;}

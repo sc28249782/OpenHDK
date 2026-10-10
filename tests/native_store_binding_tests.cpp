@@ -2,6 +2,7 @@
 #include "library/NativeStoreBinding.hpp"
 #include "library/LinuxCheckpointProvider.hpp"
 #include "tests/TestCheck.hpp"
+#include "tests/NativeAdmissionReceipts.hpp"
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -70,18 +71,23 @@ int main() {
   const auto initialFds=fdCount();LinuxCheckpointLease l;
   OPENHDK_FAIL_IF(1,Access::binding(l).binding || !code(Access::binding(l).error,NativeBindingErrorCode::Unbound));
   OPENHDK_FAIL_IF(2,acquire(l,store));
-  const auto heldFds=fdCount(),leaseBytes=l.ownedBytes();auto result=Access::binding(l);
+  const auto heldFds=fdCount(),leaseBytes=l.ownedBytes();AdmissionEvidence::begin();auto result=Access::binding(l);
   OPENHDK_FAIL_IF(3,result.error || !result.binding || fdCount()!=heldFds+1);
   auto b=result.binding;result.binding.reset();
   OPENHDK_FAIL_IF(4,b->parentMapping()!=store.string() || b->primaryName()!="catalog.ohkcat" || l.ownedBytes()!=leaseBytes+b->retainedBytes());
   OPENHDK_FAIL_IF(5,(::fcntl(Access::descriptor(*b),F_GETFD)&FD_CLOEXEC)==0);
   auto same=Access::binding(l);OPENHDK_FAIL_IF(6,same.binding!=b || same.error || fdCount()!=heldFds+1);same.binding.reset();
-  auto a=admit(l,b,songs);OPENHDK_FAIL_IF(7,a.error || !a.admission || Access::recheck(*a.admission,l));
+  OPENHDK_FAIL_IF(67,!AdmissionEvidence::trace("fresh-and-cached-export"));
+  std::cout<<"BINDING_CASE case=export mapping_match="<<(b->parentMapping()==store.string())<<" primary_match="<<(b->primaryName()=="catalog.ohkcat")<<" cloexec=1 cache_same=1 duplicate_fds=1\n";
+  AdmissionEvidence::begin();auto a=admit(l,b,songs);OPENHDK_FAIL_IF(7,a.error || !a.admission || Access::recheck(*a.admission,l));
   OPENHDK_FAIL_IF(8,a.admission->retainedBytes()!=b->retainedBytes()+songs.string().size());
-  auto equal=admit(l,b,store);OPENHDK_FAIL_IF(9,equal.admission || !code(equal.error,NativeBindingErrorCode::RootOverlap));
+  OPENHDK_FAIL_IF(68,!AdmissionEvidence::trace("sibling-admission"));
+  AdmissionEvidence::begin();auto equal=admit(l,b,store);OPENHDK_FAIL_IF(9,equal.admission || !code(equal.error,NativeBindingErrorCode::RootOverlap));
   auto parent=admit(l,b,temp.path);OPENHDK_FAIL_IF(10,parent.admission || !code(parent.error,NativeBindingErrorCode::RootOverlap));
   Access::skipLexical(true);auto ancestors=admit(l,b,temp.path);Access::skipLexical(false);
   OPENHDK_FAIL_IF(11,ancestors.admission || !code(ancestors.error,NativeBindingErrorCode::RootOverlap));
+  OPENHDK_FAIL_IF(69,!AdmissionEvidence::trace("equal-parent-ancestry-overlap"));
+  std::cout<<"BINDING_CASE case=overlap lexical_equal=RootOverlap lexical_parent=RootOverlap handle_parent=RootOverlap lexical_bypass=1\n";
   fs::create_directory(store/"song-child");auto child=admit(l,b,store/"song-child");OPENHDK_FAIL_IF(12,child.error || !child.admission);child.admission.reset();
   fs::create_directory(temp.path/"store2");auto neighbor=admit(l,b,temp.path/"store2");OPENHDK_FAIL_IF(13,neighbor.error);neighbor.admission.reset();
   auto absent=admit(l,b,temp.path/"missing");OPENHDK_FAIL_IF(14,absent.admission || !code(absent.error,NativeBindingErrorCode::SourceChanged));
@@ -89,7 +95,7 @@ int main() {
   fs::create_directory(songs/"nested");auto ancestorLink=admit(l,b,temp.path/"root-link"/"nested");OPENHDK_FAIL_IF(16,!code(ancestorLink.error,NativeBindingErrorCode::SourceChanged));
   auto noRoots=Access::admit(l,b,{});OPENHDK_FAIL_IF(17,noRoots.error || !noRoots.admission);noRoots.admission.reset();
   LinuxCheckpointLease foreign;OPENHDK_FAIL_IF(18,acquire(foreign,songs));
-  auto foreignUse=Access::admit(foreign,b,{});OPENHDK_FAIL_IF(19,foreignUse.admission || !code(foreignUse.error,NativeBindingErrorCode::ForeignBinding));foreign.release();
+  AdmissionEvidence::begin();auto foreignUse=Access::admit(foreign,b,{});OPENHDK_FAIL_IF(19,foreignUse.admission || !code(foreignUse.error,NativeBindingErrorCode::ForeignBinding));foreign.release();OPENHDK_FAIL_IF(70,!AdmissionEvidence::trace("foreign-owner"));
   NativeStoreAdmissionLimits limits;limits.stagedBytes=b->retainedBytes();auto exact=Access::binding(l,limits);
   OPENHDK_FAIL_IF(20,exact.error || exact.binding!=b);exact.binding.reset();--limits.stagedBytes;
   OPENHDK_FAIL_IF(21,!code(Access::binding(l,limits).error,NativeBindingErrorCode::LimitExceeded));
@@ -106,18 +112,24 @@ int main() {
     {32,4096,32,32,0,100},{32,4096,32,32,46,100},{32,4096,32,32,45,0},{32,4096,32,32,45,64U*1024U*1024U+1}}};
   for(const auto limit:invalid)OPENHDK_FAIL_IF(28,!code(Access::binding(l,limit).error,NativeBindingErrorCode::InvalidConfiguration));
   limits={};limits.pathBytes=store.string().size()-1;OPENHDK_FAIL_IF(29,!code(Access::binding(l,limits).error,NativeBindingErrorCode::LimitExceeded));
-  Access::missingMount(true);auto missing=admit(l,b,songs);Access::missingMount(false);OPENHDK_FAIL_IF(30,missing.admission || !code(missing.error,NativeBindingErrorCode::UnsupportedStorage));
+  AdmissionEvidence::begin();Access::missingMount(true);auto missing=admit(l,b,songs);Access::missingMount(false);OPENHDK_FAIL_IF(30,missing.admission || !code(missing.error,NativeBindingErrorCode::UnsupportedStorage));
   Access::differentRootMount(true);auto different=admit(l,b,songs);Access::differentRootMount(false);OPENHDK_FAIL_IF(31,different.admission || !code(different.error,NativeBindingErrorCode::UnsupportedStorage));
   auto proc=admit(l,b,"/proc");OPENHDK_FAIL_IF(32,proc.admission || !code(proc.error,NativeBindingErrorCode::UnsupportedStorage));
-  hookPath=songs;hookSaved=temp.path/"old-songs";Access::afterRoots(replaceRoot);auto replaced=admit(l,b,songs);Access::afterRoots(nullptr);
+  OPENHDK_FAIL_IF(71,!AdmissionEvidence::trace("mount-rejections"));
+  std::cout<<"BINDING_CASE case=mount-rejections missing=injected different=injected proc=actual result=UnsupportedStorage\n";
+  AdmissionEvidence::begin();hookPath=songs;hookSaved=temp.path/"old-songs";Access::afterRoots(replaceRoot);auto replaced=admit(l,b,songs);Access::afterRoots(nullptr);
   OPENHDK_FAIL_IF(33,replaced.admission || !code(replaced.error,NativeBindingErrorCode::SourceChanged));
   auto changed=Access::recheck(*a.admission,l);OPENHDK_FAIL_IF(34,!code(changed,NativeBindingErrorCode::SourceChanged) || changed->operation!=NativeBindingOperation::Recheck);
+  OPENHDK_FAIL_IF(72,!AdmissionEvidence::trace("root-replacement"));
+  std::cout<<"BINDING_CASE case=root-replacement admit=SourceChanged recheck=SourceChanged root_index="<<*changed->rootIndex<<"\n";
   a.admission.reset();fs::remove(songs);fs::rename(hookSaved,songs);
-  auto again=admit(l,b,songs);OPENHDK_FAIL_IF(35,again.error);l.release();
+  AdmissionEvidence::begin();auto again=admit(l,b,songs);OPENHDK_FAIL_IF(35,again.error);l.release();
   OPENHDK_FAIL_IF(36,!code(Access::recheck(*again.admission,l),NativeBindingErrorCode::StaleBinding));
   OPENHDK_FAIL_IF(37,b->parentMapping()!=store.string() || ::fcntl(Access::descriptor(*b),F_GETFD)<0);
   OPENHDK_FAIL_IF(38,acquire(l,store));auto next=Access::binding(l);
   OPENHDK_FAIL_IF(39,next.error || next.binding==b || !code(Access::recheck(*again.admission,l),NativeBindingErrorCode::StaleBinding));
+  OPENHDK_FAIL_IF(73,!AdmissionEvidence::trace("release-and-reacquire"));
+  std::cout<<"BINDING_CASE case=epoch old_retained=1 released=StaleBinding reacquired=StaleBinding new_binding=1\n";
   again.admission.reset();b.reset();l.release();next.binding.reset();OPENHDK_FAIL_IF(40,fdCount()!=initialFds);
   // Allocation failure sweeps must not publish a cache or leak a duplicate/root FD.
   OPENHDK_FAIL_IF(41,acquire(l,store));const auto beforeExport=fdCount();bool exported=false;unsigned throws=0;
@@ -166,7 +178,12 @@ int main() {
   failAfter=0;auto cacheNoAlloc=Access::binding(bounded);failAfter=-1;
   OPENHDK_FAIL_IF(65,cacheNoAlloc.error || cacheNoAlloc.binding!=boundedBinding);cacheNoAlloc.binding.reset();
   bounded.release();boundedBinding.reset();OPENHDK_FAIL_IF(66,fdCount()!=initialFds);
-  std::cout<<"binding checks=66 production-factory=unavailable native-acceptance=Pending\n";
+  // Deliberately overflow the fixed buffer: evidence collection must fail closed.
+  Access::receipts();for(unsigned i=0;i<257;++i)(void)Access::admit(l,{},{});
+  OPENHDK_FAIL_IF(74,!Access::overflow() || Access::records().size()!=256);
+  Access::receipts(false);
+  std::cout<<"ADMISSION_OVERFLOW_TEST capacity=256 detected=1 synthetic=1\n";
+  std::cout<<"binding checks=74 factory=experimental native-acceptance=Pending\n";
   std::cout<<"mount-alias namespace case=Skipped reason=private-namespace-harness-not-implemented\n";
   std::cout<<"filesystem-bypass="<<(std::getenv("OPENHDK_NATIVE_CHECKPOINT_DIR")?0:1)<<"\n";
 #endif

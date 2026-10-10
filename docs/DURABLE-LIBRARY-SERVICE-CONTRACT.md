@@ -346,3 +346,14 @@ Create requires ExpectedAbsent; Open reconciles and restores unattached roots.
 The private coordinator fence protects both final publication and NoChange.
 These paths are experimental pending fresh pinned native evidence/acceptance.
 No new durable root mutation or application API is supplied.
+
+## Native admission receipt instrumentation
+
+The binding and experimental native service targets now emit bounded per-case
+[admission receipts](NATIVE-ADMISSION-EVIDENCE.md) for lease epochs, identity/mount checks,
+ancestor termination and the final changed/NoChange fence. The existing collector
+verifies both logs with Python 3 and records its verification exit code. Current
+counts remain 28 core / 31 audio-enabled; binding checks are 74 and native service
+checks are 33. A fresh pinned ext4 run and explicit scoped native factory acceptance
+remain pending. Historical evidence and the `6a6337d` provider acceptance are
+unchanged. Windows checkpoint acknowledgment remains blocked.
