@@ -425,6 +425,18 @@ The binding and experimental native service targets now emit bounded per-case
 ancestor termination and the final changed/NoChange fence. The existing collector
 verifies both logs with Python 3 and records its verification exit code. Current
 counts remain 28 core / 31 audio-enabled; binding checks are 74 and native service
-checks are 33. A fresh pinned ext4 run and explicit scoped native factory acceptance
-remain pending. Historical evidence and the `6a6337d` provider acceptance are
+checks are 33. A fresh pinned ext4 run is recorded in the evidence section below; explicit
+scoped native factory acceptance remains pending. Historical evidence and the `6a6337d` provider acceptance are
 unchanged. Windows checkpoint acknowledgment remains blocked.
+
+## Recorded WSL2 ext4 admission run
+
+The maintainer supplied a [fresh pinned admission run](../docs/evidence/native-admission/2026-10-10-wsl2-ext4/README.md) at
+`4f6924670d4272736984342c8294967650c60edb` on WSL2 `/dev/sdd` ext4.
+All 28 compile/run exits, admission verifier and overall exit are zero. The
+binding/service logs use bypass zero and contain 13 traces, 364 identity
+observations and three fence cases. The published logs redact the local username
+with original/published hashes and replacement counts. This is supplied execution
+evidence, not independent source/run authentication. Explicit scoped factory
+acceptance remains pending; mount-namespace alias evidence remains Skipped.
+Historical `6a6337d` acceptance, Windows blockage and roadmap checkboxes are unchanged.
