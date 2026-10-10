@@ -219,3 +219,9 @@ file I/O, allocation, parsing, or UI work.
   same-device selection, reconnection, and note cleanup on route changes.
 - External MIDI input and mixer-sidecar mode.
 - Cross-platform work after Windows behaviour is stable.
+
+Native durable service slice 2 has a proposed
+[binding/admission plan](NATIVE-SERVICE-BINDING-PLAN.md): lease-epoch capability,
+bounded same-mount root ancestry and a final prepublication fence. Review the
+plan before implementing its native factory, then collect fresh pinned evidence.
+The accepted detached Linux revision and Windows BLOCKED gate remain unchanged.

@@ -384,3 +384,11 @@ The target requires OPENHDK_ENABLE_TEST_SEAMS=1, configured only for this target
 in CMake and included in the collector seam list. Factories accept only the test
 provider category; they cannot admit a native Linux provider. Current counts are
 26 core / 29 audio-enabled. Historical provider receipts remain unchanged.
+
+## Proposed native service admission tests
+
+[OHK-BIND-030](../docs/NATIVE-SERVICE-BINDING-PLAN.md#7-required-implementation-tests)
+proposes lease-epoch/lifetime, root ancestry, bounds and prepublication-fence
+cases. Native acceptance needs a fresh pinned matrix run after implementation.
+No tests or suite-count changes accompany this proposal; 26 core / 29
+audio-enabled remain current. Historical evidence bundles must stay unchanged.

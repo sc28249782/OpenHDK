@@ -446,3 +446,11 @@ Windows acknowledgment remains BLOCKED: section 4's unprivileged NTFS publicatio
 synchronization protocol is unresolved. Do not implement acknowledged Windows
 saves by substituting an unconditional success or by weakening OHK-STORE-030.
 Live capture and durable-first wiring remain separate slices.
+
+## 17. Proposed durable service admission
+
+[OHK-BIND-030](NATIVE-SERVICE-BINDING-PLAN.md) proposes an owning capability
+from the retained provider lease and bounded same-mount root containment.
+Exported authority expires on release/reacquire. The plan adds no provider API
+or native service support; changed integration needs a fresh pinned run and
+explicit scoped acceptance. Existing revision-bound evidence stays unchanged.
