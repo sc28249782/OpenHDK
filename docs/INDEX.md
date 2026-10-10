@@ -26,7 +26,7 @@ continue to apply independently of feature plans.
 | [KARAOKE-LIBRARY-CONTRACT](KARAOKE-LIBRARY-CONTRACT.md) | Accepted 0.3.0 contract; catalog/discovery/preparation slices implemented, full services gated. |
 | [CATALOG-METADATA-POLICY-CONTRACT](CATALOG-METADATA-POLICY-CONTRACT.md) | Accepted member/metadata and root-policy contract; models, scan/preparation and override/display transactions implemented. |
 | [CATALOG-PERSISTENCE-CONTRACT](CATALOG-PERSISTENCE-CONTRACT.md) | Accepted schema-1 contract with pure codec, fresh-owner restore and fake-provider store protocol implemented; scoped Linux evidence accepted and live capture implemented; Windows and durable-first wiring pending. |
-| [NATIVE-ADMISSION-EVIDENCE](NATIVE-ADMISSION-EVIDENCE.md) | Bounded binding/epoch/ancestor/fence receipts and verifier implemented; fresh native run and scoped factory acceptance pending. |
+| [NATIVE-ADMISSION-EVIDENCE](NATIVE-ADMISSION-EVIDENCE.md) | Bounded admission receipts/verifier implemented; pinned WSL2 ext4 run recorded; scoped factory acceptance pending. |
 | [NATIVE-SERVICE-BINDING-PLAN](NATIVE-SERVICE-BINDING-PLAN.md) | Accepted lease-epoch/ancestry plan; private binding/guards and experimental Linux factory/fence implemented; fresh native evidence pending. |
 | [DURABLE-LIBRARY-SERVICE-CONTRACT](DURABLE-LIBRARY-SERVICE-CONTRACT.md) | Accepted exclusive service/baseline contract; override primitive, fake tests and experimental Linux factory/fence implemented; other mutations/native evidence pending. |
 | [NATIVE-LINUX-CHECKPOINT-EVIDENCE](NATIVE-LINUX-CHECKPOINT-EVIDENCE.md) | Scoped acceptance recorded for 6a6337d on WSL2 /dev/sdd ext4; evidence bundles retained. |
@@ -93,3 +93,6 @@ canonical SMF and mixer contracts unless a compatibility change is accepted.
 This review does not establish KAR/NCN support or select a UI framework. Later
 multi-SoundFont, bus, effects, and output-routing work keeps the ordering in
 [ROADMAP.md](ROADMAP.md).
+
+The [2026-10-10 native admission bundle](evidence/native-admission/2026-10-10-wsl2-ext4/README.md)
+records revision `4f6924670d4272736984342c8294967650c60edb`; acceptance remains pending.

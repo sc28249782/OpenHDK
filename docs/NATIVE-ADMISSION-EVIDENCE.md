@@ -1,7 +1,7 @@
 # Native service admission receipts
 
-Status: Instrumentation implemented; fresh pinned ext4 run and explicit scoped
-acceptance remain pending. This does not extend the provider acceptance for
+Status: Instrumentation implemented; fresh pinned WSL2 ext4 run recorded;
+explicit scoped native factory acceptance remains pending. This does not extend the provider acceptance for
 `6a6337d`.
 
 ## Scope and format
@@ -96,3 +96,15 @@ wiring, NCN evidence and manual validation remain separate work.
 
 See [native binding plan](NATIVE-SERVICE-BINDING-PLAN.md) and
 [provider evidence](NATIVE-LINUX-CHECKPOINT-EVIDENCE.md).
+
+## Recorded WSL2 ext4 admission run
+
+The maintainer supplied a [fresh pinned admission run](evidence/native-admission/2026-10-10-wsl2-ext4/README.md) at
+`4f6924670d4272736984342c8294967650c60edb` on WSL2 `/dev/sdd` ext4.
+All 28 compile/run exits, admission verifier and overall exit are zero. The
+binding/service logs use bypass zero and contain 13 traces, 364 identity
+observations and three fence cases. The published logs redact the local username
+with original/published hashes and replacement counts. This is supplied execution
+evidence, not independent source/run authentication. Explicit scoped factory
+acceptance remains pending; mount-namespace alias evidence remains Skipped.
+Historical `6a6337d` acceptance, Windows blockage and roadmap checkboxes are unchanged.

@@ -1,0 +1,1 @@
+{"fence_cases": 3, "identity_observations": 364, "native_acceptance": "Pending", "scope": "selected observations and consistency only; mount namespace case remains Skipped", "status": "verified", "traces": 13}

@@ -1,0 +1,102 @@
+{
+  "verification": "Passed for supplied receipts; scoped factory acceptance Pending",
+  "revision": "4f6924670d4272736984342c8294967650c60edb",
+  "archive_sha256": "88fe7d3680ce9af0ddc3325aa5354fb873d54e4422d21da045ec6b132727b51c",
+  "archive_files": 61,
+  "manifest_entries": 60,
+  "compile_exit_zero": 28,
+  "run_exit_zero": 28,
+  "verify_exit": 0,
+  "overall_exit": 0,
+  "admission": {
+    "status": "verified",
+    "traces": 13,
+    "identity_observations": 364,
+    "fence_cases": 3,
+    "native_acceptance": "Pending",
+    "scope": "selected observations and consistency only; mount namespace case remains Skipped"
+  },
+  "provider_wires": 384,
+  "provider_wire_classes": {
+    "empty": 99,
+    "valid": 280,
+    "partial": 2,
+    "invalid_magic": 1,
+    "unsupported_schema": 2
+  },
+  "provider_traces": 106,
+  "provider_native_record_counts": {
+    "actual": 1250,
+    "injected": 11
+  },
+  "cut_results": [
+    {
+      "phase": 0,
+      "repeat": 0,
+      "prior_revision": 9,
+      "observed_revision": 9,
+      "expected_revision": 9
+    },
+    {
+      "phase": 0,
+      "repeat": 1,
+      "prior_revision": 9,
+      "observed_revision": 9,
+      "expected_revision": 9
+    },
+    {
+      "phase": 1,
+      "repeat": 0,
+      "prior_revision": 9,
+      "observed_revision": 9,
+      "expected_revision": 9
+    },
+    {
+      "phase": 1,
+      "repeat": 1,
+      "prior_revision": 9,
+      "observed_revision": 9,
+      "expected_revision": 9
+    },
+    {
+      "phase": 2,
+      "repeat": 0,
+      "prior_revision": 9,
+      "observed_revision": 10,
+      "expected_revision": 10
+    },
+    {
+      "phase": 2,
+      "repeat": 1,
+      "prior_revision": 10,
+      "observed_revision": 11,
+      "expected_revision": 11
+    },
+    {
+      "phase": 3,
+      "repeat": 0,
+      "prior_revision": 11,
+      "observed_revision": 12,
+      "expected_revision": 12
+    },
+    {
+      "phase": 3,
+      "repeat": 1,
+      "prior_revision": 12,
+      "observed_revision": 13,
+      "expected_revision": 13
+    }
+  ],
+  "scope": [
+    "Maintainer-supplied execution evidence; no independent source/run authentication.",
+    "Direct g++ without sanitizers; not CTest or an ASan/UBSan run.",
+    "WSL2 /dev/sdd ext4 data=ordered only; not bare metal, Windows/NTFS, DrvFS, hostile writers or power-loss.",
+    "Selected observations, not complete syscall tracing. Mount namespace alias case remains Skipped.",
+    "Harness artifacts removed; retained observations exist in the supplied logs.",
+    "Explicit scoped native factory acceptance remains Pending; historical 6a6337d acceptance unchanged."
+  ],
+  "admission_identity_observation_counts": {
+    "actual": 363,
+    "injected": 1
+  }
+}
