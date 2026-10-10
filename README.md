@@ -225,12 +225,12 @@ remains separate and unchanged. Mount-namespace alias evidence remains Skipped;
 Windows checkpoint acknowledgment, durable root mutations, application/CLI wiring,
 NCN evidence and manual validation remain open. No storage release checkbox changes.
 
-## Proposed durable root lifecycle
+## Private durable root registration slice
 
-[OHK-DURABLE-ROOT-030](docs/DURABLE-ROOT-LIFECYCLE-PLAN.md) proposes complete-owner
-staging for durable register/scan/song-relocate/remove/reattach, prospective root
-admission and commit-before-memory-publication. It distinguishes targeted repair
-from same-path identity drift and bounds old-plus-candidate guards together.
-Review and acceptance precede implementation; scoped runtime acceptances remain
-pinned to their tested revisions. Windows checkpoint acknowledgment, NCN,
-application/CLI wiring and manual validation remain separate gates.
+[OHK-DURABLE-ROOT-030](docs/DURABLE-ROOT-LIFECYCLE-PLAN.md#10-current-slice-31-boundary)
+is accepted. Complete-owner staging and fake-provider registration now preserve
+lineage, mappings and allocator history until confirmed storage commit. Only the
+test seam can call registration; native services reject it before filesystem
+work. Prospective native guards/fencing and remaining lifecycle operations are
+pending. Counts stay 28 core / 31 audio-enabled; prior native acceptances do not
+extend to this slice.

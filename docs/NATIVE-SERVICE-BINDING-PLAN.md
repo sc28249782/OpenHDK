@@ -366,12 +366,11 @@ remains separate and unchanged. Mount-namespace alias evidence remains Skipped;
 Windows checkpoint acknowledgment, durable root mutations, application/CLI wiring,
 NCN evidence and manual validation remain open. No storage release checkbox changes.
 
-## Proposed prospective root admission
+## Private staging follow-up boundary
 
-The separate [OHK-DURABLE-ROOT-030 proposal](DURABLE-ROOT-LIFECYCLE-PLAN.md) defines
-next-slice guard sharing and operation-aware fencing. Changed reattachment may
-retire only its designated old guard; unchanged roots must match retained
-identities, and the complete prospective root set must satisfy reciprocal
-store/root containment. Same-path drift is rejected, not adopted as a new
-binding. This awaits acceptance and implementation; it does not extend the
-`4f69246` factory/fence decision or alter historical receipts.
+[OHK-DURABLE-ROOT-030 slice 3.1](DURABLE-ROOT-LIFECYCLE-PLAN.md#10-current-slice-31-boundary)
+now implements complete-owner staging and fake-provider registration. Native
+services explicitly reject that private test entry point before admission or
+filesystem work. Prospective shared guards and the operation-aware fence remain
+the next integration slice. Historical receipts and `4f69246` scoped acceptance
+are unchanged; no native root mutation acceptance follows from these fake tests.

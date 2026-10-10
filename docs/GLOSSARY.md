@@ -119,10 +119,18 @@ coordinator. It revalidates retained store/root admission before final publicati
 and before a NoChange acknowledgment. It cannot be supplied by a public caller
 and does not run after confirmed save before memory publication.
 
-## Prospective durable root admission (proposed)
+## Prospective durable root admission (pending implementation)
 
 Private candidate guards and RootId mappings associated with a complete staged
 owner, checked before storage publication. Unchanged roots preserve their old
 identity association; a changed reattachment may retire only its targeted guard.
-This is proposed by [OHK-DURABLE-ROOT-030](DURABLE-ROOT-LIFECYCLE-PLAN.md), not an
+This is specified by accepted [OHK-DURABLE-ROOT-030](DURABLE-ROOT-LIFECYCLE-PLAN.md), not an
 implemented mutation facility.
+
+## Staged durable owner
+
+A privately owned same-lineage SongDiscovery candidate with its snapshot, exact
+allocator high-water counters and root mappings/hints. Slice 3.1 captures its
+checkpoint and publishes the whole owner only after confirmed save. Current
+registration access is test-only; prospective native root guards remain pending.
+See [OHK-DURABLE-ROOT-030](DURABLE-ROOT-LIFECYCLE-PLAN.md#10-current-slice-31-boundary).

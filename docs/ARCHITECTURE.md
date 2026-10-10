@@ -297,13 +297,13 @@ remains separate and unchanged. Mount-namespace alias evidence remains Skipped;
 Windows checkpoint acknowledgment, durable root mutations, application/CLI wiring,
 NCN evidence and manual validation remain open. No storage release checkbox changes.
 
-## Proposed complete-owner durable staging
+## Implemented private complete-owner staging
 
-[OHK-DURABLE-ROOT-030](DURABLE-ROOT-LIFECYCLE-PLAN.md) proposes a private candidate
-that associates the catalog snapshot, allocator high-water counters, registered
-root mappings, checkpoint projection and prospective admission guards. Confirmed
-store commit must precede nonthrowing installation of that complete context.
-Unchanged roots retain their original identity guards; targeted changed-root
-repair cannot silently adopt unrelated replacements. Old/candidate descriptor
-peaks share the existing bound. This plan awaits acceptance and adds no runtime
-mutation, publication or native acceptance.
+[Slice 3.1](DURABLE-ROOT-LIFECYCLE-PLAN.md#10-current-slice-31-boundary) stages an
+owned same-lineage SongDiscovery with snapshot, exact counters and copied root
+mappings/hints. Capture derives the projection from that candidate. Confirmed
+Saved precedes a nonthrowing owner swap and baseline/expectation transfers. Shared
+metadata/override records count once while distinct path/locator copies count
+separately. Registration remains a fake-provider test primitive; the current
+native fence cannot admit a prospective root. Native mutation support still
+requires shared guards, operation-aware fencing and fresh scoped evidence.
