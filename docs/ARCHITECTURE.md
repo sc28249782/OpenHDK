@@ -191,16 +191,16 @@ reconciliation. The coordinator includes retained provider bytes in its existing
 ledger. Scoped WSL2 ext4 acceptance is recorded; live checkpoint capture is implemented.
 Capture acquires one serialized owner snapshot/counters/root mapping into a
 const owning projection/context, without I/O. It preserves historical captures
-after owner changes. Native durable admission and other mutation staging remain
+after owner changes. Experimental native admission is implemented; other mutation staging remains
 pending. It approves no database package
 and adds no callback-visible file, lock, decode, or recovery operation.
 The [accepted durable service boundary](DURABLE-LIBRARY-SERVICE-CONTRACT.md)
 requires exclusive owner/store lifetimes and an acknowledged baseline. Its first
 implemented primitive is complete user override replacement: private staging, confirmed
-store commit, then noexcept memory publication. Native binding capabilities and
-reciprocal store/root containment require a later reviewed integration slice.
-The primitive has fake-provider tests and test-only construction. It does not
-yet admit native durable library writes or complete other mutation services.
+store commit, then noexcept memory publication. The experimental Linux
+factory now owns native binding and root-containment guards. Fake-provider
+construction remains test-only. Native service evidence and other mutation
+services remain pending.
 
 The evidence target records bounded selected-call and artifact receipts before
 cleanup. The maintainer reviewed the pinned WSL2 ext4 matrix run and explicitly
@@ -251,6 +251,12 @@ Audio callbacks must not perform file I/O, allocation, parsing, or UI work.
 
 [OHK-BIND-030](NATIVE-SERVICE-BINDING-PLAN.md) is accepted. Its private lease
 epoch capability and retained root/ancestor guard primitives are implemented.
-The final coordinator admission fence remains pending in durable service slice 2. Canonical text alone is insufficient
+The final coordinator admission fence and experimental Linux factory are now
+implemented in durable service slice 2. Fresh native integration evidence is pending. Canonical text alone is insufficient
 for containment. The primitive admits only same-mount active roots, with
-32 active roots and bounded handle/path budgets. No native factory exists yet.
+32 active roots and bounded handle/path budgets. Native factory acceptance remains pending.
+
+The [experimental factory boundary](NATIVE-SERVICE-BINDING-PLAN.md#11-experimental-factory-and-final-admission-fence)
+records explicit Create/Open, private final and NoChange admission checks, and
+shared binding/guard accounting. Future durable root lifecycle and application
+wiring remain separate slices; new native receipts/run/acceptance remain pending.

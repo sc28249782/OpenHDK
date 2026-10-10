@@ -242,8 +242,10 @@ class CatalogCheckpointStore {
         const auto oldShape=CheckpointDetail::shape(*prior,limits_);
         auto retained=base;StoreDetail::charge(retained,primary->size(),limits_.stagedBytes,operation);
         StoreDetail::charge(retained,oldShape.strings,limits_.stagedBytes,operation);
-        if(StoreDetail::equalProjection(*prior,projection))
+        if(StoreDetail::equalProjection(*prior,projection)) {
+          checkAdmission();
           return {StoreSaveStatus::Unchanged,StoreExpectation(origin_,ack_),projection.catalogRevision,{},{},{},{}};
+        }
         StoreDetail::history(*prior,projection);
         if(current->sequence==UINT64_MAX)StoreDetail::fail(StoreErrorCode::CounterExhausted,operation);
       }
@@ -281,6 +283,7 @@ class CatalogCheckpointStore {
         if(token!=current)StoreDetail::fail(StoreErrorCode::StaleCheckpoint,operation);
       }
       StoreDetail::check(provider_.checkDirectory(),operation);cancel(control);
+      checkAdmission();
       // The result, token and artifact descriptors are ready before publication.
       // No callbacks, retry, throwing/allocating provider API or cancellation
       // check is permitted from here to acknowledgment.
@@ -305,6 +308,14 @@ class CatalogCheckpointStore {
     } catch(const std::bad_alloc&) {return artifacts.failure(error(StoreErrorCode::StorageFailure,operation));}
   }
  private:
+  friend class DurableLibraryService;
+  // Private owner fence: fixed function/context, no public caller installation.
+  void setAdmissionFence(void* context,std::optional<StoreProviderError> (*check)(void*) noexcept) noexcept {
+    admissionContext_=context;admissionCheck_=check;
+  }
+  void checkAdmission() {if(admissionCheck_)StoreDetail::check(admissionCheck_(admissionContext_),StoreOperation::Recheck);}
+  void* admissionContext_=nullptr;
+  std::optional<StoreProviderError> (*admissionCheck_)(void*) noexcept=nullptr;
   struct Guard {
     std::atomic_flag& flag;bool held;
     explicit Guard(std::atomic_flag& f) noexcept:flag(f),held(!f.test_and_set(std::memory_order_acquire)){}

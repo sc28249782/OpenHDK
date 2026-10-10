@@ -1,21 +1,21 @@
 # Native durable service binding and admission plan
 
 **Plan:** OHK-BIND-030
-**Status:** Accepted; binding/ancestry primitive implemented, native factory and affected evidence pending
+**Status:** Accepted; binding/ancestry and experimental factory/fence implemented; affected evidence pending
 **Scope:** Linux binding capability and store/root admission for
 [OHK-DURABLE-030](DURABLE-LIBRARY-SERVICE-CONTRACT.md), slice 2.
 
 ## 1. Current boundary and proposed change
 
 PR #70 implements service baseline admission and durable user overrides with a
-test-only provider category. There is no production native service factory.
+test-only provider category. Experimental Linux Create/Open factories now use private binding admission.
 The Linux provider retains a directory and lock lease. A private binding
 primitive now retains that lease epoch; no public provider interface exports it.
 
 The accepted plan specifies that capability, a bounded containment check, and
 the evidence needed before native factory acceptance. The first implementation
-adds private binding/ancestry primitives and a seam-only test entry point. It
-adds no production service factory, dependency or released storage support.
+adds private binding/ancestry primitives and an experimental Linux factory.
+It adds no dependency or released storage support.
 The existing detached checkpoint provider and capture APIs retain their scope.
 
 The Linux acceptance remains tied to provider/test revision
@@ -223,7 +223,7 @@ bare-metal, NTFS, cross-OS or hostile-writer guarantees.
 
 NCN evidence, manual device/lyric validation and the Windows gate remain separate.
 The initial docs-only proposal changed no tests or completed roadmap checkbox.
-The binding primitive adds one suite: current counts are 27 core / 30
+The binding primitive adds one suite: current counts are 28 core / 31
 audio-enabled. The storage completion checkbox remains open.
 
 Primary API references:
@@ -249,10 +249,10 @@ Release clears the cache and epoch before closing the lease. Existing detached
 provider operations do not export a binding or allocate its token/duplicate.
 
 The helper accepts active mapping views only through its private plumbing.
-Production service factories remain unavailable. TestAccess behind
+Experimental service factories use their owned concrete Linux provider. TestAccess behind
 OPENHDK_ENABLE_TEST_SEAMS can supply harness paths to the primitive; it cannot
 create a writable native service. Structured primitive errors identify a root
-by its input index. The future owner factory must map that index to its RootId;
+by its input index. The owning service factory maps that index to its RootId;
 the ordinal is not authority or a serialized identity.
 
 Admission stages at most 32 retained root handles. It rejects different observed
@@ -280,5 +280,50 @@ is explicitly Skipped because its harness is not implemented. Local filesystem
 eligibility bypass is test-only; native collector runs disable it.
 
 Binding/factory receipt instrumentation and fresh native evidence remain pending.
-The existing scoped acceptance at 6a6337d is unchanged. No production service
-factory or coordinator fence is added by this primitive slice.
+The existing scoped acceptance at 6a6337d is unchanged. That primitive slice added no native factory or coordinator fence; the
+following integration section records the later implementation.
+
+## 11. Experimental factory and final admission fence
+
+[DurableLibraryService](../library/DurableLibraryService.hpp) now exposes explicit
+createLinux/openLinux factories. Create transfers one owner; Open restores a
+fresh unattached owner. Both construct and own the concrete Linux provider.
+Callers cannot supply a provider, capability, expectation, projection or fence.
+Production lease eligibility remains ext4-only. Other platforms return the
+provider's UnsupportedStorage result before native filesystem access.
+
+After store open/reconciliation and optional restore, the factory exports the
+binding and stages guards for active owner roots. Unattached hints trigger no
+lookup. Admission precedes initial baseline save. Errors return no service;
+structured binding errors include the mapped RootId when an active root index
+is available. Public string argument construction can throw before entry; the
+factory catches allocation failures inside its operation.
+
+The service rechecks admission before staging an override. The coordinator has
+a private fixed function/context fence installed only by the owning service.
+It runs after the last cancellation/directory/token checks and before native
+publication. The Unchanged return path invokes the same fence. Fixed error
+storage records a failed recheck without allocation. No admission callback runs
+between confirmed storage save and the service's noexcept memory swap.
+
+Mapping drift retains prior memory and marks RecoveryRequired. A fence rejection
+before publication returns NotCommitted and keeps primary bytes; publication or
+sync uncertainty follows the existing explicit recovery protocol. Close releases
+the store lease and retained admission guards. No root mutation, reattachment,
+reopen-in-place or live application integration is exposed by this slice.
+
+The provider charges its cached binding strings once. Service path accounting
+adds only guard mapping copies; admission staging excludes the newly exported
+binding from alreadyOwned, then charges it once. Coordinator input/baseline and
+provider costs continue to use the same checkpoint allowance. Admission uses the
+smaller of its configured payload allowance and the checkpoint allowance.
+
+Native-service tests exercise real syscalls under the local seam-only eligibility
+bypass, or production eligibility when the collector supplies an ext4 parent.
+They cover baseline Create/Open, overlap rejection, mapped RootId, final and
+NoChange fence rejection, confirmed-save allocation prohibition, uncertainty,
+recovery, owner lifetime and factory allocation/FD rollback. The independent
+fake service suite also verifies the private fence. Current counts are 28 core /
+31 audio-enabled. Binding/factory per-case receipts, a fresh pinned native run
+and explicit scoped acceptance remain pending. Existing 6a6337d acceptance and
+historical evidence bundles are unchanged; Windows saves remain BLOCKED.

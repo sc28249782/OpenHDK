@@ -284,8 +284,8 @@ Exhausted counters MUST NOT wrap; old owners/prepared values remain unchanged.
 A detached checkpoint coordinator is implemented with fake-provider tests. It
 MUST reject stale/foreign store tickets, retain history, acknowledge only confirmed
 publication, and fault on uncertainty until validated reopen/reconciliation.
-Store tickets do not prove live catalog snapshot provenance. No autosave,
-migration or durable library service is provided today.
+Store tickets do not prove live catalog snapshot provenance. No autosave or migration is supplied. An experimental native override service
+is implemented below; its affected evidence remains pending.
 The [accepted native provider plan](NATIVE-CHECKPOINT-PROVIDER-PLAN.md) describes
 API review and native evidence obligations. A Linux ownership lease is implemented
 with bounded validated paths, single-owner admission, stable no-truncate locking,
@@ -388,12 +388,13 @@ root policy/generation/hints, allocator high water and user overrides without
 filesystem access. It does not persist Ready authority or make mutations durable.
 Limits and conservative Windows UTF-8 hint preflight are specified in
 [OHK-STORE-030](CATALOG-PERSISTENCE-CONTRACT.md#current-live-checkpoint-capture-boundary).
-Native durable service admission remains pending; released v0.2.0 behavior is unchanged.
+Experimental Linux durable service admission is implemented; fresh native
+evidence remains pending. Released v0.2.0 behavior is unchanged.
 The [accepted durable service contract](DURABLE-LIBRARY-SERVICE-CONTRACT.md)
 defines exclusive owner/store admission, an acknowledged baseline and override-first
 staging. The service primitive has fake-provider lifecycle and commit-before-memory
-publication tests. Construction is available only through the test provider category
-under test seams; no native service factory is implemented. Existing in-memory
+publication tests. Fake construction uses the test provider category under
+seams; experimental Linux factories own their concrete provider and admission. Existing in-memory
 mutation, provider acceptance and playback behavior are unchanged.
 
 ## 10. Deferred work and change control
@@ -431,4 +432,10 @@ now has private lease-epoch and retained-handle ancestry primitives. They reject
 stale/foreign bindings, root overlap and different observed mount IDs; they
 retain at most 32 active roots under a conservative 45-descriptor cap. They
 perform no save or memory publication. Discovery and checkpoint schema limits
-remain separate. Native factory/coordinator fence integration is pending. Native service acceptance requires fresh integration evidence.
+remain separate. An experimental native factory and private coordinator fence are implemented.
+Fresh integration evidence and explicit acceptance remain pending. Native service acceptance requires fresh integration evidence.
+
+The [experimental factory boundary](NATIVE-SERVICE-BINDING-PLAN.md#11-experimental-factory-and-final-admission-fence)
+records explicit Create/Open, private final and NoChange admission checks, and
+shared binding/guard accounting. Future durable root lifecycle and application
+wiring remain separate slices; new native receipts/run/acceptance remain pending.
