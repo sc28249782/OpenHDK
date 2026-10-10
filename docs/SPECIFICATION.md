@@ -425,3 +425,9 @@ Changes to parser strictness, event ordering, time conversion, session
 completion, callback rules, channel-volume semantics, or CLI argument behavior
 are compatibility changes. They MUST update this document, regression tests,
 and release notes together.
+
+The proposed [native service binding plan](NATIVE-SERVICE-BINDING-PLAN.md)
+requires lease-epoch authority and bounded retained-handle admission before
+native durable service publication. Its same-mount and active-root restrictions
+require review; they do not change implemented discovery or checkpoint schema
+limits. Native service acceptance requires fresh integration evidence.

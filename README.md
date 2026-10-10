@@ -175,5 +175,10 @@ OpenHDK is licensed under GPL-3.0-or-later. See [LICENSE](LICENSE).
 
 The development tree also has a bounded Linux checkpoint evidence collector.
 See the [native evidence procedure](docs/NATIVE-LINUX-CHECKPOINT-EVIDENCE.md)
-for pinned ext4 runs and explicit exit-code receipts. Native acceptance remains
-Pending; this does not change the released v0.2.0 storage boundary.
+for pinned ext4 runs and explicit exit-code receipts. Linux provider acceptance is scoped to revision `6a6337d` and the recorded
+WSL2 ext4 environment; this does not change the released v0.2.0 storage boundary.
+
+The [native durable service binding proposal](docs/NATIVE-SERVICE-BINDING-PLAN.md)
+plans lease-bound authority, store/root containment and fresh integration evidence.
+The current durable service factories remain test-only; this proposal adds no
+native service support or released storage feature.
