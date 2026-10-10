@@ -482,9 +482,9 @@ NCN evidence and manual validation remain open. No storage release checkbox chan
 implements complete-owner staging and fake-provider registration tests. A
 confirmed Saved with matching revision/token precedes owner publication. Failed
 registration returns no RootId, snapshot or success receipt and leaves counters
-and mappings unpublished. Uncertain/protocol outcomes require recovery. This is
-not a public/native registration API; native services reject the test seam
-before filesystem work. Other root mutations and application wiring stay pending.
+and mappings unpublished. Uncertain/protocol outcomes require recovery. Experimental native registration/reattachment now extend this staging
+boundary using service-owned prospective guards. Durable scan/song lifecycle,
+fresh mutation receipts/acceptance and application wiring stay pending.
 
 ## Private prospective admission boundary
 
@@ -493,6 +493,7 @@ now implements private shared guard staging. It rejects duplicate/missing prior
 correspondence, retirement of more than one target, same-path changed-target
 requests, unrelated identity drift, mount/containment violations and excessive
 old-plus-new descriptor peaks. Stage root indices identify candidate rows for
-future service RootId mapping. No production native root mutation/fence is
-implemented here. Earlier native acceptances do not advance to this runtime
+owned service RootId mapping. Experimental root registration/reattachment now
+select a scoped candidate fence; the old context remains retained until
+confirmed-save nonthrowing owner/admission/baseline transfers. Earlier native acceptances do not advance to this runtime
 revision without a fresh pinned affected run and scoped review.

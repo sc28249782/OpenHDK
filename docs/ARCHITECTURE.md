@@ -304,9 +304,10 @@ owned same-lineage SongDiscovery with snapshot, exact counters and copied root
 mappings/hints. Capture derives the projection from that candidate. Confirmed
 Saved precedes a nonthrowing owner swap and baseline/expectation transfers. Shared
 metadata/override records count once while distinct path/locator copies count
-separately. Registration remains a fake-provider test primitive; the current
-native fence cannot admit a prospective root. Native mutation support still
-requires shared guards, operation-aware fencing and fresh scoped evidence.
+separately. Experimental native registration/reattachment now use the same staged owner.
+A scoped borrowed candidate admission selects the final fence; current guards
+remain owned until rollback or confirmed-save nonthrowing context transfers.
+Fresh affected native evidence is required.
 
 ## Private prospective guard ownership
 
@@ -315,7 +316,8 @@ retains immutable shared root guards containing mapping, native identity, mount
 and directory handle. A candidate reuses unchanged guards by validated prior
 index and owns a distinct new guard. Retired guards stay owned by the old context
 through commit/rollback. Stage charges the union of retained paths once and
-checks the 45-descriptor peak before opening a target. No guard refresh from
-path text, service publication, native mutation API or audio callback work is
-added. Service RootId/generation association and operation-aware fencing remain
-the next integration boundary.
+checks the 45-descriptor peak before opening a target. The service verifies RootId/path/policy/generation correspondence and installs
+experimental registration/reattachment only after confirmed storage save.
+The candidate fence uses original unchanged guards and the retained target.
+A designated missing old target may retire; unrelated guards never refresh
+from path text. No audio callback work is added.

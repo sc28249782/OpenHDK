@@ -3,8 +3,8 @@
 **Plan:** OHK-DURABLE-ROOT-030
 **Status:** Accepted by review and merge of PR #77; private complete-owner staging
 and fake-provider durable registration implemented. Private prospective shared
-guards implemented; service fence integration, native root mutations and remaining
-lifecycle operations are pending.
+guards and experimental operation-aware register/reattach integration implemented;
+fresh affected mutation evidence and scan/song lifecycle remain pending.
 **Target:** OHK-DURABLE-030 slice 3, after scoped native factory/fence acceptance.
 
 ## 1. Purpose and current boundary
@@ -24,8 +24,9 @@ guards from current paths would instead silently adopt replacements of unrelated
 roots. Neither behavior is a suitable transaction rule.
 
 This accepted plan defines private complete-owner staging and prospective admission.
-Section 10 records the implemented fake-provider boundary. No production lifecycle
-API, new native acceptance, CLI command or completed roadmap item is supplied. Root unregistration, root policy editing, physical source moves/deletion,
+Sections 10 and 11 record the earlier fake-provider and guard primitive slices.
+Section 12 records the experimental service lifecycle integration. No new native
+acceptance, CLI command or completed roadmap item is supplied. Root unregistration, root policy editing, physical source moves/deletion,
 schema changes and automatic recovery remain outside scope. Logical song
 relocation/removal changes catalog records only.
 
@@ -236,10 +237,10 @@ Confirmed Saved, matching revision and a token precede one nonthrowing owner
 swap plus prebuilt baseline/expectation transfers. Failures expose no staged
 RootId, snapshot or commit receipt. Old snapshots and PreparedSong remain owned.
 
-Registration is available only through the fake-provider test seam; native
-services reject it before staging/admission/filesystem work. No production
-registration API or prospective native guard/fence is added. The existing public
-override transaction and Linux factories retain their implemented boundary.
+The original slice made registration available only through the fake-provider
+test seam and rejected native services before staging. Section 12 supersedes
+that implementation boundary with experimental native registration/reattachment;
+it does not advance historical native acceptance.
 Discovery failures carry nested structured diagnostics; uncertainty/protocol
 faults retain prior memory and require explicit recovery.
 
@@ -247,13 +248,14 @@ The [service suite](../tests/durable_library_service_tests.cpp) now has 100
 numbered checks, including allocation sweeps, shared-budget boundaries, staged
 ID rollback, storage/cancellation/fence failures, old context during publish/sync,
 cleanup warning, reentry, exhaustion, restore and prepared-input lifetime. The
-[native suite](../tests/native_durable_service_tests.cpp) has 34 checks, adding
-only rejection of this unsupported registration path. Counts remain 28 core /
+[native suite](../tests/native_durable_service_tests.cpp) originally had 34 checks
+including rejection of the unsupported registration path; it now has 68 checks
+for the section 12 integration. Counts remain 28 core /
 31 audio-enabled. Fake-store success is not native registration evidence.
 
 Historical bundles and the `6a6337d` provider / `4f69246` factory/fence decisions
-remain unchanged. Next: prospective shared guards and operation-aware fencing
-before native registration/reattachment, then scan/song relocation/removal and
+remain unchanged. The prospective guards and experimental operation-aware register/reattach fence
+are now implemented. Next: scan/song relocation/removal and
 fresh affected native receipts/acceptance. Windows checkpoint acknowledgment
 remains BLOCKED; app/CLI, NCN and manual validation stay separate.
 
@@ -286,9 +288,64 @@ is bounded by counts, not represented as a total process-memory measurement.
 The [binding suite](../tests/native_store_binding_tests.cpp) now has 108 checks,
 including exact/beyond payload and descriptor boundaries, sharing/lifetime,
 missing targeted roots, unrelated and late drift, mount faults, allocation sweeps
-and epochs. Native service behavior and its registration rejection remain
-unchanged. This slice supplies no operation-aware fence, durable native mutation
-or complete new receipt matrix. Next: service-owned candidate mapping/fence and
-registration/reattachment integration, then fresh affected native receipts and
+and epochs. The primitive slice supplied no service fence or native mutation. Section 12
+now integrates service-owned candidate mapping/fencing and experimental root
+transactions. A complete new receipt matrix remains pending, followed by
+fresh affected native receipts and
 pinned execution/acceptance. Historical `6a6337d` and `4f69246` decisions remain
 revision-bound; no later runtime revision borrows their acceptance.
+
+## 12. Experimental root service integration
+
+[DurableLibraryService](../library/DurableLibraryService.hpp) now exposes
+experimental `registerRoot(path, policy, StoreControl, alreadyOwned)` and
+`reattachRoot(RootId, path, StoreControl, alreadyOwned)` on its serialized control
+path. The latter returns Updated or Unchanged plus an owning snapshot and
+confirmed receipt; failures have no success status/snapshot/receipt. Registration
+failures have no admitted RootId. Existing in-memory APIs remain separate.
+
+The service checks its baseline, clones the complete same-lineage owner, and
+constructs prospective admission under the owned provider epoch before invoking
+discovery's existing mutation validation. It retains a canonical target handle
+before mutation, verifies exact candidate paths, owned RootIds, policies and
+attachment generation correspondence, then captures that same candidate. Active
+guard ordering is independent of checkpoint root-record order: explicit first
+attachments of restored hints can arrive in any order. Hints remain inactive
+until selected. No callers can supply guards, counters or mappings.
+
+Only a changed reattachment at a different canonical path retires its designated
+old guard. Every other guard is shared and reverified against the original
+identity. Same-path drift faults the service; a valid same-path NoChange still
+requires token/fence validation and may succeed at generation/revision exhaustion.
+An already RecoveryRequired service has no repair bypass. Store/root containment,
+same-mount rules and the 45-descriptor peak remain enforced by the private
+primitive. Configuration/target rejection can remain Ready when old authority
+is valid; detected old authority or unrelated drift enters RecoveryRequired.
+
+A fixed borrowed pending context selects candidate guards/RootId mapping during
+coordinator.save. RAII clears it on all returns and exceptions. Changed saves
+require Saved, matching revision and token before nonthrowing complete-owner,
+baseline, admission/mapping and expectation transfers. NoChange requires
+Unchanged and retains the current context. The coordinator publication ordering
+is unchanged; no fallible work occurs between confirmed save and memory install.
+Nested fence errors can identify an owned candidate RootId for diagnostics;
+that field is not a success/admission receipt for a staged registration.
+
+One ledger includes old/candidate paths, snapshots, projections and guard union.
+Shared guard strings are counted once; fresh target paths add storage. Source
+metadata cleared in the candidate remains charged while the old snapshot owns
+it. The provider already charges shared binding strings. Logical payload counts
+are not total process-memory limits, and a maximum record count does not promise
+every operation fits its old-plus-candidate peak.
+
+The native service suite has 68 regression checks, including allocation sweeps,
+FD rollback/cleanup, confirmed-save allocation bans, uncertainty/recovery, missing
+old target repair, unrelated and late drift, reverse-order hint attachment,
+same-path NoChange and exhaustion. These new cases do not yet emit a complete
+bounded mutation receipt matrix. Local overlay bypass is regression coverage;
+namespace alias evidence remains Skipped. Fresh affected receipts, pinned WSL2
+ext4 execution and explicit scoped mutation acceptance remain required. Both
+`6a6337d` and `4f69246` historical decisions and all evidence bundles are unchanged.
+Next: durable scan/song relocation/removal, affected receipts/acceptance, then
+app/CLI wiring. Windows checkpoint acknowledgment remains BLOCKED; NCN and manual
+validation stay separate. Counts remain 28 core / 31 audio-enabled.

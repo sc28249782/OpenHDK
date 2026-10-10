@@ -271,8 +271,8 @@ NCN evidence and manual validation remain open. No storage release checkbox chan
 
 [OHK-DURABLE-ROOT-030](DURABLE-ROOT-LIFECYCLE-PLAN.md#10-current-slice-31-boundary)
 is accepted, with private complete-owner staging and fake-provider registration
-implemented. Next are shared prospective guards and operation-aware native
-fencing/registration/reattachment, then scan and logical song relocation/removal.
+implemented. Shared guards and experimental operation-aware native
+registration/reattachment are implemented. Next: scan and logical song relocation/removal.
 Fresh affected native receipts and scoped acceptance remain required. This does
 not complete storage or application/CLI work; Windows, NCN and manual gates stay
 open, and existing roadmap completion checkboxes remain unchanged.
@@ -281,8 +281,8 @@ open, and existing roadmap completion checkboxes remain unchanged.
 
 [Slice 3.2 guard preparation](DURABLE-ROOT-LIFECYCLE-PLAN.md#11-current-prospective-guard-primitive)
 now shares unchanged retained guards and privately stages one new/replacement
-guard with bounded rollback coexistence. Next: owned RootId/generation mapping,
-operation-aware service fence and native registration/targeted reattachment.
-Those mutations remain unavailable, followed by scan/song lifecycle and fresh
-scoped native evidence. No storage checkbox changes; Windows checkpoint
+guard with bounded rollback coexistence. Owned RootId/generation mapping,
+operation-aware service fencing and experimental native registration/targeted
+reattachment are now implemented. Scan/song lifecycle and fresh scoped mutation
+receipts/run/acceptance remain pending. No storage checkbox changes; Windows checkpoint
 acknowledgment, NCN, app/CLI and manual validation remain separate gates.

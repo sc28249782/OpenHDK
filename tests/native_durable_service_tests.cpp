@@ -24,6 +24,18 @@ using namespace OpenHDK;
 namespace fs=std::filesystem;
 using Access=DurableLibraryServiceTestAccess;
 #ifdef __linux__
+namespace OpenHDK {
+struct RootReattachmentTestAccess {
+ static void exhausted(SongDiscovery& owner,RootId root) {
+  auto staged=std::make_shared<CatalogSnapshot>(*owner.catalog_.snapshot_);
+  staged->revision=UINT64_MAX;
+  for(auto& r:staged->roots)if(r.id==root)r.attachmentGeneration=UINT64_MAX;
+  owner.catalog_.snapshot_=std::move(staged);
+ }
+};
+}
+#endif
+#ifdef __linux__
 namespace {
 struct Temp {
  fs::path path;
@@ -73,14 +85,13 @@ int main(){
  std::cout<<"FENCE_CASE case=nochange checks=2 status=NoChange token_preserved=1\n";
  Access::nativeAfterPublication(service,banAllocations);auto noAlloc=service.replaceUserOverrides(id,{"Confirmed",{}});failAfter=-1;Access::nativeAfterPublication(service,nullptr);
  OPENHDK_FAIL_IF(6,!noAlloc.succeeded() || noAlloc.receipt->token.sequence!=3);
- // Test-only registration cannot bypass prospective native guards, even when
- // given an invalid/nonexistent path. Rejection precedes admission/FS work.
+ // A nonexistent target cannot become a durable registration.
  const auto nativeRegistrationPrimary=read(store/"catalog.ohkcat");
  const auto nativeRegistrationOld=service.snapshot();
  const auto nativeRegistrationChecks=Access::admissionChecks(service);
  auto noNativeRegistration=Access::registerRoot(service,t.path/"never-probed-registration");
  OPENHDK_FAIL_IF(34,noNativeRegistration.succeeded() || noNativeRegistration.root || noNativeRegistration.snapshot
-     || noNativeRegistration.receipt || noNativeRegistration.error->code!=DurableServiceErrorCode::InvalidConfiguration
+     || noNativeRegistration.receipt || noNativeRegistration.error->code!=DurableServiceErrorCode::DiscoveryFailure
      || service.snapshot()!=nativeRegistrationOld || Access::admissionChecks(service)!=nativeRegistrationChecks
      || read(store/"catalog.ohkcat")!=nativeRegistrationPrimary);
  OPENHDK_FAIL_IF(7,service.close() || service.state()!=DurableServiceState::Closed);started.service.reset();
@@ -145,6 +156,147 @@ int main(){
  OPENHDK_FAIL_IF(25,!succeeded || failedCount==0);
  std::cout<<"SERVICE_ALLOCATION failures="<<failedCount<<" success=1 fd_baseline="<<initial<<" fd_final="<<fds()<<" no_partial_primary=1\n";
  OPENHDK_FAIL_IF(26,historical->songs[0].overrides || fds()!=initial);
- std::cout<<"native-service checks=34 factory=experimental native-acceptance=Pending filesystem-bypass="<<(std::getenv("OPENHDK_NATIVE_CHECKPOINT_DIR")?0:1)<<"\n";
+ // Prospective lifecycle cases are regression assertions; tracing remains off.
+ // New native acceptance needs a fresh affected receipt matrix and pinned run.
+ NativeStoreBindingTestAccess::receipts(false);
+ {
+  const auto rs=t.path/"root-service-store",r1=t.path/"r1",r2=t.path/"r2",r3=t.path/"r3";
+  fs::create_directory(rs);fs::create_directory(r2);fs::create_directory(r3);
+  auto lifecycle=create(owner(r1),rs);OPENHDK_FAIL_IF(35,!lifecycle.succeeded());
+  auto& live=*lifecycle.service;const auto original=live.snapshot();const auto rootId=original->roots[0].id;
+  auto warmed=live.reattachRoot(rootId,r1);OPENHDK_FAIL_IF(64,!warmed.succeeded());
+  const auto fdBefore=fds();auto added=live.registerRoot(r2);
+  OPENHDK_FAIL_IF(36,!added.succeeded() || added.snapshot->roots.size()!=2 || added.snapshot->revision!=original->revision+1
+      || added.snapshot->roots.back().attachmentGeneration!=1 || fds()!=fdBefore+1);
+  auto projection=decodeCatalogCheckpoint(read(rs/"catalog.ohkcat"));
+  OPENHDK_FAIL_IF(37,!projection.succeeded() || projection.value->nextRoot!=3 || projection.value->roots.size()!=2
+      || projection.value->catalogRevision!=live.snapshot()->revision);
+  auto ownedPrepared=Access::owner(live).prepare(original,original->songs[0].id);
+  OPENHDK_FAIL_IF(38,!ownedPrepared.succeeded());
+  const auto beforeReject=live.snapshot();const auto beforeRejectBytes=read(rs/"catalog.ohkcat");
+  auto overlap=live.registerRoot(rs);
+  OPENHDK_FAIL_IF(39,overlap.succeeded() || !overlap.error->binding || overlap.error->binding->code!=NativeBindingErrorCode::RootOverlap
+      || live.state()!=DurableServiceState::Ready || live.snapshot()!=beforeReject || read(rs/"catalog.ohkcat")!=beforeRejectBytes);
+  StoreControl cancelled;cancelled.cancelled=[]{return true;};
+  auto cancel=live.registerRoot(r3,{},cancelled);
+  OPENHDK_FAIL_IF(40,cancel.succeeded() || cancel.root || cancel.snapshot || cancel.receipt || live.snapshot()!=beforeReject);
+  Access::nativeFault(live,LinuxProviderFault::Write);auto writeFail=live.registerRoot(r3);
+  OPENHDK_FAIL_IF(41,writeFail.succeeded() || live.snapshot()!=beforeReject || live.state()!=DurableServiceState::Ready
+      || read(rs/"catalog.ohkcat")!=beforeRejectBytes || fds()!=fdBefore+1);
+  Access::nativeFault(live,LinuxProviderFault::None);
+  Access::nativeAfterPublication(live,banAllocations);auto third=live.registerRoot(r3);failAfter=-1;Access::nativeAfterPublication(live,nullptr);
+  OPENHDK_FAIL_IF(42,!third.succeeded() || third.receipt->token.sequence!=3
+      || third.snapshot->roots.size()!=3 || third.snapshot->revision!=beforeReject->revision+1);
+  auto d=decodeCatalogCheckpoint(read(rs/"catalog.ohkcat"));OPENHDK_FAIL_IF(43,d.value->nextRoot!=4);
+  // The target's old directory is missing, yet unrelated guards stay verified.
+  const auto moved=t.path/"r1-moved";fs::rename(r1,moved);
+  const auto old=live.snapshot();const auto oldGen=old->roots[0].attachmentGeneration;
+  Access::nativeAfterPublication(live,banAllocations);auto repaired=live.reattachRoot(rootId,moved);failAfter=-1;Access::nativeAfterPublication(live,nullptr);
+  OPENHDK_FAIL_IF(44,!repaired.succeeded() || repaired.status!=RootReattachmentStatus::Updated
+      || repaired.snapshot->revision!=old->revision+1 || repaired.snapshot->roots[0].attachmentGeneration!=oldGen+1
+      || repaired.snapshot->songs[0].id!=old->songs[0].id || repaired.snapshot->songs[0].state!=CatalogState::Invalid
+      || repaired.snapshot->songs[0].sourceRevision() || repaired.snapshot->songs[0].metadata);
+  OPENHDK_FAIL_IF(45,original->songs[0].state!=CatalogState::Ready || !ownedPrepared.prepared->lyrics());
+  const auto sameBytes=read(rs/"catalog.ohkcat");const auto sameSnapshot=live.snapshot();
+  auto same=live.reattachRoot(rootId,moved);
+  OPENHDK_FAIL_IF(46,!same.succeeded() || same.status!=RootReattachmentStatus::Unchanged || same.snapshot!=sameSnapshot
+      || read(rs/"catalog.ohkcat")!=sameBytes || same.receipt->token!=repaired.receipt->token);
+  auto unknown=live.reattachRoot(original->songs[0].root,r2); // overlap with another root
+  OPENHDK_FAIL_IF(47,unknown.succeeded() || live.snapshot()!=sameSnapshot || live.state()!=DurableServiceState::Ready);
+  // Replacing the same path never becomes changed reattachment authority.
+  fs::rename(moved,t.path/"saved-original");fs::create_directory(moved);
+  auto drift=live.reattachRoot(rootId,moved);
+  OPENHDK_FAIL_IF(48,drift.succeeded() || !drift.error->binding || drift.error->root!=rootId
+      || live.state()!=DurableServiceState::RecoveryRequired || live.snapshot()!=sameSnapshot || read(rs/"catalog.ohkcat")!=sameBytes);
+  auto blocked=live.reattachRoot(rootId,t.path/"saved-original");
+  OPENHDK_FAIL_IF(49,blocked.succeeded() || blocked.error->code!=DurableServiceErrorCode::RecoveryRequired);
+  lifecycle.service.reset();
+  // Restored hints remain inactive. Attach in reverse record order to exercise
+  // stable guard-index/RootId association across subsequent registration.
+  auto reopened=open(rs);OPENHDK_FAIL_IF(50,!reopened.succeeded());
+  const auto roots=reopened.service->snapshot()->roots;const auto offline=reopened.service->snapshot();
+  auto attachThird=reopened.service->reattachRoot(roots[2].id,r3);
+  auto attachFirst=reopened.service->reattachRoot(rootId,t.path/"saved-original");
+  auto attachSecond=reopened.service->reattachRoot(roots[1].id,r2);
+  OPENHDK_FAIL_IF(51,!attachThird.succeeded() || !attachFirst.succeeded() || !attachSecond.succeeded()
+      || reopened.service->snapshot()->revision!=offline->revision+3);
+  auto fourthPath=t.path/"r4";fs::create_directory(fourthPath);auto fourth=reopened.service->registerRoot(fourthPath);
+  OPENHDK_FAIL_IF(52,!fourth.succeeded() || fourth.snapshot->roots.size()!=4);
+  auto stillSame=reopened.service->reattachRoot(roots[2].id,r3);
+  OPENHDK_FAIL_IF(53,!stillSame.succeeded() || stillSame.status!=RootReattachmentStatus::Unchanged);
+  reopened.service.reset();
+ }
+ OPENHDK_FAIL_IF(54,fds()!=initial);
+ {
+  const auto rs=t.path/"late-register-store",r=t.path/"late-old",fresh=t.path/"late-fresh";
+  fs::create_directory(rs);fs::create_directory(fresh);auto a=create(owner(r),rs);
+  const auto old=a.service->snapshot();const auto bytes=read(rs/"catalog.ohkcat");bool replaced=false;
+  StoreControl control;control.checkpoint=[&](StoreCheckpoint point){if(point==StoreCheckpoint::BeforePublication){fs::rename(fresh,t.path/"late-retained");fs::create_directory(fresh);replaced=true;}};
+  auto bad=a.service->registerRoot(fresh,{},control);
+  OPENHDK_FAIL_IF(55,!replaced || bad.succeeded() || bad.root || bad.snapshot || bad.receipt || !bad.error->binding
+      || bad.error->store->outcome!=StoreOutcome::NotCommitted || a.service->snapshot()!=old
+      || read(rs/"catalog.ohkcat")!=bytes || a.service->state()!=DurableServiceState::RecoveryRequired);
+ }
+ {
+  const auto rs=t.path/"unrelated-store",r=t.path/"unrelated-target",other=t.path/"unrelated-other",to=t.path/"unrelated-new";
+  fs::create_directory(rs);fs::create_directory(other);fs::create_directory(to);auto o=owner(r);auto otherId=o->registerRoot(other).root;
+  auto a=create(std::move(o),rs);const auto old=a.service->snapshot();const auto bytes=read(rs/"catalog.ohkcat");
+  fs::rename(r,t.path/"target-retired");fs::rename(other,t.path/"other-retained");fs::create_directory(other);
+  auto bad=a.service->reattachRoot(old->roots[0].id,to);
+  OPENHDK_FAIL_IF(56,bad.succeeded() || bad.error->root!=otherId || a.service->state()!=DurableServiceState::RecoveryRequired
+      || a.service->snapshot()!=old || read(rs/"catalog.ohkcat")!=bytes);
+ }
+ {
+  const auto rs=t.path/"sync-register-store",fresh=t.path/"sync-register-root";fs::create_directory(rs);fs::create_directory(fresh);
+  auto a=create(std::make_unique<SongDiscovery>(),rs);const auto old=a.service->snapshot();
+  Access::nativeFault(*a.service,LinuxProviderFault::SyncPublication);auto uncertain=a.service->registerRoot(fresh);
+  OPENHDK_FAIL_IF(57,uncertain.succeeded() || uncertain.root || uncertain.error->store->outcome!=StoreOutcome::Uncertain
+      || a.service->snapshot()!=old || a.service->state()!=DurableServiceState::RecoveryRequired);
+  a.service.reset();auto recovered=open(rs);OPENHDK_FAIL_IF(58,!recovered.succeeded() || recovered.service->snapshot()->roots.size()!=1
+      || Access::attached(*recovered.service,recovered.service->snapshot()->roots[0].id)!=false);
+ }
+ {
+  const auto rs=t.path/"mutation-sweep-store",fresh=t.path/"mutation-sweep-root";fs::create_directory(rs);fs::create_directory(fresh);
+  auto a=create(std::make_unique<SongDiscovery>(),rs);a.service.reset();a=open(rs);
+  const auto old=a.service->snapshot();const auto bytes=read(rs/"catalog.ohkcat");const auto count=fds();
+  bool done=false;unsigned failures=0;
+  for(std::ptrdiff_t n=0;n<512;++n) {
+    failAfter=n;auto result=a.service->registerRoot(fresh);failAfter=-1;
+    if(result.succeeded()){done=true;break;}
+    ++failures;OPENHDK_FAIL_IF(59,result.root || result.snapshot || result.receipt || a.service->snapshot()!=old
+        || read(rs/"catalog.ohkcat")!=bytes || a.service->state()!=DurableServiceState::Ready || fds()!=count);
+  }
+  OPENHDK_FAIL_IF(60,!done || failures==0 || a.service->snapshot()->roots.size()!=1);
+  const auto rootId=a.service->snapshot()->roots[0].id;const auto target=t.path/"mutation-sweep-target";fs::create_directory(target);
+  const auto prior=a.service->snapshot();const auto priorBytes=read(rs/"catalog.ohkcat");const auto priorFd=fds();done=false;failures=0;
+  for(std::ptrdiff_t n=0;n<512;++n) {
+    failAfter=n;auto result=a.service->reattachRoot(rootId,target);failAfter=-1;
+    if(result.succeeded()){done=true;break;}
+    ++failures;OPENHDK_FAIL_IF(61,result.status || result.snapshot || result.receipt || a.service->snapshot()!=prior
+        || read(rs/"catalog.ohkcat")!=priorBytes || a.service->state()!=DurableServiceState::Ready || fds()!=priorFd);
+  }
+  OPENHDK_FAIL_IF(62,!done || failures==0 || a.service->snapshot()->roots[0].attachmentGeneration!=2);
+ }
+ {
+  const auto rs=t.path/"root-nochange-fence-store",r=t.path/"root-nochange-fence";
+  fs::create_directory(rs);auto a=create(owner(r),rs);const auto old=a.service->snapshot();const auto bytes=read(rs/"catalog.ohkcat");
+  unsigned checks=0;StoreControl control;control.cancelled=[&]{if(++checks==2){
+    fs::rename(r,t.path/"root-nochange-retained");fs::create_directory(r);}return false;};
+  auto rejected=a.service->reattachRoot(old->roots[0].id,r,control);
+  OPENHDK_FAIL_IF(65,rejected.succeeded() || !rejected.error->binding || a.service->snapshot()!=old
+      || read(rs/"catalog.ohkcat")!=bytes || a.service->state()!=DurableServiceState::RecoveryRequired || Access::pendingAdmission(*a.service));
+ }
+ {
+  const auto rs=t.path/"root-exhaustion-store",r=t.path/"root-exhaustion",target=t.path/"root-exhaustion-target";
+  fs::create_directory(rs);fs::create_directory(target);auto o=owner(r);const auto id=o->snapshot()->roots[0].id;
+  RootReattachmentTestAccess::exhausted(*o,id);auto a=create(std::move(o),rs);OPENHDK_FAIL_IF(66,!a.succeeded());
+  const auto old=a.service->snapshot();const auto bytes=read(rs/"catalog.ohkcat");auto noop=a.service->reattachRoot(id,r);
+  OPENHDK_FAIL_IF(67,!noop.succeeded() || noop.status!=RootReattachmentStatus::Unchanged || noop.snapshot!=old || read(rs/"catalog.ohkcat")!=bytes);
+  auto exhausted=a.service->reattachRoot(id,target);
+  OPENHDK_FAIL_IF(68,exhausted.succeeded() || exhausted.error->discovery->code!=DiscoveryError::RevisionExhausted
+      || a.service->state()!=DurableServiceState::Ready || a.service->snapshot()!=old || Access::pendingAdmission(*a.service));
+ }
+ OPENHDK_FAIL_IF(63,fds()!=initial);
+ std::cout<<"native-service checks=68 factory=experimental native-acceptance=Pending filesystem-bypass="<<(std::getenv("OPENHDK_NATIVE_CHECKPOINT_DIR")?0:1)<<"\n";
 #endif
 }

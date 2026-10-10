@@ -4,7 +4,8 @@
 **Status:** Accepted by review and merge of PR #69; override service primitive
 and fake-provider lifecycle/commit tests implemented. Experimental native
 admission/fence implemented with scoped acceptance for tested revision `4f69246`;
-other durable mutations remain pending.
+experimental root registration/reattachment implemented; their fresh affected
+native evidence/acceptance and scan/song lifecycle remain pending.
 **Target:** 0.3.0 storage slice 5, after immutable live capture.
 
 ## 1. Purpose and scope
@@ -392,15 +393,16 @@ root mappings/hints while retaining snapshot lineage and exact counters. The
 candidate capture is associated with that staged owner. Valid Saved/revision/
 token acknowledgment precedes a nonthrowing whole-owner publication. Failed
 operations expose no staged identities or receipt; recovery rules remain intact.
-Only test access can invoke registration, and native services reject that path.
-No prospective native admission or public lifecycle mutation is implemented.
+The original slice exposed fake-provider registration only. The current
+experimental service now exposes `registerRoot` and `reattachRoot`; see
+[the integration boundary](DURABLE-ROOT-LIFECYCLE-PLAN.md#12-experimental-root-service-integration).
 
 ## Prospective guard primitive before service integration
 
 [OHK-DURABLE-ROOT-030](DURABLE-ROOT-LIFECYCLE-PLAN.md#11-current-prospective-guard-primitive)
 now provides private prospective admission using immutable shared unchanged
-guards and one new/replacement guard. The service must still associate prior
-indices with owned RootIds/generations and retain the old admission through
-commit/rollback. Its current fence and fake-only registration path are unchanged.
-No native registration/reattachment or recovery bypass is enabled by this
-primitive. Fresh affected receipts/run/acceptance remain required.
+guards and one new/replacement guard. The service now associates prior
+indices with owned RootIds/generations and retains the old admission through
+commit/rollback. A scoped candidate context selects the final fence during
+root transactions. Changed registration/reattachment requires Saved; same-path
+validated NoChange requires Unchanged. No recovery bypass is enabled. Fresh affected receipts/run/acceptance remain required.

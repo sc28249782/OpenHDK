@@ -96,7 +96,7 @@ v0.2.0 behavior.
 | **VST2/VST3 integration** | A future, separate integration workstream. |
 | **physical MIDI hardware I/O** | Future input/output device integration. It is not part of the current SMF foundation. |
 
-- **Durable library service**: Accepted exclusive owner/store boundary that stages a mutation and publishes memory only after confirmed storage commit. The override primitive has fake-provider tests and an experimental Linux factory/fence with scoped acceptance for tested revision `4f69246`; other mutations remain pending. Existing in-memory APIs remain separate.
+- **Durable library service**: Accepted exclusive owner/store boundary that stages a mutation and publishes memory only after confirmed storage commit. The override primitive has fake-provider tests and an experimental Linux factory/fence with scoped acceptance for tested revision `4f69246`; experimental registration/reattachment also use prospective guards, with fresh native acceptance pending. Scan/song lifecycle remains pending. Existing in-memory APIs remain separate.
 - **Acknowledged baseline**: In the durable service primitive, the matching owner snapshot/counter/root context and internal store expectation established by confirmed initialization or mutation. A store token alone does not establish this association.
 
 ## Native binding epoch
@@ -131,8 +131,8 @@ implemented mutation facility.
 
 A privately owned same-lineage SongDiscovery candidate with its snapshot, exact
 allocator high-water counters and root mappings/hints. Slice 3.1 captures its
-checkpoint and publishes the whole owner only after confirmed save. Current
-registration access is test-only; prospective native root guards remain pending.
+checkpoint and publishes the whole owner only after confirmed save. Experimental registration/reattachment
+now associate prospective guards before the storage commit.
 See [OHK-DURABLE-ROOT-030](DURABLE-ROOT-LIFECYCLE-PLAN.md#10-current-slice-31-boundary).
 
 ## Shared prospective root guard
@@ -141,5 +141,6 @@ An immutable mapping/identity/mount/handle object reused by a private prospectiv
 admission when its prior index and path match. Sharing preserves original
 identity authority and avoids descriptor duplication. A changed target gets a
 distinct guard; its retired guard remains in the old context until commit or
-rollback. The owning service's RootId/generation association is still pending.
+rollback. The service validates RootId/generation association and uses the candidate
+guards in its scoped prepublication fence.
 See [OHK-DURABLE-ROOT-030](DURABLE-ROOT-LIFECYCLE-PLAN.md#11-current-prospective-guard-primitive).
