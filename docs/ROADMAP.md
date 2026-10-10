@@ -271,9 +271,9 @@ NCN evidence and manual validation remain open. No storage release checkbox chan
 
 [OHK-DURABLE-ROOT-030](DURABLE-ROOT-LIFECYCLE-PLAN.md#10-current-slice-31-boundary)
 is accepted, with private complete-owner staging and fake-provider registration
-implemented. Shared guards and experimental operation-aware native
-registration/reattachment are implemented. Next: scan and logical song relocation/removal.
-Fresh affected native receipts and scoped acceptance remain required. This does
+implemented. Shared guards, operation-aware native registration/reattachment and
+scan/logical song relocation/removal are implemented experimentally.
+Next: affected mutation receipts, fresh pinned native execution and scoped acceptance. This does
 not complete storage or application/CLI work; Windows, NCN and manual gates stay
 open, and existing roadmap completion checkboxes remain unchanged.
 

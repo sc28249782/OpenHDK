@@ -495,3 +495,32 @@ complete acceptance record. Shared-guard representation changes require fresh
 affected native evidence before extending support claims. No historical bundle
 is edited. [Service fence integration](../docs/DURABLE-ROOT-LIFECYCLE-PLAN.md#12-experimental-root-service-integration)
 now uses a scoped candidate context; new mutation receipts remain pending.
+
+
+## Durable scan and logical song lifecycle tests
+
+The [fake service suite](durable_library_service_tests.cpp) now has 124 numbered
+checks, and the [native service suite](native_durable_service_tests.cpp) has 78.
+New cases exercise complete-scan revision/sequence increments, Ready metadata and
+override preservation, equal-key invalidation, logical relocation/source
+preservation, removal/high-water/rediscovery, retained PreparedSong buffers,
+invalid-source diagnostics, cancellation, fake artifact phase faults,
+uncertainty/recovery, relocate/remove allocation sweeps and scan save-stage sweeps, exact/beyond
+shared staging budgets, old memory during publish/sync and postpublication
+allocation bans. Native cases add late original-root drift rejection for scan,
+relocate/remove with unchanged primary bytes/memory, RootId error mapping,
+pending-context cleanup and FD rollback.
+
+These added cases are regression assertions; the existing receipt verifier does
+not declare complete mutation evidence. Fresh bounded mutation receipts, a pinned
+native ext4 run and explicit scoped review remain pending. Local overlay bypass
+is not ext4 acceptance. Counts remain 28 core / 31 audio-enabled, historical
+bundles/accepted revisions stay unchanged, and Windows acknowledgment remains
+BLOCKED. [Current integration boundary](../docs/DURABLE-ROOT-LIFECYCLE-PLAN.md#13-experimental-scan-and-logical-song-lifecycle-integration).
+
+Scan allocation injection starts at the existing coordinator BeforeStaging
+checkpoint, after filesystem discovery and capture. It does not sweep standard
+library traversal allocations: the local libstdc++ recursive directory iterator
+terminates on an injected allocation failure inside its constructor. Relocate
+and remove are swept from operation entry. These tests do not claim a total
+process-memory bound or comprehensive system-library allocation coverage.

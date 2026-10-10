@@ -295,8 +295,75 @@ int main(){
   auto exhausted=a.service->reattachRoot(id,target);
   OPENHDK_FAIL_IF(68,exhausted.succeeded() || exhausted.error->discovery->code!=DiscoveryError::RevisionExhausted
       || a.service->state()!=DurableServiceState::Ready || a.service->snapshot()!=old || Access::pendingAdmission(*a.service));
+  auto exhaustedScan=a.service->scan(id);auto exhaustedRemove=a.service->removeSong(old->songs[0].id);
+  OPENHDK_FAIL_IF(78,exhaustedScan.succeeded() || exhaustedScan.error->discovery->code!=DiscoveryError::RevisionExhausted
+      || exhaustedRemove.succeeded() || exhaustedRemove.error->catalog!=CatalogError::IdExhausted
+      || a.service->snapshot()!=old || read(rs/"catalog.ohkcat")!=bytes || Access::pendingAdmission(*a.service));
+
+ }
+
+ // Song lifecycle cases are regression assertions; fresh native receipts and
+ // scoped acceptance are still required for these changed service paths.
+ {
+  const auto rs=t.path/"song-lifecycle-store",r=t.path/"song-lifecycle-root";fs::create_directory(rs);
+  auto o=owner(r);const auto history=o->snapshot();const auto id=history->songs[0].id;const auto rootId=history->roots[0].id;
+  auto prepared=o->prepare(history,id);auto a=create(std::move(o),rs);
+  auto edited=a.service->replaceUserOverrides(id,{"Keep ไทย",{}});
+  auto scanned=a.service->scan(rootId);auto again=a.service->scan(rootId);
+  OPENHDK_FAIL_IF(69,!scanned.succeeded() || !again.succeeded() || scanned.snapshot->songs[0].state!=CatalogState::Ready
+      || again.snapshot->revision!=scanned.snapshot->revision+1 || again.receipt->token.sequence!=scanned.receipt->token.sequence+1
+      || again.snapshot->songs[0].overrides!=edited.snapshot->songs[0].overrides);
+  auto moved=a.service->relocateSong(id,rootId,"ready.kar");
+  OPENHDK_FAIL_IF(70,!moved.succeeded() || moved.snapshot->songs[0].state!=CatalogState::Invalid
+      || moved.snapshot->songs[0].sourceRevision() || moved.snapshot->songs[0].metadata);
+  auto removed=a.service->removeSong(id);auto rediscovered=a.service->scan(rootId);
+  OPENHDK_FAIL_IF(71,!removed.succeeded() || !removed.snapshot->songs.empty() || !rediscovered.succeeded()
+      || rediscovered.snapshot->songs[0].id==id || rediscovered.snapshot->songs[0].overrides || !fs::exists(r/"ready.kar")
+      || !prepared.succeeded() || prepared.prepared->lyrics()->cues().size()!=1);
+  Access::nativeAfterPublication(*a.service,banAllocations);auto noAlloc=a.service->scan(rootId);failAfter=-1;
+  Access::nativeAfterPublication(*a.service,nullptr);
+  OPENHDK_FAIL_IF(72,!noAlloc.succeeded() || Access::pendingAdmission(*a.service));
+  const auto stable=a.service->snapshot();const auto prior=read(rs/"catalog.ohkcat");
+  Access::nativeFault(*a.service,LinuxProviderFault::SyncPublication);auto uncertain=a.service->removeSong(stable->songs[0].id);
+  OPENHDK_FAIL_IF(73,uncertain.succeeded() || uncertain.snapshot || uncertain.receipt || a.service->snapshot()!=stable
+      || read(rs/"catalog.ohkcat")==prior || a.service->state()!=DurableServiceState::RecoveryRequired);
+  a.service.reset();auto recovery=open(rs);
+  OPENHDK_FAIL_IF(74,!recovery.succeeded() || !recovery.service->snapshot()->songs.empty());
+ }
+ for(unsigned operation=0;operation<3;++operation) {
+  const auto rs=t.path/("song-fence-store-"+std::to_string(operation)),r=t.path/("song-fence-root-"+std::to_string(operation));
+  fs::create_directory(rs);auto a=create(owner(r),rs);const auto old=a.service->snapshot();const auto bytes=read(rs/"catalog.ohkcat");
+  StoreControl control;control.checkpoint=[&](StoreCheckpoint point){if(point==StoreCheckpoint::BeforePublication){fs::rename(r,t.path/("song-retained-"+std::to_string(operation)));fs::create_directory(r);}};
+  DurableCatalogMutationResult result;
+  if(operation==0){auto x=a.service->scan(old->roots[0].id,{}, {},control);result={std::move(x.snapshot),std::move(x.receipt),std::move(x.error)};}
+  else if(operation==1)result=a.service->relocateSong(old->songs[0].id,old->roots[0].id,"next.kar",control);
+  else result=a.service->removeSong(old->songs[0].id,control);
+  OPENHDK_FAIL_IF(75,result.succeeded() || !result.error->binding || result.error->root!=old->roots[0].id
+      || result.snapshot || result.receipt || a.service->snapshot()!=old || read(rs/"catalog.ohkcat")!=bytes
+      || a.service->state()!=DurableServiceState::RecoveryRequired || Access::pendingAdmission(*a.service));
+ }
+ for(unsigned operation=0;operation<3;++operation) {
+  const auto rs=t.path/("song-sweep-store-"+std::to_string(operation)),r=t.path/("song-sweep-root-"+std::to_string(operation));
+  fs::create_directory(rs);auto a=create(owner(r),rs);const auto snap=a.service->snapshot();
+  if(!a.service->reattachRoot(snap->roots[0].id,r).succeeded())std::abort();
+  const auto old=a.service->snapshot();const auto bytes=read(rs/"catalog.ohkcat");const auto count=fds();bool done=false;unsigned failures=0;
+  for(std::ptrdiff_t n=0;n<1024;++n) {
+    // Scan sweep begins at store staging; stdlib traversal allocations are
+    // outside injection scope (see the fake suite's matching caveat).
+    StoreControl sweepControl;
+    if(operation==0)sweepControl.checkpoint=[&](StoreCheckpoint point){if(point==StoreCheckpoint::BeforeStaging)failAfter=n;};
+    else failAfter=n;
+    DurableCatalogMutationResult result;
+    if(operation==0){auto x=a.service->scan(old->roots[0].id,{}, {},sweepControl);result={std::move(x.snapshot),std::move(x.receipt),std::move(x.error)};}
+    else if(operation==1)result=a.service->relocateSong(old->songs[0].id,old->roots[0].id,"next.kar");
+    else result=a.service->removeSong(old->songs[0].id);
+    failAfter=-1;if(result.succeeded()){done=true;break;}++failures;
+    OPENHDK_FAIL_IF(76,result.snapshot || result.receipt || a.service->snapshot()!=old || read(rs/"catalog.ohkcat")!=bytes
+        || a.service->state()!=DurableServiceState::Ready || fds()!=count || Access::pendingAdmission(*a.service));
+  }
+  OPENHDK_FAIL_IF(77,!done || failures==0 || fds()!=count);
  }
  OPENHDK_FAIL_IF(63,fds()!=initial);
- std::cout<<"native-service checks=68 factory=experimental native-acceptance=Pending filesystem-bypass="<<(std::getenv("OPENHDK_NATIVE_CHECKPOINT_DIR")?0:1)<<"\n";
+ std::cout<<"native-service checks=78 factory=experimental native-acceptance=Pending filesystem-bypass="<<(std::getenv("OPENHDK_NATIVE_CHECKPOINT_DIR")?0:1)<<"\n";
 #endif
 }

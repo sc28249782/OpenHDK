@@ -4,8 +4,8 @@
 **Status:** Accepted by review and merge of PR #69; override service primitive
 and fake-provider lifecycle/commit tests implemented. Experimental native
 admission/fence implemented with scoped acceptance for tested revision `4f69246`;
-experimental root registration/reattachment implemented; their fresh affected
-native evidence/acceptance and scan/song lifecycle remain pending.
+experimental root registration/reattachment and scan/song lifecycle implemented;
+fresh affected native mutation evidence/acceptance remain pending.
 **Target:** 0.3.0 storage slice 5, after immutable live capture.
 
 ## 1. Purpose and scope
@@ -406,3 +406,16 @@ indices with owned RootIds/generations and retains the old admission through
 commit/rollback. A scoped candidate context selects the final fence during
 root transactions. Changed registration/reattachment requires Saved; same-path
 validated NoChange requires Unchanged. No recovery bypass is enabled. Fresh affected receipts/run/acceptance remain required.
+
+
+## Experimental durable scan and song lifecycle
+
+[OHK-DURABLE-ROOT-030 integration](DURABLE-ROOT-LIFECYCLE-PLAN.md#13-experimental-scan-and-logical-song-lifecycle-integration)
+now stages complete owners for `scan`, `relocateSong` and `removeSong` while
+sharing all original native guards. Every complete scan requires a new confirmed
+checkpoint revision. Relocation invalidates source state even for an equal key;
+removal preserves allocator history and never deletes source files. Discovery
+and service staging share one payload allowance; diagnostics/results are owned
+before commit. No fallible work is added between confirmed save and the
+nonthrowing owner swap. New mutation receipts, a pinned native run and scoped
+acceptance remain required. Windows/NCN/manual/application gates stay open.

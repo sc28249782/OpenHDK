@@ -144,3 +144,13 @@ distinct guard; its retired guard remains in the old context until commit or
 rollback. The service validates RootId/generation association and uses the candidate
 guards in its scoped prepublication fence.
 See [OHK-DURABLE-ROOT-030](DURABLE-ROOT-LIFECYCLE-PLAN.md#11-current-prospective-guard-primitive).
+
+
+## Durable catalog lifecycle result
+
+An immutable snapshot and confirmed commit receipt produced by experimental
+service scan/logical relocation/removal. A complete scan also owns diagnostics
+and candidate counts before publication. Failure exposes no staged snapshot,
+receipt or discovery diagnostics. Root mappings and original guards remain
+associated with the staged owner; logical edits do not move or delete files.
+See [OHK-DURABLE-ROOT-030](DURABLE-ROOT-LIFECYCLE-PLAN.md#13-experimental-scan-and-logical-song-lifecycle-integration).
