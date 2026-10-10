@@ -80,6 +80,8 @@ for src in "$source_root"/tests/*_tests.cpp; do
   count=$((count+1))
 done
 run_receipt verify native-admission "$out/native-admission-verification.log" 120s python3 "$source_root/tests/verify-native-admission-receipts.py" "$out/native_store_binding_tests.run.log" "$out/native_durable_service_tests.run.log"
+run_receipt verify native-mutation "$out/native-mutation-verification.log" 120s python3 "$source_root/tests/verify-native-mutation-receipts.py" "$out/native_durable_service_tests.run.log"
+run_receipt verify native-mutation-negative "$out/native-mutation-verifier-tests.log" 120s python3 "$source_root/tests/check-native-mutation-verifier.py" "$out/native_durable_service_tests.run.log"
 {
   printf 'REVISION %s\n' "$(git -C "$source_root" rev-parse HEAD)"
   git -C "$source_root" status --porcelain --untracked-files=all

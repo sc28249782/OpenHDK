@@ -375,6 +375,7 @@ struct LinuxCheckpointProviderTestAccess {
   static void partialWrite(LinuxCheckpointProvider& p,std::uint64_t failAt) noexcept {p.shortIo_=true;p.writeFailureAt_=failAt;}
   static std::pair<unsigned,unsigned> calls(const LinuxCheckpointProvider& p) noexcept {return {p.readCalls_,p.writeCalls_};}
 #ifdef __linux__
+  static void snapshotRetainedArtifacts(LinuxCheckpointProvider& p) noexcept {for(const auto& s:p.slots_)if(s.id)p.cleanupSnapshot(s);}
   static std::string nextArtifactName() {return ".ohk-stage-"+std::to_string(::getpid())+"-"+std::to_string(LinuxCheckpointProvider::identities_.load()+1);}
   static const char* artifactName(LinuxCheckpointProvider& p,StoreArtifact a) noexcept {auto* s=p.slot(a);return s?s->name.data():nullptr;}
 #endif

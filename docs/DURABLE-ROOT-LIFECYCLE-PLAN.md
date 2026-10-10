@@ -4,7 +4,8 @@
 **Status:** Accepted by review and merge of PR #77; private complete-owner staging
 and fake-provider durable registration implemented. Private prospective shared
 guards and experimental operation-aware register/reattach integration implemented;
-experimental scan/song lifecycle implemented; fresh affected mutation evidence remains pending.
+experimental scan/song lifecycle and bounded mutation receipt instrumentation implemented;
+fresh pinned affected mutation execution/acceptance remains pending.
 **Target:** OHK-DURABLE-030 slice 3, after scoped native factory/fence acceptance.
 
 ## 1. Purpose and current boundary
@@ -401,3 +402,59 @@ library traversal allocations: the local libstdc++ recursive directory iterator
 terminates on an injected allocation failure inside its constructor. Relocate
 and remove are swept from operation entry. These tests do not claim a total
 process-memory bound or comprehensive system-library allocation coverage.
+
+
+## 14. Bounded mutation receipts and verifier
+
+The native service target now emits a separate MUTATION receipt matrix through
+[test-only helpers](../tests/NativeMutationReceipts.hpp). There are 34 cases:
+5 operations times Saved/write-failure/late-fence/uncertainty/late-cancellation,
+plus targeted missing-root repair, same-path NoChange, equal-key relocation,
+remove/rediscovery, same-path drift, unrelated drift, reciprocal containment,
+explicit saved-hint attachment and the 32-root replacement descriptor peak.
+The five allocation sweeps emit operation, scope, failure count, rollback FD
+observation and successful FD count. Registration legitimately adds one guard FD;
+other successful sweep operations preserve their warmed baseline count. Scan
+injection still starts at coordinator BeforeStaging after discovery/capture.
+
+Before fixture cleanup, 69 primary observations report full-wire SHA-256,
+checkpoint footer digest, sequence/revision/high-water and selected detached
+root/song rows. They omit hints and absolute paths. Root IDs in these rows are
+detached checkpoint numbers, not live identity capabilities. The final fence's
+RootId mapping is reported as equality/association, not an authority value.
+Original-guard sharing and old memory at the post-rename test seam are booleans;
+no pointers or epoch tokens are logged. Late cancellation is observed after
+rename and cannot undo a committed save. Uncertainty is followed by explicit
+close/open and full captured-versus-stored projection comparison except sequence.
+Restored roots remain unattached.
+
+Admission and provider observations use the existing fixed 256-record buffers,
+with overflow reported and rejected. Selected native results and injected faults
+remain distinct. A seams-only retained-artifact snapshot invokes existing fstat/
+bounded pread instrumentation before uncertain service closure; it never writes,
+unlinks or releases an artifact. Artifact identity/size/capture status is printed
+for 45 captures. The existing 256-byte capture cap remains: larger artifacts
+explicitly report EFBIG/unavailable. Raw hint-bearing artifact bytes are omitted;
+only a digest is printed when capture succeeds. No full artifact-byte availability
+or independent reconstruction of omitted wire/path fields is claimed.
+
+The [mutation verifier](../tests/verify-native-mutation-receipts.py) enforces
+case completeness, framing/counts/overflow, projection ordering/high-water,
+revision-only scans, operation-specific identity/generation rules, rollback,
+acknowledgment association, typed error families, memory-before-publication,
+shared guards, uncertainty/fresh recovery and allocation scope/FD rules.
+[Negative checks](../tests/check-native-mutation-verifier.py) reject 10 tampered
+logs: overflow, missing case, counter drift, publication ordering, guard refresh,
+late cancellation, duplicate case, staged-result leakage, false acceptance and
+missing injection. These checks prove selected receipt consistency, not log
+provenance, source/run authentication or independent hashing of omitted bytes.
+
+The collector records both verifier and negative-test exit codes in separate logs
+covered by SHA256SUMS. No historical bundle changes. Current local overlay runs
+remain regression coverage. Fresh pinned WSL2 ext4 execution with bypass disabled
+and explicit scoped mutation acceptance are still required; both historical
+accepted revisions remain unchanged. Namespace aliases remain Skipped, Windows
+acknowledgment BLOCKED, and application/CLI, NCN and manual validation stay open.
+No production behavior, publication ordering, schema, dependencies, version or
+roadmap checkbox changes. Counts stay 28 core / 31 audio-enabled; the native
+service target has 82 numbered check identifiers plus the 34-case matrix.

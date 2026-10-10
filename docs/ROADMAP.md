@@ -286,3 +286,12 @@ operation-aware service fencing and experimental native registration/targeted
 reattachment are now implemented. Scan/song lifecycle and fresh scoped mutation
 receipts/run/acceptance remain pending. No storage checkbox changes; Windows checkpoint
 acknowledgment, NCN, app/CLI and manual validation remain separate gates.
+
+
+## Durable mutation receipt instrumentation
+
+The [34-case receipt matrix](DURABLE-ROOT-LIFECYCLE-PLAN.md#14-bounded-mutation-receipts-and-verifier)
+and positive/negative verifiers are implemented. Next: fresh pinned WSL2 ext4
+execution with no eligibility bypass, evidence review and explicit scoped
+acceptance, then application/CLI wiring. Historical acceptances and storage
+checkbox status do not advance. Windows/NCN/manual gates remain open.
