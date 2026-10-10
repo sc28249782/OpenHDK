@@ -475,3 +475,13 @@ meaning; this final decision is authoritative. The `6a6337d` provider decision
 remains separate and unchanged. Mount-namespace alias evidence remains Skipped;
 Windows checkpoint acknowledgment, durable root mutations, application/CLI wiring,
 NCN evidence and manual validation remain open. No storage release checkbox changes.
+
+## Proposed durable root lifecycle boundary
+
+[OHK-DURABLE-ROOT-030](DURABLE-ROOT-LIFECYCLE-PLAN.md) is a proposal awaiting review
+and acceptance. It plans durable root registration, complete scan, logical song
+relocation/removal and changed reattachment with same-lineage full-owner staging,
+prospective admission and confirmed-save-before-memory publication. Existing
+in-memory API semantics remain implemented behavior; the proposal does not make
+them durable. New runtime/receipt changes require fresh affected native evidence
+and explicit scoped acceptance. Windows checkpoint acknowledgment remains BLOCKED.

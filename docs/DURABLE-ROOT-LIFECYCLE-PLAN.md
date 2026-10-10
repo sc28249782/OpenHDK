@@ -1,0 +1,224 @@
+# Durable root lifecycle staging and admission plan
+
+**Plan:** OHK-DURABLE-ROOT-030
+**Status:** Proposed; requires review and acceptance before implementation.
+**Target:** OHK-DURABLE-030 slice 3, after scoped native factory/fence acceptance.
+
+## 1. Purpose and current boundary
+
+The [durable service contract](DURABLE-LIBRARY-SERVICE-CONTRACT.md) currently
+implements baseline admission and durable user overrides. Its private projection
+path deliberately requires unchanged roots, counters and song identities. The
+existing in-memory register, scan, relocate, remove and reattach APIs publish
+their results immediately; wrapping them with a later save would violate
+commit-before-memory-publication.
+
+The [native binding plan](NATIVE-SERVICE-BINDING-PLAN.md) supplies lease-bound
+store authority and retained root guards. Its current fence rechecks every
+published root. That cannot directly repair a missing old root: the fence would
+reject the old mapping before the replacement could be staged. Rebuilding all
+guards from current paths would instead silently adopt replacements of unrelated
+roots. Neither behavior is a suitable transaction rule.
+
+This proposal defines private complete-owner staging and prospective admission.
+It supplies no runtime API, native acceptance, CLI command or completed roadmap
+item. Root unregistration, root policy editing, physical source moves/deletion,
+schema changes and automatic recovery remain outside scope. Logical song
+relocation/removal changes catalog records only.
+
+## 2. Private staged owner and checkpoint association
+
+Each operation MUST start under the existing non-reentrant service guard and
+verify its acknowledged baseline. Callers cannot supply a snapshot, projection,
+allocator counter, directory mapping, store expectation or admission capability.
+
+A private staging descriptor MUST retain, as one associated candidate:
+
+- The complete candidate catalog snapshot with the current owner's lineage.
+- Exact candidate allocator high-water counters, including unused/deleted IDs.
+- Every registered root's ID, policy, attachment generation, attached flag,
+  active path and saved hint where present.
+- A captured projection derived from that same candidate, plus its association
+  with the current baseline and internal store expectation.
+- Prospective native guards and their RootId mapping under the same retained
+  provider lease epoch, and a fully constructed success result.
+
+Do not restore a checkpoint to create staging: restore intentionally creates a
+fresh lineage, unattached roots and Invalid songs. Reuse existing validation and
+reconciliation logic through private staging helpers; do not independently
+reimplement SMF/KAR parsing, metadata extraction or identity reconciliation.
+Candidate ID/generation allocation MUST affect only staging until commit.
+
+Implementation MUST choose a complete staged-owner publication representation
+that can be installed without throwing, for example an owned staged context
+swapped into the service. It MUST prebuild all associated guard, baseline,
+expectation and result transfers. Static assertions and allocation-prohibition
+tests MUST cover the entire confirmed-save-to-result path. The serialized service
+must expose a coherent new context only after these nonthrowing transfers; this
+does not claim an atomic multi-field publication to concurrent mutable callers.
+
+## 3. Proposed operation semantics
+
+These names describe operations, not implemented public signatures. Preserve the
+existing [library](KARAOKE-LIBRARY-CONTRACT.md),
+[metadata](CATALOG-METADATA-POLICY-CONTRACT.md) and
+[reattachment](ROOT-REATTACHMENT-CONTRACT.md) semantics:
+
+| Operation | Staged identity and state | Confirmed publication |
+| --- | --- | --- |
+| Register root | Validate policy before filesystem work/ID allocation; validate canonical directory and root overlap; verify the store is outside the root; allocate one RootId with generation 1. | Revision +1, nextRoot advances once, mapping and guards publish together. |
+| Complete scan | Apply captured root policy, bounded source verification and metadata reconciliation; retain IDs for existing keys, stage new IDs for new keys, retain missing entries and overrides. | Revision +1 for every successful complete scan; nextSong advances only for new entries; attachment generation unchanged. |
+| Relocate song | Validate existing IDs, locator and collisions; retain SongId/overrides, invalidate source tokens/metadata and state. No file move. | Revision +1; counters unchanged. Equal root/locator retains the current invalidating behavior, rather than introducing a new no-op. |
+| Remove song | Remove the known catalog row and overrides. No file deletion. | Revision +1; counters do not decrease. Rediscovery allocates a new SongId without the removed overrides. |
+| Reattach root | Validate/retain target identity; preserve RootId, SongIds, locators, policy and overrides; invalidate all songs under that root and clear source tokens/metadata. | Changed binding: revision and attachment generation +1; counters unchanged; mapping and guards publish together. |
+
+A scan whose persistent identity rows are unchanged still publishes a new catalog
+revision under the existing scan contract. That revision is serialized, so this
+is a changed checkpoint requiring confirmed Saved, not a volatile-only scan or an
+Unchanged store acknowledgment. Enumeration/read/hash verification remains a
+consistency check, not a filesystem-wide atomic snapshot.
+
+Same-canonical-path reattachment is NoChange only for an existing active binding
+that passes the service's retained-identity checks. It performs no scan or
+invalidation, and may succeed at counter exhaustion after token/fence validation.
+First attachment of a restored unattached root is changed even when selecting
+its saved hint. Saved hints cause no filesystem lookup until explicitly selected.
+Real changes fail at relevant ID, generation or revision exhaustion without
+consuming any counter. Root removal remains excluded by checkpoint history rules.
+
+## 4. Targeted repair without unrelated identity adoption
+
+Registration, scan, song relocation/removal and ordinary no-op requests MUST
+recheck all current active guards. A changed reattachment alone may designate
+one owned RootId whose old binding is being retired. Before staging, validate
+store authority/epoch and every other active root against its retained identity.
+The designated old root need not exist; no unrelated guard may be exempted.
+
+Repair of a missing or replaced old directory requires a validated genuinely
+different canonical target. A same-path request with detected identity drift
+MUST fail closed and enter RecoveryRequired; it must not silently become a
+changed reattachment or refresh authority. Supporting explicit same-path
+replacement would require a separate reviewed amendment to OHK-ROOT-030.
+Existing overlap/equivalence reservations and probe-error rules still apply.
+
+The proposed target MUST be retained before staging and reverified before
+publication. Unchanged roots MUST retain their old guards or be compared against
+them; constructing fresh guards solely from current paths is not verification.
+Retained handles prevent identity recycling while staged. These observations do
+not provide hostile-writer isolation or an atomic pathname compare-and-swap.
+
+## 5. Prospective admission and final fence
+
+Before checkpoint publication, validate the complete prospective active root set
+using component-wise no-follow walks, retained native identity/mount observations
+and handle ancestry. Apply the existing same-mount, 32-active-root and bounded
+walk rules. The store MUST remain outside every prospective active root;
+the store parent may be above a root. Unattached roots/hints remain inactive.
+Canonical text alone cannot replace retained identity evidence.
+
+The private service-owned fence MUST select the operation's staged admission
+descriptor while saving a candidate. It MUST validate unchanged mappings against
+their original guards and changed/new mappings against their retained candidate
+guards under the unchanged provider lease epoch. It MUST also fence NoChange
+acknowledgments with the current validated admission. No public fence setter or
+caller callback is added. A scoped internal installation must clear pending
+context on every failure/return without exposing candidate guards as live state.
+
+The fence remains after the coordinator's final token/directory/cancellation
+checks and before native publication. No fallible admission work, filesystem
+lookup, cancellation, hook or allocation may follow confirmed storage save and
+precede memory publication. Binding errors retain nested detail and an owned
+RootId mapping where available; do not allocate diagnostic path copies.
+
+Rejected candidate configuration/containment retains the old service publication
+and Ready state when current authority is still valid. Detected store/epoch or
+unchanged-root drift enters RecoveryRequired. Only the targeted changed-root
+repair above may proceed despite that root's old mapping failure. An already
+RecoveryRequired service does not gain a repair bypass; explicit close,
+reconcile and fresh-owner recovery remain required.
+
+## 6. Commit and recovery outcomes
+
+All validation, source work, allocations, candidate capture, peak accounting and
+result construction MUST finish before the publication boundary. Hand the exact
+candidate projection and its single operation allowance to the coordinator.
+Verify confirmed Saved, matching captured revision and a present acknowledgment
+token using the existing protocol. Then install the complete staged context and
+its prebuilt admission/baseline/expectation by nonthrowing transfers.
+
+| Outcome | Service behavior |
+| --- | --- |
+| Saved with valid acknowledgment | Publish the complete staged context once; report cleanup warnings independently of commit success. |
+| Validated NoChange | Retain current context and counters; return the verified acknowledgment without a new revision. |
+| Cancellation or definite prepublication failure | Retain snapshot, mappings, counters, guards and baseline; never return staged IDs as admitted identities. |
+| Stale baseline/token, admission drift or acknowledgment protocol fault | Retain prior memory and enter RecoveryRequired under existing service rules. |
+| CommitUncertain | Retain prior memory, fault writes, preserve coordinator artifacts and require explicit reconciliation/fresh restore. |
+
+A late cancellation cannot undo confirmed storage commit. Process interruption
+after disk commit but before memory installation recovers from the committed
+checkpoint, with fresh lineage, Invalid songs and unattached roots. No exactly-once
+delivery receipt or automatic adoption of a backup/candidate is promised.
+
+## 7. Shared payload and descriptor peaks
+
+Use one bounded operation ledger for current/candidate snapshots, source metadata,
+overrides, projections, paths/hints, conversion scratch, provider/binding strings
+and staged admission. Charge shared records/guards once per object identity while
+retained; identical bytes in distinct owned objects are separate charges. Reuse
+the coordinator's existing coexistence accounting without a second allowance.
+Logical payload accounting is not a total process-memory limit.
+
+The existing 45-descriptor admission bound applies to the peak old-plus-candidate
+context, not separately to each. Propose private immutable shared guards for
+unchanged roots, preserving exact identity/mount/mapping association; copied
+references must not duplicate descriptors. Keep retired changed-root guards alive
+until commit/rollback and count candidate target handles and transient walks.
+Review the complete provider/binding/staging descriptor inventory in code.
+
+Do not widen the 45 bound or 32-active-root limit. With the current conservative
+13-descriptor overhead, 32 old root guards plus one distinct replacement guard
+exceed the bound: reject before commit rather than discarding rollback guards.
+Registration from 31 to 32 active roots can share the 31 unchanged guards.
+Maximum record capacity does not promise every mutation fits every peak budget.
+
+## 8. Required tests and evidence
+
+Fake-provider tests MUST cover complete context retention at each allocation,
+cancellation, write, sync, fence and acknowledgment failure; staged ID/counter
+rollback; revision/generation exhaustion; scan revision-only persistence;
+relocation/removal/rediscovery; and historical snapshot/PreparedSong lifetime.
+Check new mappings, counters, policy and candidate projection together, not just
+display text. Ban allocation/throwing work throughout confirmed-save publication.
+
+Native tests MUST cover reciprocal containment for new roots/targets, missing-old
+root repair, replaced unrelated roots, same-path drift rejection, explicit saved
+hint attachment, unchanged-guard sharing and descriptor peaks/FD cleanup.
+Exercise changed and NoChange fences, late target replacement, uncertainty and
+fresh recovery. Namespace alias tests require harness-owned namespaces; absent
+privileges remain Skipped with a reason, not Passed.
+
+Extend bounded receipts to associate operation, published versus candidate
+revision/counters/mappings, guard observations, fence outcome and retained primary
+token/projection before cleanup. Separate injected observations from native ones;
+expose no authority pointers/tokens. Apply the established username redaction and
+original/published hash accounting to new evidence. Historical bundles stay
+unchanged. Instrumentation/runtime changes require a fresh pinned affected native
+run and explicit scoped acceptance; neither `6a6337d` provider acceptance nor
+`4f69246` factory/fence acceptance advances automatically.
+
+## 9. Review and implementation order
+
+1. Review and accept this staging/repair/resource plan before runtime changes.
+2. Add private complete-owner staging/capture and fake-provider durable root
+   registration tests first; retain the override path's existing behavior.
+3. Add shared prospective guards and operation-aware fence integration, then
+   native registration and targeted reattachment in separately reviewable slices.
+4. Add durable scan and logical song relocation/removal staging with the same
+   projection/publication protocol and accepted source validation behavior.
+5. Collect affected bounded receipts, run fresh pinned WSL2 ext4 evidence and
+   seek explicit scope-bound acceptance before claiming those native mutations.
+
+Application/CLI wiring follows these service slices. Windows checkpoint
+acknowledgment remains BLOCKED; NCN evidence and manual device/lyric validation
+remain separate gates. This docs-only proposal keeps 28 core / 31 audio-enabled
+suites and all roadmap completion checkboxes unchanged.

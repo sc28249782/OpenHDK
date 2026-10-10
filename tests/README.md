@@ -453,3 +453,13 @@ meaning; this final decision is authoritative. The `6a6337d` provider decision
 remains separate and unchanged. Mount-namespace alias evidence remains Skipped;
 Windows checkpoint acknowledgment, durable root mutations, application/CLI wiring,
 NCN evidence and manual validation remain open. No storage release checkbox changes.
+
+## Proposed durable root lifecycle tests
+
+[OHK-DURABLE-ROOT-030](../docs/DURABLE-ROOT-LIFECYCLE-PLAN.md#8-required-tests-and-evidence)
+proposes complete-context rollback, staged ID/counter retention, revision-only
+scan persistence, targeted repair and unrelated-root drift tests, shared-guard
+descriptor peaks, and allocation prohibition after confirmed save. Fake-provider
+registration precedes native mutation tests and fresh pinned receipts/acceptance.
+No target or completed evidence is added here; current counts remain 28 core /
+31 audio-enabled, and namespace alias evidence remains Skipped where unavailable.

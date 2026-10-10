@@ -365,3 +365,13 @@ meaning; this final decision is authoritative. The `6a6337d` provider decision
 remains separate and unchanged. Mount-namespace alias evidence remains Skipped;
 Windows checkpoint acknowledgment, durable root mutations, application/CLI wiring,
 NCN evidence and manual validation remain open. No storage release checkbox changes.
+
+## Proposed prospective root admission
+
+The separate [OHK-DURABLE-ROOT-030 proposal](DURABLE-ROOT-LIFECYCLE-PLAN.md) defines
+next-slice guard sharing and operation-aware fencing. Changed reattachment may
+retire only its designated old guard; unchanged roots must match retained
+identities, and the complete prospective root set must satisfy reciprocal
+store/root containment. Same-path drift is rejected, not adopted as a new
+binding. This awaits acceptance and implementation; it does not extend the
+`4f69246` factory/fence decision or alter historical receipts.
