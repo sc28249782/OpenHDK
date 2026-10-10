@@ -2,6 +2,7 @@
 #include "library/DurableLibraryService.hpp"
 #include "tests/TestCheck.hpp"
 #include "tests/NativeAdmissionReceipts.hpp"
+#include "tests/NativeMutationReceipts.hpp"
 #include <chrono>
 #include <fstream>
 #include <iostream>
@@ -259,23 +260,25 @@ int main(){
   const auto rs=t.path/"mutation-sweep-store",fresh=t.path/"mutation-sweep-root";fs::create_directory(rs);fs::create_directory(fresh);
   auto a=create(std::make_unique<SongDiscovery>(),rs);a.service.reset();a=open(rs);
   const auto old=a.service->snapshot();const auto bytes=read(rs/"catalog.ohkcat");const auto count=fds();
-  bool done=false;unsigned failures=0;
+  bool done=false;unsigned failures=0;auto rollbackFds=count;
   for(std::ptrdiff_t n=0;n<512;++n) {
     failAfter=n;auto result=a.service->registerRoot(fresh);failAfter=-1;
     if(result.succeeded()){done=true;break;}
-    ++failures;OPENHDK_FAIL_IF(59,result.root || result.snapshot || result.receipt || a.service->snapshot()!=old
+    ++failures;rollbackFds=fds();OPENHDK_FAIL_IF(59,result.root || result.snapshot || result.receipt || a.service->snapshot()!=old
         || read(rs/"catalog.ohkcat")!=bytes || a.service->state()!=DurableServiceState::Ready || fds()!=count);
   }
   OPENHDK_FAIL_IF(60,!done || failures==0 || a.service->snapshot()->roots.size()!=1);
+  std::cout<<"MUTATION_ALLOCATION operation=register scope=entry failures="<<failures<<" success=1 fd_before="<<count<<" fd_after="<<fds()<<" rollback_fd_after="<<rollbackFds<<" rollback_preserved=1 pending_cleared=1\n";
   const auto rootId=a.service->snapshot()->roots[0].id;const auto target=t.path/"mutation-sweep-target";fs::create_directory(target);
-  const auto prior=a.service->snapshot();const auto priorBytes=read(rs/"catalog.ohkcat");const auto priorFd=fds();done=false;failures=0;
+  const auto prior=a.service->snapshot();const auto priorBytes=read(rs/"catalog.ohkcat");const auto priorFd=fds();done=false;failures=0;rollbackFds=priorFd;
   for(std::ptrdiff_t n=0;n<512;++n) {
     failAfter=n;auto result=a.service->reattachRoot(rootId,target);failAfter=-1;
     if(result.succeeded()){done=true;break;}
-    ++failures;OPENHDK_FAIL_IF(61,result.status || result.snapshot || result.receipt || a.service->snapshot()!=prior
+    ++failures;rollbackFds=fds();OPENHDK_FAIL_IF(61,result.status || result.snapshot || result.receipt || a.service->snapshot()!=prior
         || read(rs/"catalog.ohkcat")!=priorBytes || a.service->state()!=DurableServiceState::Ready || fds()!=priorFd);
   }
   OPENHDK_FAIL_IF(62,!done || failures==0 || a.service->snapshot()->roots[0].attachmentGeneration!=2);
+  std::cout<<"MUTATION_ALLOCATION operation=reattach scope=entry failures="<<failures<<" success=1 fd_before="<<priorFd<<" fd_after="<<fds()<<" rollback_fd_after="<<rollbackFds<<" rollback_preserved=1 pending_cleared=1\n";
  }
  {
   const auto rs=t.path/"root-nochange-fence-store",r=t.path/"root-nochange-fence";
@@ -346,7 +349,7 @@ int main(){
   const auto rs=t.path/("song-sweep-store-"+std::to_string(operation)),r=t.path/("song-sweep-root-"+std::to_string(operation));
   fs::create_directory(rs);auto a=create(owner(r),rs);const auto snap=a.service->snapshot();
   if(!a.service->reattachRoot(snap->roots[0].id,r).succeeded())std::abort();
-  const auto old=a.service->snapshot();const auto bytes=read(rs/"catalog.ohkcat");const auto count=fds();bool done=false;unsigned failures=0;
+  const auto old=a.service->snapshot();const auto bytes=read(rs/"catalog.ohkcat");const auto count=fds();bool done=false;unsigned failures=0;auto rollbackFds=count;
   for(std::ptrdiff_t n=0;n<1024;++n) {
     // Scan sweep begins at store staging; stdlib traversal allocations are
     // outside injection scope (see the fake suite's matching caveat).
@@ -357,13 +360,15 @@ int main(){
     if(operation==0){auto x=a.service->scan(old->roots[0].id,{}, {},sweepControl);result={std::move(x.snapshot),std::move(x.receipt),std::move(x.error)};}
     else if(operation==1)result=a.service->relocateSong(old->songs[0].id,old->roots[0].id,"next.kar");
     else result=a.service->removeSong(old->songs[0].id);
-    failAfter=-1;if(result.succeeded()){done=true;break;}++failures;
+    failAfter=-1;if(result.succeeded()){done=true;break;}++failures;rollbackFds=fds();
     OPENHDK_FAIL_IF(76,result.snapshot || result.receipt || a.service->snapshot()!=old || read(rs/"catalog.ohkcat")!=bytes
         || a.service->state()!=DurableServiceState::Ready || fds()!=count || Access::pendingAdmission(*a.service));
   }
   OPENHDK_FAIL_IF(77,!done || failures==0 || fds()!=count);
+  std::cout<<"MUTATION_ALLOCATION operation="<<MutationEvidence::name(operation+2)<<" scope="<<(operation==0?"store-staging":"entry")<<" failures="<<failures<<" success=1 fd_before="<<count<<" fd_after="<<fds()<<" rollback_fd_after="<<rollbackFds<<" rollback_preserved=1 pending_cleared=1\n";
  }
+ OPENHDK_FAIL_IF(82,MutationEvidence::run(t.path,owner,[](auto o,const auto& p){return create(std::move(o),p);},[](const auto& p){return open(p);})!=0);
  OPENHDK_FAIL_IF(63,fds()!=initial);
- std::cout<<"native-service checks=78 factory=experimental native-acceptance=Pending filesystem-bypass="<<(std::getenv("OPENHDK_NATIVE_CHECKPOINT_DIR")?0:1)<<"\n";
+ std::cout<<"native-service checks=82 factory=experimental native-acceptance=Pending filesystem-bypass="<<(std::getenv("OPENHDK_NATIVE_CHECKPOINT_DIR")?0:1)<<"\n";
 #endif
 }

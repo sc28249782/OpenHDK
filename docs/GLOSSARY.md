@@ -154,3 +154,13 @@ and candidate counts before publication. Failure exposes no staged snapshot,
 receipt or discovery diagnostics. Root mappings and original guards remain
 associated with the staged owner; logical edits do not move or delete files.
 See [OHK-DURABLE-ROOT-030](DURABLE-ROOT-LIFECYCLE-PLAN.md#13-experimental-scan-and-logical-song-lifecycle-integration).
+
+
+## Mutation receipt matrix
+
+Bounded test observations associating a service operation with primary
+sequence/revision/high-water, detached rows, guard/fence outcomes and a confirmed
+acknowledgment or failure. It records selected native calls separately from
+injections and omits absolute paths/authority values. Verifier success establishes
+supplied-observation consistency, not independent provenance or acceptance.
+See [OHK-DURABLE-ROOT-030](DURABLE-ROOT-LIFECYCLE-PLAN.md#14-bounded-mutation-receipts-and-verifier).

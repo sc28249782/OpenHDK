@@ -910,6 +910,8 @@ struct DurableLibraryServiceTestAccess {
   static void failAdmission(DurableLibraryService& s,bool fail) noexcept {
     s.forcedAdmissionFailure_=fail;s.installAdmissionFence();
   }
+  static std::shared_ptr<const NativeStoreAdmission> nativeAdmission(const DurableLibraryService& s) noexcept {return s.nativeAdmission_;}
+  static LinuxCheckpointProvider& nativeProvider(DurableLibraryService& s) noexcept {return *s.nativeProvider_;}
   static void nativeFault(DurableLibraryService& s,LinuxProviderFault fault) {LinuxCheckpointProviderTestAccess::fault(*s.nativeProvider_,fault);}
   static void nativeAfterPublication(DurableLibraryService& s,void (*hook)() noexcept) {LinuxCheckpointProviderTestAccess::afterPublication(*s.nativeProvider_,hook);}
   static void corruptAcknowledgment(DurableLibraryService& service) { service.corruptAcknowledgment_ = true; }

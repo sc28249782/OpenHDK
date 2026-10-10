@@ -145,3 +145,18 @@ Earlier Pending statements in the plan and the supplied bundle record the
 sequence before this decision. Keep all supplied logs, hashes, manifests,
 verification/redaction records and bundle READMEs unchanged. This final decision
 is the authoritative current acceptance record.
+
+
+## Native mutation receipt preparation
+
+[OHK-DURABLE-ROOT-030 receipts](DURABLE-ROOT-LIFECYCLE-PLAN.md#14-bounded-mutation-receipts-and-verifier)
+now cover 34 selected cases across all five service operations. Separate bounded
+admission/provider traces, primary digest/projection observations, acknowledgment,
+fence/pending-context outcomes and five allocation sweep receipts are checked by
+verifier and negative tests. Hints, absolute paths, pointers and raw hint-bearing
+wires are omitted. Supplied observations are not independent byte/provenance
+proof; artifacts above the 256-byte capture cap explicitly remain unavailable.
+Fresh pinned WSL2 ext4 execution and scoped mutation acceptance remain pending.
+Historical evidence and the `6a6337d`/`4f69246` accepted revisions stay unchanged.
+Windows remains BLOCKED; namespace aliases Skipped; application/CLI, NCN and
+manual validation remain open. No storage release checkbox is completed.

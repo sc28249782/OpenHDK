@@ -16,11 +16,11 @@ inline const char* callName(NativeAdmissionCall call) noexcept {
 }
 // Called after operations, with allocation prohibitions disabled. No pointers,
 // username-bearing paths or authority tokens are published in these receipts.
-inline bool trace(std::string_view tag) {
+inline bool trace(std::string_view tag,std::string_view prefix="ADMISSION") {
   const auto records=NativeStoreBindingTestAccess::records();
-  std::cout<<"ADMISSION_TRACE case="<<tag<<" count="<<records.size()<<" overflow="<<NativeStoreBindingTestAccess::overflow()<<'\n';
+  std::cout<<prefix<<"_TRACE case="<<tag<<" count="<<records.size()<<" overflow="<<NativeStoreBindingTestAccess::overflow()<<'\n';
   for(const auto& r:records) {
-    std::cout<<"ADMISSION_RECORD case="<<tag<<" call="<<callName(r.call)<<" operation="<<static_cast<int>(r.operation)
+    std::cout<<prefix<<"_RECORD case="<<tag<<" call="<<callName(r.call)<<" operation="<<static_cast<int>(r.operation)
         <<" dev="<<r.device<<" ino="<<r.inode<<" mount="<<r.mount<<" index=";
     if(r.index==SIZE_MAX)std::cout<<"none";else std::cout<<r.index;
     std::cout<<" errno="<<r.nativeError<<" owner_match="<<r.ownerMatch<<" held="<<r.held

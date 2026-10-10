@@ -524,3 +524,37 @@ library traversal allocations: the local libstdc++ recursive directory iterator
 terminates on an injected allocation failure inside its constructor. Relocate
 and remove are swept from operation entry. These tests do not claim a total
 process-memory bound or comprehensive system-library allocation coverage.
+
+
+## Native mutation receipt matrix
+
+The native service target now has 82 numbered check identifiers plus a
+[34-case matrix](NativeMutationReceipts.hpp): five operations times Saved,
+write-failure, late-fence drift, uncertainty and late cancellation; targeted
+missing-root repair, same-path NoChange/drift, unrelated drift, reciprocal
+containment, explicit hint attachment, descriptor peak, equal-key relocation
+and remove/rediscovery. Receipts report 69 primary snapshots, 32 bounded admission
+traces, 25 bounded provider traces, 45 artifact observations and five allocation
+sweeps. All are emitted before harness fixture cleanup. No new CMake suite is
+added (28 core / 31 audio-enabled), and all instrumentation remains seams-only.
+
+[verify-native-mutation-receipts.py](verify-native-mutation-receipts.py) checks the
+selected matrix. [check-native-mutation-verifier.py](check-native-mutation-verifier.py)
+requires a valid service log and rejects ten altered variants. The collector runs
+both and records their exits/hashes. Run locally with the native service log:
+
+```sh
+python3 tests/verify-native-mutation-receipts.py native_durable_service_tests.run.log
+python3 tests/check-native-mutation-verifier.py native_durable_service_tests.run.log
+```
+
+Hints/absolute paths and raw hint-bearing checkpoint/artifact wires are omitted
+for privacy; numeric IDs in projection rows are detached checkpoint values.
+Digest syntax/association and supplied observations are checked, not independent
+full-wire reconstruction, source/run provenance or universal durability. Existing
+artifact capture remains capped at 256 bytes; oversized captures report EFBIG
+and unavailable bytes. Scan allocation injection starts at store staging;
+registration adds one owned FD on success, while failure sweeps preserve FDs.
+Pending/Skipped remain explicit. New native mutation acceptance requires a fresh
+pinned ext4 run, review and scoped maintainer decision; historical bundles stay
+unchanged. See [current receipt boundary](../docs/DURABLE-ROOT-LIFECYCLE-PLAN.md#14-bounded-mutation-receipts-and-verifier).
