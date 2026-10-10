@@ -267,12 +267,12 @@ remains separate and unchanged. Mount-namespace alias evidence remains Skipped;
 Windows checkpoint acknowledgment, durable root mutations, application/CLI wiring,
 NCN evidence and manual validation remain open. No storage release checkbox changes.
 
-## Proposed durable root lifecycle sequence
+## Durable root lifecycle slice 3.1
 
-[OHK-DURABLE-ROOT-030](DURABLE-ROOT-LIFECYCLE-PLAN.md) proposes slice 3 after the
-recorded native factory/fence decision: complete-owner staging and fake-provider
-registration first, then shared prospective guards/native registration and
-targeted reattachment, followed by scan and logical song relocation/removal.
-Affected native receipts, a fresh pinned run and explicit acceptance precede new
-support claims. The plan awaits review; application/CLI wiring follows, and the
-storage checkbox, Windows checkpoint gate, NCN and manual validation stay open.
+[OHK-DURABLE-ROOT-030](DURABLE-ROOT-LIFECYCLE-PLAN.md#10-current-slice-31-boundary)
+is accepted, with private complete-owner staging and fake-provider registration
+implemented. Next are shared prospective guards and operation-aware native
+fencing/registration/reattachment, then scan and logical song relocation/removal.
+Fresh affected native receipts and scoped acceptance remain required. This does
+not complete storage or application/CLI work; Windows, NCN and manual gates stay
+open, and existing roadmap completion checkboxes remain unchanged.

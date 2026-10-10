@@ -1,7 +1,9 @@
 # Durable root lifecycle staging and admission plan
 
 **Plan:** OHK-DURABLE-ROOT-030
-**Status:** Proposed; requires review and acceptance before implementation.
+**Status:** Accepted by review and merge of PR #77; private complete-owner staging
+and fake-provider durable registration implemented. Prospective native guards,
+native root mutations and remaining lifecycle operations are pending.
 **Target:** OHK-DURABLE-030 slice 3, after scoped native factory/fence acceptance.
 
 ## 1. Purpose and current boundary
@@ -20,9 +22,9 @@ reject the old mapping before the replacement could be staged. Rebuilding all
 guards from current paths would instead silently adopt replacements of unrelated
 roots. Neither behavior is a suitable transaction rule.
 
-This proposal defines private complete-owner staging and prospective admission.
-It supplies no runtime API, native acceptance, CLI command or completed roadmap
-item. Root unregistration, root policy editing, physical source moves/deletion,
+This accepted plan defines private complete-owner staging and prospective admission.
+Section 10 records the implemented fake-provider boundary. No production lifecycle
+API, new native acceptance, CLI command or completed roadmap item is supplied. Root unregistration, root policy editing, physical source moves/deletion,
 schema changes and automatic recovery remain outside scope. Logical song
 relocation/removal changes catalog records only.
 
@@ -59,7 +61,7 @@ does not claim an atomic multi-field publication to concurrent mutable callers.
 
 ## 3. Proposed operation semantics
 
-These names describe operations, not implemented public signatures. Preserve the
+These names describe the planned operations, not implemented public signatures. Preserve the
 existing [library](KARAOKE-LIBRARY-CONTRACT.md),
 [metadata](CATALOG-METADATA-POLICY-CONTRACT.md) and
 [reattachment](ROOT-REATTACHMENT-CONTRACT.md) semantics:
@@ -220,5 +222,36 @@ run and explicit scoped acceptance; neither `6a6337d` provider acceptance nor
 
 Application/CLI wiring follows these service slices. Windows checkpoint
 acknowledgment remains BLOCKED; NCN evidence and manual device/lyric validation
-remain separate gates. This docs-only proposal keeps 28 core / 31 audio-enabled
-suites and all roadmap completion checkboxes unchanged.
+remain separate gates. The implemented slice keeps 28 core / 31 audio-enabled suites and all roadmap
+completion checkboxes unchanged.
+
+## 10. Current slice 3.1 boundary
+
+[DurableLibraryService](../library/DurableLibraryService.hpp) now stages an owned
+[SongDiscovery](../library/SongDiscovery.hpp) with the same catalog lineage, exact
+allocator counters and copied root paths/hints. Private registration reuses
+existing policy/directory/overlap checks and captures that candidate owner.
+Confirmed Saved, matching revision and a token precede one nonthrowing owner
+swap plus prebuilt baseline/expectation transfers. Failures expose no staged
+RootId, snapshot or commit receipt. Old snapshots and PreparedSong remain owned.
+
+Registration is available only through the fake-provider test seam; native
+services reject it before staging/admission/filesystem work. No production
+registration API or prospective native guard/fence is added. The existing public
+override transaction and Linux factories retain their implemented boundary.
+Discovery failures carry nested structured diagnostics; uncertainty/protocol
+faults retain prior memory and require explicit recovery.
+
+The [service suite](../tests/durable_library_service_tests.cpp) now has 100
+numbered checks, including allocation sweeps, shared-budget boundaries, staged
+ID rollback, storage/cancellation/fence failures, old context during publish/sync,
+cleanup warning, reentry, exhaustion, restore and prepared-input lifetime. The
+[native suite](../tests/native_durable_service_tests.cpp) has 34 checks, adding
+only rejection of this unsupported registration path. Counts remain 28 core /
+31 audio-enabled. Fake-store success is not native registration evidence.
+
+Historical bundles and the `6a6337d` provider / `4f69246` factory/fence decisions
+remain unchanged. Next: prospective shared guards and operation-aware fencing
+before native registration/reattachment, then scan/song relocation/removal and
+fresh affected native receipts/acceptance. Windows checkpoint acknowledgment
+remains BLOCKED; app/CLI, NCN and manual validation stay separate.

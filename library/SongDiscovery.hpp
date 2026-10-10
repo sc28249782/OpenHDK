@@ -80,6 +80,7 @@ struct RootAttachmentInfo {
 
 class SongDiscovery {
  public:
+  SongDiscovery() = default;
   std::shared_ptr<const CatalogSnapshot> snapshot() const noexcept { return catalog_.snapshot(); }
   // Query copies at most one bounded saved hint and performs no filesystem I/O.
   // Allocation exceptions propagate; the result owns its text after destruction.
@@ -155,11 +156,17 @@ class SongDiscovery {
   }
 
  private:
+  // Private complete-owner staging retains the existing snapshot lineage and
+  // exact allocator history. Root paths/hints are separate owned copies.
+  SongDiscovery(const SongDiscovery& owner)
+      : catalog_(owner.catalog_.snapshot_, owner.catalog_.nextRoot_, owner.catalog_.nextSong_),
+        roots_(owner.roots_) {}
   friend class DurableLibraryService;
   friend class CatalogCheckpointRestore;
   friend class CatalogCheckpointCapture;
 #ifdef OPENHDK_ENABLE_TEST_SEAMS
   friend struct RootReattachmentTestAccess;
+  friend struct DurableLibraryServiceTestAccess;
 #endif
   static RootReattachmentResult reattachmentFailure(DiscoveryError code) {
     return {{}, diagnostic(code, DiscoveryOperation::ReattachRoot)};

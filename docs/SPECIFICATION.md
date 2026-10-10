@@ -476,12 +476,12 @@ remains separate and unchanged. Mount-namespace alias evidence remains Skipped;
 Windows checkpoint acknowledgment, durable root mutations, application/CLI wiring,
 NCN evidence and manual validation remain open. No storage release checkbox changes.
 
-## Proposed durable root lifecycle boundary
+## Implemented private registration staging boundary
 
-[OHK-DURABLE-ROOT-030](DURABLE-ROOT-LIFECYCLE-PLAN.md) is a proposal awaiting review
-and acceptance. It plans durable root registration, complete scan, logical song
-relocation/removal and changed reattachment with same-lineage full-owner staging,
-prospective admission and confirmed-save-before-memory publication. Existing
-in-memory API semantics remain implemented behavior; the proposal does not make
-them durable. New runtime/receipt changes require fresh affected native evidence
-and explicit scoped acceptance. Windows checkpoint acknowledgment remains BLOCKED.
+[OHK-DURABLE-ROOT-030 slice 3.1](DURABLE-ROOT-LIFECYCLE-PLAN.md#10-current-slice-31-boundary)
+implements complete-owner staging and fake-provider registration tests. A
+confirmed Saved with matching revision/token precedes owner publication. Failed
+registration returns no RootId, snapshot or success receipt and leaves counters
+and mappings unpublished. Uncertain/protocol outcomes require recovery. This is
+not a public/native registration API; native services reject the test seam
+before filesystem work. Other root mutations and application wiring stay pending.

@@ -384,12 +384,13 @@ remains separate and unchanged. Mount-namespace alias evidence remains Skipped;
 Windows checkpoint acknowledgment, durable root mutations, application/CLI wiring,
 NCN evidence and manual validation remain open. No storage release checkbox changes.
 
-## Proposed remaining mutation staging
+## Current private root registration transaction
 
-[OHK-DURABLE-ROOT-030](DURABLE-ROOT-LIFECYCLE-PLAN.md) proposes the complete-owner
-staging, operation semantics, targeted repair and prospective admission needed
-for slice 3. It preserves scan revision publication, logical relocation/removal,
-attachment generations and same-path no-op semantics while requiring exact
-candidate counter/mapping association. Peak old/candidate guards share one
-descriptor bound. Review and acceptance precede implementation; this proposal
-changes neither the current override protocol nor recorded native acceptance.
+[OHK-DURABLE-ROOT-030 slice 3.1](DURABLE-ROOT-LIFECYCLE-PLAN.md#10-current-slice-31-boundary)
+adds private complete-owner staging and fake-provider registration. It copies
+root mappings/hints while retaining snapshot lineage and exact counters. The
+candidate capture is associated with that staged owner. Valid Saved/revision/
+token acknowledgment precedes a nonthrowing whole-owner publication. Failed
+operations expose no staged identities or receipt; recovery rules remain intact.
+Only test access can invoke registration, and native services reject that path.
+No prospective native admission or public lifecycle mutation is implemented.

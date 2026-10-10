@@ -73,6 +73,16 @@ int main(){
  std::cout<<"FENCE_CASE case=nochange checks=2 status=NoChange token_preserved=1\n";
  Access::nativeAfterPublication(service,banAllocations);auto noAlloc=service.replaceUserOverrides(id,{"Confirmed",{}});failAfter=-1;Access::nativeAfterPublication(service,nullptr);
  OPENHDK_FAIL_IF(6,!noAlloc.succeeded() || noAlloc.receipt->token.sequence!=3);
+ // Test-only registration cannot bypass prospective native guards, even when
+ // given an invalid/nonexistent path. Rejection precedes admission/FS work.
+ const auto nativeRegistrationPrimary=read(store/"catalog.ohkcat");
+ const auto nativeRegistrationOld=service.snapshot();
+ const auto nativeRegistrationChecks=Access::admissionChecks(service);
+ auto noNativeRegistration=Access::registerRoot(service,t.path/"never-probed-registration");
+ OPENHDK_FAIL_IF(34,noNativeRegistration.succeeded() || noNativeRegistration.root || noNativeRegistration.snapshot
+     || noNativeRegistration.receipt || noNativeRegistration.error->code!=DurableServiceErrorCode::InvalidConfiguration
+     || service.snapshot()!=nativeRegistrationOld || Access::admissionChecks(service)!=nativeRegistrationChecks
+     || read(store/"catalog.ohkcat")!=nativeRegistrationPrimary);
  OPENHDK_FAIL_IF(7,service.close() || service.state()!=DurableServiceState::Closed);started.service.reset();
  AdmissionEvidence::begin();auto restored=open(store);OPENHDK_FAIL_IF(8,!restored.succeeded() || restored.receipt || restored.service->snapshot()->songs[0].state!=CatalogState::Invalid);
  const auto restoredId=restored.service->snapshot()->songs[0].id;auto invalidEdit=restored.service->replaceUserOverrides(restoredId,{"Offline override",{}});
@@ -135,6 +145,6 @@ int main(){
  OPENHDK_FAIL_IF(25,!succeeded || failedCount==0);
  std::cout<<"SERVICE_ALLOCATION failures="<<failedCount<<" success=1 fd_baseline="<<initial<<" fd_final="<<fds()<<" no_partial_primary=1\n";
  OPENHDK_FAIL_IF(26,historical->songs[0].overrides || fds()!=initial);
- std::cout<<"native-service checks=33 factory=experimental native-acceptance=Pending filesystem-bypass="<<(std::getenv("OPENHDK_NATIVE_CHECKPOINT_DIR")?0:1)<<"\n";
+ std::cout<<"native-service checks=34 factory=experimental native-acceptance=Pending filesystem-bypass="<<(std::getenv("OPENHDK_NATIVE_CHECKPOINT_DIR")?0:1)<<"\n";
 #endif
 }

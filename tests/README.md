@@ -454,12 +454,21 @@ remains separate and unchanged. Mount-namespace alias evidence remains Skipped;
 Windows checkpoint acknowledgment, durable root mutations, application/CLI wiring,
 NCN evidence and manual validation remain open. No storage release checkbox changes.
 
-## Proposed durable root lifecycle tests
+## Complete-owner staging and fake registration tests
 
-[OHK-DURABLE-ROOT-030](../docs/DURABLE-ROOT-LIFECYCLE-PLAN.md#8-required-tests-and-evidence)
-proposes complete-context rollback, staged ID/counter retention, revision-only
-scan persistence, targeted repair and unrelated-root drift tests, shared-guard
-descriptor peaks, and allocation prohibition after confirmed save. Fake-provider
-registration precedes native mutation tests and fresh pinned receipts/acceptance.
-No target or completed evidence is added here; current counts remain 28 core /
-31 audio-enabled, and namespace alias evidence remains Skipped where unavailable.
+The [durable service suite](durable_library_service_tests.cpp) now has 100
+numbered checks. Registration tests use real harness-owned source directories
+with an independent fake checkpoint store. They cover failed-stage ID rollback,
+policy/path/overlap errors, cancellation, all staged artifact failure phases,
+old owner at publish/sync, no allocation after publication, reentry, cleanup
+warning, exhaustion, stale/protocol/fence/uncertain recovery behavior, shared
+payload boundaries and snapshot/PreparedSong lifetime. Captured candidate
+mappings/counters are compared with decoded primary bytes and fresh capture.
+
+The [native service suite](native_durable_service_tests.cpp) now has 34 checks;
+the added check rejects test-seam registration before admission/filesystem work.
+These changes add no native mutation evidence or new target. Both targets still
+require OPENHDK_ENABLE_TEST_SEAMS=1 through CMake. Counts remain 28 core /
+31 audio-enabled. [Next native staging work](../docs/DURABLE-ROOT-LIFECYCLE-PLAN.md#10-current-slice-31-boundary)
+requires prospective guards/fencing and fresh scoped evidence. Historical
+receipts and accepted tested revisions are not relabeled.

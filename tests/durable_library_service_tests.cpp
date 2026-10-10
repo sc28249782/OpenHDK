@@ -389,4 +389,218 @@ int main() {
   auto noopRejected=noopFence.service->replaceUserOverrides(noopOld->songs[0].id,{"Old","Artist"},noopControl);
   OPENHDK_FAIL_IF(67,noopRejected.succeeded() || !noopRejected.error->binding || *noopImage.primary!=noopWire || noopFence.service->snapshot()!=noopOld);
   OPENHDK_FAIL_IF(68,noopFence.service->state()!=DurableServiceState::RecoveryRequired);
+  // Slice 3.1: real source-directory validation with a detached fake store.
+  // Old snapshots, owner counters and root mappings stay live until confirmed
+  // save; this does not test prospective native admission or acceptance.
+  const auto a = rootPath / "registration-a", b = rootPath / "registration-b";
+  std::filesystem::create_directory(a); std::filesystem::create_directory(b);
+  Image rootsImage; auto rootsProvider = std::make_unique<Fake>(rootsImage); auto* rootsRaw = rootsProvider.get();
+  auto rootsService = Access::create(owner(projection()), std::move(rootsProvider));
+  OPENHDK_FAIL_IF(69, !rootsService.succeeded());
+  auto& rs = *rootsService.service;
+  auto oldRoots = rs.snapshot(); auto oldRootWire = *rootsImage.primary;
+  const auto unchanged = [&] {
+    auto c = CatalogCheckpointCapture::acquire(Access::owner(rs));
+    return c.succeeded() && rs.snapshot() == oldRoots && *rootsImage.primary == oldRootWire
+        && c.captured->projection().nextRoot == 17 && c.captured->projection().nextSong == 23
+        && c.captured->projection().roots.size() == 1 && !Access::owner(rs).rootAttachment(oldRoots->roots[0].id)->attached;
+  };
+  RootSourcePolicy badPolicy; badPolicy.mode = static_cast<decltype(badPolicy.mode)>(999);
+  auto badRegistration = Access::registerRoot(rs, rootPath / "absent", badPolicy);
+  OPENHDK_FAIL_IF(70, badRegistration.succeeded() || badRegistration.root || badRegistration.snapshot
+      || badRegistration.receipt || badRegistration.error->code != DurableServiceErrorCode::InvalidConfiguration || !unchanged());
+  auto absent = Access::registerRoot(rs, rootPath / "absent");
+  OPENHDK_FAIL_IF(71, absent.succeeded() || absent.error->discovery->code != DiscoveryError::InvalidRoot || !unchanged());
+  bool early = true; StoreControl earlyControl; earlyControl.cancelled = [&] { return early; };
+  auto cancelledRoot = Access::registerRoot(rs, a, {}, earlyControl);
+  OPENHDK_FAIL_IF(72, cancelledRoot.succeeded() || cancelledRoot.error->store->code != StoreErrorCode::Cancelled || !unchanged());
+  for (auto phase : {StoreOperation::Read, StoreOperation::CreateCandidate, StoreOperation::WriteCandidate,
+      StoreOperation::SyncCandidate, StoreOperation::VerifyCandidate, StoreOperation::CreatePrior,
+      StoreOperation::WritePrior, StoreOperation::SyncPrior, StoreOperation::VerifyPrior}) {
+    rootsRaw->fail = phase;
+    auto failedRoot = Access::registerRoot(rs, a);
+    OPENHDK_FAIL_IF(73, failedRoot.succeeded() || failedRoot.root || failedRoot.snapshot || failedRoot.receipt
+        || !failedRoot.error || !unchanged() || rs.state() != DurableServiceState::Ready);
+  }
+  rootsRaw->fail.reset();
+  for (auto point : {StoreCheckpoint::BeforeStaging, StoreCheckpoint::CandidateVerified,
+      StoreCheckpoint::PriorVerified, StoreCheckpoint::BeforePublication}) {
+    bool cancelled = false; StoreControl c; c.cancelled = [&] { return cancelled; };
+    c.checkpoint = [&](StoreCheckpoint current) { if (current == point) cancelled = true; };
+    auto failure = Access::registerRoot(rs, a, {}, c);
+    OPENHDK_FAIL_IF(74, failure.succeeded() || failure.root || !unchanged());
+  }
+  rootsRaw->outcome = StorePublication::NotCommitted;
+  OPENHDK_FAIL_IF(75, Access::registerRoot(rs, a).succeeded() || !unchanged());
+  rootsRaw->outcome = StorePublication::Published;
+  struct RootObserver {
+    DurableLibraryService* service; std::shared_ptr<const CatalogSnapshot> old;
+    bool publishOld = false, syncOld = false;
+    static void at(void* ctx, StoreOperation op) noexcept {
+      auto& self = *static_cast<RootObserver*>(ctx);
+      const bool retained = self.service->snapshot() == self.old
+          && Access::attached(*self.service, self.old->roots[0].id) == false;
+      if (op == StoreOperation::Publish) self.publishOld = retained;
+      if (op == StoreOperation::SyncPublication) self.syncOld = retained;
+    }
+  } rootObserver{&rs, oldRoots};
+  rootsRaw->observe = RootObserver::at; rootsRaw->context = &rootObserver;
+  bool registrationLate = false; rootsRaw->lateCancel = &registrationLate; rootsRaw->banAllocations = true;
+  StoreControl lateControl; lateControl.cancelled = [&] { return registrationLate; };
+  RootSourcePolicy selected; selected.lyrics.encoding = LyricTextEncoding::Tis620; selected.lyrics.trackIndex = 2;
+  auto registered = Access::registerRoot(rs, a, selected, lateControl);
+  failAfter = -1; rootsRaw->banAllocations = false; rootsRaw->lateCancel = nullptr; rootsRaw->observe = nullptr;
+  OPENHDK_FAIL_IF(76, !registered.succeeded() || !registrationLate || !rootObserver.publishOld || !rootObserver.syncOld);
+  auto registeredDisk = disk(rootsImage);
+  auto capturedRoots = CatalogCheckpointCapture::acquire(Access::owner(rs));
+  OPENHDK_FAIL_IF(77, registeredDisk.nextRoot != 18 || registeredDisk.nextSong != 23
+      || registeredDisk.catalogRevision != 4 || registeredDisk.roots.size() != 2
+      || registeredDisk.roots.back().id != 17 || registeredDisk.roots.back().attachmentGeneration != 1
+      || registeredDisk.roots.back().policy != selected || registered.snapshot->roots.back().id != registered.root
+      || registered.receipt->capturedRevision != 4 || !capturedRoots.succeeded()
+      || !StoreDetail::equalProjection(registeredDisk, capturedRoots.captured->projection()));
+  OPENHDK_FAIL_IF(78, oldRoots->roots.size() != 1 || oldRoots->revision != 3
+      || !Access::owner(rs).rootAttachment(*registered.root)->attached
+      || Access::owner(rs).rootAttachment(oldRoots->roots[0].id)->attached
+      || Access::owner(rs).prepare(oldRoots, oldRoots->songs[0].id).error->code != PreparationErrorCode::InvalidRoot);
+  const auto overlapSnapshot = rs.snapshot(); const auto overlapWire = *rootsImage.primary;
+  auto overlap = Access::registerRoot(rs, a);
+  OPENHDK_FAIL_IF(79, overlap.succeeded() || overlap.error->discovery->code != DiscoveryError::AmbiguousPath
+      || rs.snapshot() != overlapSnapshot || *rootsImage.primary != overlapWire);
+  auto editedRoot = rs.replaceUserOverrides(rs.snapshot()->songs[0].id, {"After registration", {}});
+  auto registeredAgain = Access::registerRoot(rs, b);
+  OPENHDK_FAIL_IF(80, !editedRoot.succeeded() || !registeredAgain.succeeded()
+      || disk(rootsImage).nextRoot != 19 || disk(rootsImage).catalogRevision != 6
+      || rs.snapshot()->songs[0].overrides->title->bytes() != "After registration");
+  OPENHDK_FAIL_IF(81, rs.close().has_value());
+  auto reopenedRoots = Access::open(std::make_unique<Fake>(rootsImage));
+  auto restoredCapture = CatalogCheckpointCapture::acquire(Access::owner(*reopenedRoots.service));
+  OPENHDK_FAIL_IF(82, !reopenedRoots.succeeded() || !restoredCapture.succeeded()
+      || !StoreDetail::equalProjection(restoredCapture.captured->projection(), disk(rootsImage))
+      || Access::owner(*reopenedRoots.service).rootAttachment(*registered.root)->attached);
+
+  // Every application allocation before commit can fail without consuming IDs.
+  Image sweepImage; auto sweep = Access::create(owner(projection()), std::make_unique<Fake>(sweepImage));
+  const auto sweepOld = sweep.service->snapshot(); const auto sweepWire = *sweepImage.primary;
+  std::size_t rootFailures = 0; bool rootSuccess = false;
+  for (std::ptrdiff_t n = 0; n < 300; ++n) {
+    failAfter = n;
+    auto attempt = Access::registerRoot(*sweep.service, a);
+    failAfter = -1;
+    if (attempt.succeeded()) { rootSuccess = true; break; }
+    ++rootFailures;
+    OPENHDK_FAIL_IF(83, attempt.root || attempt.snapshot || attempt.receipt || !attempt.error
+        || sweep.service->snapshot() != sweepOld || *sweepImage.primary != sweepWire
+        || sweep.service->state() != DurableServiceState::Ready);
+    auto c = CatalogCheckpointCapture::acquire(Access::owner(*sweep.service));
+    OPENHDK_FAIL_IF(84, !c.succeeded() || c.captured->projection().nextRoot != 17);
+  }
+  OPENHDK_FAIL_IF(85, !rootSuccess || rootFailures == 0 || disk(sweepImage).nextRoot != 18);
+
+  // Boundaries share one operation allowance; restored root rows count even
+  // though their hints are inactive and do not cause filesystem lookup.
+  Image limitedImage; auto rootLimits = CatalogCheckpointLimits{}; rootLimits.roots = 1;
+  auto limited = Access::create(owner(projection()), std::make_unique<Fake>(limitedImage), rootLimits);
+  auto limitedOld = limited.service->snapshot(); auto limitedWire = *limitedImage.primary;
+  OPENHDK_FAIL_IF(86, Access::registerRoot(*limited.service, a).succeeded()
+      || limited.service->snapshot() != limitedOld || *limitedImage.primary != limitedWire);
+  OPENHDK_FAIL_IF(87, Access::registerRoot(*limited.service, a, {}, {}, SIZE_MAX).succeeded()
+      || limited.service->snapshot() != limitedOld);
+  for (bool revision : {false, true}) {
+    auto exhaustedProjection = projection();
+    if (revision) exhaustedProjection.catalogRevision = UINT64_MAX;
+    else exhaustedProjection.nextRoot = UINT64_MAX;
+    Image exhaustedImage; auto exhausted = Access::create(owner(exhaustedProjection), std::make_unique<Fake>(exhaustedImage));
+    const auto before = exhausted.service->snapshot(); const auto wire = *exhaustedImage.primary;
+    auto r = Access::registerRoot(*exhausted.service, a);
+    OPENHDK_FAIL_IF(88, r.succeeded() || r.error->discovery->code != DiscoveryError::RevisionExhausted
+        || exhausted.service->snapshot() != before || *exhaustedImage.primary != wire);
+  }
+  Image uncertainImage; auto uncertainProvider = std::make_unique<Fake>(uncertainImage); auto* uncertainRaw = uncertainProvider.get();
+  auto uncertainRoots = Access::create(owner(projection()), std::move(uncertainProvider));
+  auto uncertainOld = uncertainRoots.service->snapshot();
+  uncertainRaw->outcome = StorePublication::Uncertain; uncertainRaw->uncertainNew = true;
+  auto uncertainRegistration = Access::registerRoot(*uncertainRoots.service, a);
+  OPENHDK_FAIL_IF(89, uncertainRegistration.succeeded() || uncertainRegistration.root
+      || uncertainRoots.service->snapshot() != uncertainOld || uncertainRoots.service->state() != DurableServiceState::RecoveryRequired
+      || disk(uncertainImage).nextRoot != 18);
+  OPENHDK_FAIL_IF(90, Access::registerRoot(*uncertainRoots.service, b).error->code != DurableServiceErrorCode::RecoveryRequired);
+  uncertainRoots.service.reset(); auto recoveredRoots = Access::open(std::make_unique<Fake>(uncertainImage));
+  OPENHDK_FAIL_IF(91, !recoveredRoots.succeeded() || recoveredRoots.service->snapshot()->roots.size() != 2
+      || Access::owner(*recoveredRoots.service).rootAttachment(recoveredRoots.service->snapshot()->roots.back().id)->attached);
+  Image ackImage; auto ackRoots = Access::create(owner(projection()), std::make_unique<Fake>(ackImage));
+  auto ackOld = ackRoots.service->snapshot(); Access::corruptAcknowledgment(*ackRoots.service);
+  auto badAck = Access::registerRoot(*ackRoots.service, a);
+  OPENHDK_FAIL_IF(92, badAck.succeeded() || badAck.root || badAck.error->code != DurableServiceErrorCode::ProtocolFault
+      || ackRoots.service->snapshot() != ackOld || disk(ackImage).nextRoot != 18
+      || ackRoots.service->state() != DurableServiceState::RecoveryRequired);
+
+  Image reentryImage; auto reentryProvider = std::make_unique<Fake>(reentryImage); auto* reentryRaw = reentryProvider.get();
+  auto reentry = Access::create(owner(projection()), std::move(reentryProvider));
+  bool busyRoot = false; StoreControl reentryControl;
+  reentryControl.checkpoint = [&](StoreCheckpoint point) {
+    if (point == StoreCheckpoint::BeforeStaging) {
+      auto nested = Access::registerRoot(*reentry.service, b);
+      busyRoot = !nested.succeeded() && !nested.root && nested.error->code == DurableServiceErrorCode::Busy;
+    }
+  };
+  reentryRaw->cleanupWarning = true;
+  auto committedWarning = Access::registerRoot(*reentry.service, a, {}, reentryControl);
+  OPENHDK_FAIL_IF(93, !committedWarning.succeeded() || !busyRoot || !committedWarning.receipt->cleanupWarning
+      || disk(reentryImage).nextRoot != 18 || reentry.service->snapshot() != committedWarning.snapshot);
+  Image rootFenceImage; auto rootFence = Access::create(owner(projection()), std::make_unique<Fake>(rootFenceImage));
+  const auto rootFenceOld = rootFence.service->snapshot(); const auto rootFenceWire = *rootFenceImage.primary;
+  StoreControl rootFenceControl; rootFenceControl.checkpoint = [&](StoreCheckpoint point) {
+    if (point == StoreCheckpoint::BeforePublication) Access::failAdmission(*rootFence.service, true);
+  };
+  auto rootFenceFailure = Access::registerRoot(*rootFence.service, a, {}, rootFenceControl);
+  OPENHDK_FAIL_IF(94, rootFenceFailure.succeeded() || rootFenceFailure.root || !rootFenceFailure.error->binding
+      || rootFence.service->snapshot() != rootFenceOld || *rootFenceImage.primary != rootFenceWire
+      || rootFence.service->state() != DurableServiceState::RecoveryRequired);
+  Image rootSyncImage; auto rootSyncProvider = std::make_unique<Fake>(rootSyncImage); auto* rootSyncRaw = rootSyncProvider.get();
+  auto rootSync = Access::create(owner(projection()), std::move(rootSyncProvider));
+  auto rootSyncOld = rootSync.service->snapshot(); rootSyncRaw->fail = StoreOperation::SyncPublication;
+  auto rootSyncFailure = Access::registerRoot(*rootSync.service, a);
+  OPENHDK_FAIL_IF(95, rootSyncFailure.succeeded() || rootSyncFailure.error->store->outcome != StoreOutcome::Uncertain
+      || rootSync.service->snapshot() != rootSyncOld || disk(rootSyncImage).nextRoot != 18
+      || rootSync.service->state() != DurableServiceState::RecoveryRequired);
+
+  // Find the exact additional-caller allowance boundary without using the
+  // implementation's accounting formula, then verify both sides retain state.
+  const auto probeRootBudget = [&](std::size_t caller) {
+    Image target; CatalogCheckpointLimits limits; limits.stagedBytes = 8192;
+    auto targetService = Access::create(owner(projection()), std::make_unique<Fake>(target), limits);
+    if (!targetService.succeeded()) std::abort();
+    auto before = targetService.service->snapshot(); auto wire = *target.primary;
+    auto r = Access::registerRoot(*targetService.service, a, {}, {}, caller);
+    if (!r.succeeded() && (r.root || r.snapshot || r.receipt || targetService.service->snapshot() != before || *target.primary != wire))
+      std::abort();
+    return r.succeeded();
+  };
+  OPENHDK_FAIL_IF(96, !probeRootBudget(0) || probeRootBudget(8192));
+  std::size_t low = 0, high = 8192;
+  while (low + 1 < high) {
+    const auto middle = low + (high - low) / 2;
+    if (probeRootBudget(middle)) low = middle; else high = middle;
+  }
+  OPENHDK_FAIL_IF(97, !probeRootBudget(low) || probeRootBudget(low + 1));
+
+  // Full-owner publication retains existing Ready source context and lineage.
+  { std::ofstream out(b / "ready.kar", std::ios::binary);
+    out.write(reinterpret_cast<const char*>(midi.data()), static_cast<std::streamsize>(midi.size())); }
+  auto preparedRootOwner = std::make_unique<SongDiscovery>(); auto preparedRoot = preparedRootOwner->registerRoot(b);
+  OPENHDK_FAIL_IF(98, !preparedRoot.root || !preparedRootOwner->scan(*preparedRoot.root).succeeded());
+  auto preparedRootSnapshot = preparedRootOwner->snapshot(); auto preparedRootSong = preparedRootSnapshot->songs[0].id;
+  auto historicalPrepared = preparedRootOwner->prepare(preparedRootSnapshot, preparedRootSong);
+  Image preparedRootImage; auto preparedRootService = Access::create(std::move(preparedRootOwner), std::make_unique<Fake>(preparedRootImage));
+  auto addedRoot = Access::registerRoot(*preparedRootService.service, a);
+  auto preparedAgain = Access::owner(*preparedRootService.service).prepare(preparedRootSnapshot, preparedRootSong);
+  OPENHDK_FAIL_IF(99, !historicalPrepared.succeeded() || !addedRoot.succeeded() || !preparedAgain.succeeded()
+      || addedRoot.snapshot->songs[0].sourceRevision() != preparedRootSnapshot->songs[0].sourceRevision()
+      || addedRoot.snapshot->songs[0].metadata != preparedRootSnapshot->songs[0].metadata
+      || addedRoot.snapshot->songs[0].state != CatalogState::Ready);
+  preparedRootService.service.reset();
+  OPENHDK_FAIL_IF(100, historicalPrepared.prepared->lyrics()->cues().size() != 1
+      || preparedRootSnapshot->roots.size() != 1 || addedRoot.snapshot->roots.size() != 2);
+
 }

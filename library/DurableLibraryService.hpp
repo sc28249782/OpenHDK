@@ -7,10 +7,10 @@
 
 namespace OpenHDK {
 enum class DurableServiceState { Unbound, Ready, RecoveryRequired, Closed };
-enum class DurableServiceOperation { Create, Open, ReplaceOverrides, Close };
+enum class DurableServiceOperation { Create, Open, ReplaceOverrides, Close, RegisterRoot };
 enum class DurableServiceErrorCode {
   InvalidConfiguration, Busy, RecoveryRequired, MetadataFailure, CheckpointFailure,
-  StoreFailure, StorageFailure, BaselineMismatch, ProtocolFault, NativeAdmissionFailure
+  StoreFailure, StorageFailure, BaselineMismatch, ProtocolFault, NativeAdmissionFailure, DiscoveryFailure
 };
 struct DurableServiceError {
   DurableServiceErrorCode code;
@@ -22,6 +22,7 @@ struct DurableServiceError {
   std::optional<StoreArtifact> candidate, prior;
   std::optional<NativeBindingError> binding;
   std::optional<RootId> root;
+  std::optional<DiscoveryDiagnostic> discovery;
 };
 enum class DurableOverrideStatus { Updated, NoChange };
 struct DurableCommitReceipt {
@@ -35,6 +36,13 @@ struct DurableOverrideResult {
   std::optional<DurableCommitReceipt> receipt;
   std::optional<DurableServiceError> error;
   bool succeeded() const noexcept { return status && snapshot && receipt && !error; }
+};
+struct DurableRootRegistrationResult {
+  std::optional<RootId> root;
+  std::shared_ptr<const CatalogSnapshot> snapshot;
+  std::optional<DurableCommitReceipt> receipt;
+  std::optional<DurableServiceError> error;
+  bool succeeded() const noexcept { return root && snapshot && receipt && !error; }
 };
 class DurableLibraryService;
 struct DurableServiceOpenResult {
@@ -148,6 +156,109 @@ class DurableLibraryService {
   std::uint64_t admissionChecks_=0;
   bool forcedAdmissionFailure_ = false;
 #endif
+  // Slice 3.1 has no native mutation entry point. Only the fake-provider test
+  // seam calls this private complete-owner transaction; prospective native
+  // guards/fencing are required before exposing production registration.
+  DurableRootRegistrationResult registerRoot(const std::filesystem::path& path,
+      RootSourcePolicy policy, const StoreControl& control, std::size_t caller) {
+    constexpr auto op = DurableServiceOperation::RegisterRoot;
+    const auto failure = [](DurableServiceError e) {
+      return DurableRootRegistrationResult{{}, nullptr, {}, std::move(e)};
+    };
+    Guard guard(busy_);
+    if (!guard.held) return failure(error(DurableServiceErrorCode::Busy, op));
+    if (state_ != DurableServiceState::Ready)
+      return failure(error(state_ == DurableServiceState::RecoveryRequired
+          ? DurableServiceErrorCode::RecoveryRequired : DurableServiceErrorCode::InvalidConfiguration, op));
+    // Reject native services before staging or filesystem work, including an
+    // unattached owner: the current fence has no prospective root guards.
+    if (nativeProvider_ || !isValidRootSourcePolicy(policy))
+      return failure(error(DurableServiceErrorCode::InvalidConfiguration, op));
+    try {
+      lastAdmissionError_.reset();
+      if (auto e = admissionCheck(this)) {
+        (void)e; state_ = DurableServiceState::RecoveryRequired; return failure(admissionError(op));
+      }
+      if (!baselineMatches()) {
+        state_ = DurableServiceState::RecoveryRequired;
+        return failure(error(DurableServiceErrorCode::BaselineMismatch, op));
+      }
+      const auto cancel = [&] {
+        if (control.cancelled && control.cancelled())
+          StoreDetail::fail(StoreErrorCode::Cancelled, StoreOperation::Save);
+      };
+      cancel();
+      if (owner_->roots_.size() >= limits_.roots)
+        CheckpointDetail::fail(CheckpointErrorCode::LimitExceeded, CheckpointField::Header);
+      // Preflight copied paths/hints and catalog copy before staging allocation.
+      // Registration retains shared metadata/override records once; distinct
+      // snapshot locator copies and root path copies each consume payload.
+      auto preflight = externalBytes(caller, true);
+      CheckpointDetail::add(preflight, pathBytes(), limits_.stagedBytes);
+      auto budget = MetadataPayloadBudget::create(limits_.stagedBytes, preflight);
+      if (!budget || !chargeCatalogPayload(*budget, *owner_->snapshot(), 2U))
+        CheckpointDetail::fail(CheckpointErrorCode::LimitExceeded, CheckpointField::None);
+      constexpr auto unitBytes = sizeof(std::filesystem::path::value_type);
+      if (path.native().size() > limits_.textBytes / unitBytes)
+        CheckpointDetail::fail(CheckpointErrorCode::LimitExceeded, CheckpointField::Hint);
+      if (!budget->charge(path.native().size() * unitBytes))
+        CheckpointDetail::fail(CheckpointErrorCode::LimitExceeded, CheckpointField::Hint);
+      StagedOwner staged{std::unique_ptr<SongDiscovery>(new SongDiscovery(*owner_)), {}};
+      auto registration = staged.owner->registerRoot(path, policy);
+      if (!registration.root) {
+        auto e = error(DurableServiceErrorCode::DiscoveryFailure, op);
+        e.discovery = std::move(registration.error); return failure(std::move(e));
+      }
+      cancel();
+      // Capture charges the candidate's complete owner/snapshot and fresh
+      // projection. The old baseline, paths and copied old locator payload
+      // coexist; shared metadata is already charged in the candidate capture.
+      auto retained = externalBytes(caller, true);
+      for (const auto& song : owner_->snapshot()->songs)
+        CheckpointDetail::add(retained, song.locator().size(), limits_.stagedBytes);
+      auto captured = CatalogCheckpointCapture::acquire(*staged.owner, limits_, retained);
+      if (!captured.succeeded()) {
+        auto e = error(DurableServiceErrorCode::CheckpointFailure, op);
+        e.checkpoint = captured.error; return failure(e);
+      }
+      staged.captured = std::move(captured.captured);
+      // During save, the coordinator charges the candidate projection and the
+      // provider. This ledger charges both owners and only the old projection.
+      auto savedRetained = retainedBytes(caller, staged.owner->snapshot(), true);
+      CheckpointDetail::add(savedRetained, rootPathBytes(*staged.owner), limits_.stagedBytes);
+      DurableRootRegistrationResult result{registration.root, staged.owner->snapshot(), {}, {}};
+      auto saved = store_.save(staged.captured->projection(), *expectation_, control, savedRetained);
+#ifdef OPENHDK_ENABLE_TEST_SEAMS
+      if (corruptAcknowledgment_ && saved.succeeded()) saved.capturedRevision.reset();
+#endif
+      if (!saved.succeeded()) return failure(*saveFailure(saved, op).error);
+      if (saved.status != StoreSaveStatus::Saved || saved.capturedRevision != result.snapshot->revision
+          || !saved.expectation->token()) {
+        state_ = DurableServiceState::RecoveryRequired;
+        auto e = error(DurableServiceErrorCode::ProtocolFault, op);
+        e.cleanupWarning = saved.cleanupWarning; e.candidate = saved.candidate; e.prior = saved.prior;
+        return failure(e);
+      }
+      result.receipt = DurableCommitReceipt{*saved.expectation->token(), *saved.capturedRevision, saved.cleanupWarning};
+      // No allocation, I/O, cancellation or hook after confirmed commit. One
+      // owner swap installs snapshot, lineage, maps and both counters together.
+      owner_.swap(staged.owner);
+      baseline_.swap(staged.captured);
+      expectation_ = std::move(saved.expectation);
+      return result;
+    } catch (const StoreDetail::Failure& e) {
+      auto failureError = error(DurableServiceErrorCode::StoreFailure, op);
+      failureError.store = e.error; return failure(failureError);
+    } catch (const CheckpointDetail::Failure& e) {
+      auto failureError = error(DurableServiceErrorCode::CheckpointFailure, op);
+      failureError.checkpoint = CheckpointError{e.code, CheckpointOperation::Capture, e.field, e.record, e.offset};
+      return failure(failureError);
+    } catch (const std::bad_alloc&) { return failure(error(DurableServiceErrorCode::StorageFailure, op)); }
+  }
+  struct StagedOwner {
+    std::unique_ptr<SongDiscovery> owner;
+    std::shared_ptr<const CapturedCatalogCheckpoint> captured;
+  };
   struct Guard {
     std::atomic_flag& flag; bool held;
     explicit Guard(std::atomic_flag& f) noexcept : flag(f), held(!f.test_and_set(std::memory_order_acquire)) {}
@@ -157,7 +268,7 @@ class DurableLibraryService {
       std::unique_ptr<CheckpointStoreProvider> provider, CatalogCheckpointLimits limits)
       : provider_(std::move(provider)), owner_(std::move(owner)), store_(*provider_), limits_(limits) {}
   static DurableServiceError error(DurableServiceErrorCode code, DurableServiceOperation op) noexcept {
-    return {code, op, {}, {}, {}, {}, {}, {}, {}, {}};
+    return {code, op, {}, {}, {}, {}, {}, {}, {}, {}, {}};
   }
   static DurableOverrideResult failed(DurableServiceError e) noexcept { return {{}, nullptr, {}, e}; }
   DurableOverrideResult saveFailure(const StoreSaveResult& saved, DurableServiceOperation op) noexcept {
@@ -177,9 +288,9 @@ class DurableLibraryService {
         && owner_->catalog_.nextRoot_ == baseline_->projection().nextRoot
         && owner_->catalog_.nextSong_ == baseline_->projection().nextSong;
   }
-  std::size_t pathBytes() const {
+  std::size_t rootPathBytes(const SongDiscovery& owner) const {
     std::size_t total = 0U;
-    for (const auto& root : owner_->roots_) {
+    for (const auto& root : owner.roots_) {
       const auto units = root.path.native().size();
       constexpr auto unitBytes = sizeof(std::filesystem::path::value_type);
       if (units > limits_.stagedBytes / unitBytes)
@@ -187,7 +298,11 @@ class DurableLibraryService {
       CheckpointDetail::add(total, units * unitBytes, limits_.stagedBytes);
       if (root.savedHint) CheckpointDetail::add(total, root.savedHint->size(), limits_.stagedBytes);
     }
-    CheckpointDetail::add(total,admissionExtraBytes(),limits_.stagedBytes);
+    return total;
+  }
+  std::size_t pathBytes() const {
+    auto total = rootPathBytes(*owner_);
+    CheckpointDetail::add(total, admissionExtraBytes(), limits_.stagedBytes);
     return total;
   }
   std::size_t projectionBytes() const { return baseline_ ? CheckpointDetail::shape(baseline_->projection(), limits_).strings : 0U; }
@@ -415,6 +530,9 @@ class DurableLibraryService {
   std::optional<StoreExpectation> expectation_;
   DurableServiceState state_ = DurableServiceState::Unbound;
   std::atomic_flag busy_ = ATOMIC_FLAG_INIT;
+  static_assert(std::is_nothrow_swappable_v<std::unique_ptr<SongDiscovery>>);
+  static_assert(std::is_nothrow_swappable_v<decltype(baseline_)>);
+  static_assert(std::is_nothrow_move_constructible_v<DurableRootRegistrationResult>);
   static_assert(std::is_nothrow_swappable_v<std::shared_ptr<const CatalogSnapshot>>);
   static_assert(std::is_nothrow_move_constructible_v<DurableOverrideResult>);
   static_assert(std::is_nothrow_move_constructible_v<DurableServiceOpenResult>);
@@ -424,6 +542,17 @@ class DurableLibraryService {
 };
 #ifdef OPENHDK_ENABLE_TEST_SEAMS
 struct DurableLibraryServiceTestAccess {
+  static DurableRootRegistrationResult registerRoot(DurableLibraryService& s,
+      const std::filesystem::path& path, RootSourcePolicy policy = {},
+      const StoreControl& control = {}, std::size_t caller = 0U) {
+    return s.registerRoot(path, policy, control, caller);
+  }
+  static const SongDiscovery& owner(const DurableLibraryService& s) noexcept { return *s.owner_; }
+  static std::optional<bool> attached(const DurableLibraryService& s, RootId id) noexcept {
+    for (const auto& root : s.owner_->roots_) if (root.id == id) return root.attached;
+    return {};
+  }
+
   static std::uint64_t admissionChecks(const DurableLibraryService& s) noexcept {return s.admissionChecks_;}
   static DurableServiceOpenResult createNative(std::unique_ptr<SongDiscovery> owner,std::string parent,std::string primary,
       CatalogCheckpointLimits limits={},NativeStoreAdmissionLimits admission={},std::size_t caller=0) {
