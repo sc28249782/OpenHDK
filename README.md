@@ -81,7 +81,7 @@ ctest --test-dir build --output-on-failure
 
 The default POC configuration uses pinned FluidSynth and miniaudio dependencies
 (and downloads a pinned test SoundFont when audio POC tests are enabled). For
-the twenty-six hardware-free core test suites, use:
+the twenty-seven hardware-free core test suites, use:
 
 ```powershell
 cmake -S . -B build-parser -DOPENHDK_BUILD_AUDIO_POC=OFF -DOPENHDK_BUILD_TESTS=ON -DOPENHDK_FETCH_TEST_FIXTURES=OFF
@@ -91,7 +91,7 @@ ctest --test-dir build-parser --output-on-failure
 
 The lightweight Linux core CI job uses this hardware-free configuration with
 strict compiler warnings and AddressSanitizer/UndefinedBehaviorSanitizer. It
-runs twenty-six suites: catalog checkpoint codec/restore/store protocol, SMF parser fixtures, MIDI
+runs twenty-seven suites: catalog checkpoint codec/restore/store protocol, SMF parser fixtures, MIDI
 diagnostics CLI, runtime mixer console, velocity curves, mixer presets, stereo peak limiting, song catalog
 identity/transactions, filesystem discovery, lyric text decoding, KAR cue
 extraction, media-clock consumption, atomic media-clock publication,
@@ -178,7 +178,8 @@ See the [native evidence procedure](docs/NATIVE-LINUX-CHECKPOINT-EVIDENCE.md)
 for pinned ext4 runs and explicit exit-code receipts. Linux provider acceptance is scoped to revision `6a6337d` and the recorded
 WSL2 ext4 environment; this does not change the released v0.2.0 storage boundary.
 
-The [native durable service binding proposal](docs/NATIVE-SERVICE-BINDING-PLAN.md)
-plans lease-bound authority, store/root containment and fresh integration evidence.
-The current durable service factories remain test-only; this proposal adds no
+The accepted [native binding plan](docs/NATIVE-SERVICE-BINDING-PLAN.md) now has
+private lease-epoch and bounded root-ancestry primitives with tests. The
+coordinator fence, native factory and fresh integration evidence remain pending.
+The current durable service factories remain test-only; the primitives add no
 native service support or released storage feature.

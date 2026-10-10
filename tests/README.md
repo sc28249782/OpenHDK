@@ -1,6 +1,6 @@
 # Test coverage and failure diagnostics
 
-The hardware-free configuration registers twenty-six CTest suites: catalog checkpoint codec/restore/store protocol,
+The hardware-free configuration registers twenty-seven CTest suites: catalog checkpoint codec/restore/store protocol,
 parser fixtures, MIDI diagnostics CLI, runtime mixer console, velocity curves, mixer presets,
 stereo peak limiter, song catalog core, filesystem discovery, lyric text
 decoding, KAR lyric extraction, media-clock consumption, media-clock
@@ -8,9 +8,9 @@ publication, generation-bound lyric observation, single-song preparation,
 root reattachment, pure catalog metadata/policy models, and catalog metadata
 scan/preparation integration, and override/display transactions, plus durable override service protocol.
 The audio-enabled test configuration adds FluidSynth headless
-playback, CLI help, and diagnostics error cases, for twenty-nine suites.
+playback, CLI help, and diagnostics error cases, for thirty suites.
 These counts describe the development tree; v0.2.0 has six/nine respectively.
-Linux core CI runs twenty-six hardware-free suites; Windows bootstrap runs all twenty-nine.
+Linux core CI runs twenty-seven hardware-free suites; Windows bootstrap runs all thirty.
 
 ## Planned 0.3.0 acceptance
 
@@ -216,7 +216,7 @@ explicit reconciliation and native process-interruption recovery. Provider tests
 must distinguish file synchronization from namespace/durability acknowledgment.
 Windows behavior requires Windows fixtures. Fake failure tests do not prove
 physical power-loss survival. The pure `catalog-checkpoint-codec` suite is now
-registered alongside `catalog-checkpoint-restore` (twenty-six core / twenty-nine
+registered alongside `catalog-checkpoint-restore` (twenty-seven core / thirty
 audio-enabled); native stores and durable-first wiring remain pending.
 
 The codec suite compares production output with checked-in independent Python
@@ -258,7 +258,7 @@ blocking allocations at publish tests the acknowledgment path.
 
 These simulations do not prove native OS locking, path capability validation,
 crash recovery or durability. The test adds no filesystem provider and does not
-complete the storage release gate. There are 26 core / 29 audio-enabled suites.
+complete the storage release gate. There are 27 core / 30 audio-enabled suites.
 
 ## Planned native checkpoint provider evidence
 
@@ -266,7 +266,7 @@ The [accepted native provider plan](../docs/NATIVE-CHECKPOINT-PROVIDER-PLAN.md)
 records an API/fault/interruption matrix and per-platform evidence fields.
 The ownership primitive has a dedicated suite; the experimental provider adds
 publication regression tests without native acceptance claims. The baseline is
-26 core / 29 audio-enabled suites. Fake-provider successes do not prove native
+27 core / 30 audio-enabled suites. Fake-provider successes do not prove native
 lock ownership, namespace synchronization or durability.
 
 Future native tests must verify the filesystem used by the test directory and
@@ -302,7 +302,7 @@ removed. Publication, synchronization and durability tests remain pending.
 CMake enables OPENHDK_ENABLE_TEST_SEAMS for this target only. Linux regression
 uses real openat/flock/rename/fsync in a harness-owned temporary directory, with
 filesystem eligibility bypass when native ext4 is unavailable. Non-Linux builds
-check UnsupportedStorage without filesystem access. This is 26 core / 29 audio
+check UnsupportedStorage without filesystem access. This is 27 core / 30 audio
 suites, not a storage acceptance claim.
 
 Checks cover create/update/reopen/no-op/stale tickets, bounded artifact reads,
@@ -328,7 +328,7 @@ Use `bash tests/run-linux-checkpoint-evidence.sh FULL_COMMIT_SHA EXT4_PARENT`
 from a clean pinned checkout for a new native collection. The script records
 compiler/test/overall exit codes and log hashes, keeping failure bundles too.
 See [receipt semantics and pending gates](../docs/NATIVE-LINUX-CHECKPOINT-EVIDENCE.md).
-There are 26 core / 29 audio-enabled suites. The six seam targets require
+There are 27 core / 30 audio-enabled suites. The eight seam targets require
 OPENHDK_ENABLE_TEST_SEAMS=1 when compiled directly; CMake sets it per target.
 
 
@@ -383,12 +383,22 @@ reciprocal store/root containment need separate reviewed integration/evidence.
 The target requires OPENHDK_ENABLE_TEST_SEAMS=1, configured only for this target
 in CMake and included in the collector seam list. Factories accept only the test
 provider category; they cannot admit a native Linux provider. Current counts are
-26 core / 29 audio-enabled. Historical provider receipts remain unchanged.
+27 core / 30 audio-enabled. Historical provider receipts remain unchanged.
 
-## Proposed native service admission tests
+## Native binding primitive tests
 
-[OHK-BIND-030](../docs/NATIVE-SERVICE-BINDING-PLAN.md#7-required-implementation-tests)
-proposes lease-epoch/lifetime, root ancestry, bounds and prepublication-fence
-cases. Native acceptance needs a fresh pinned matrix run after implementation.
-No tests or suite-count changes accompany this proposal; 26 core / 29
-audio-enabled remain current. Historical evidence bundles must stay unchanged.
+[OHK-BIND-030](../docs/NATIVE-SERVICE-BINDING-PLAN.md#10-current-bindingancestry-primitive)
+is accepted. The native-store-binding target checks private construction,
+lease-epoch/lifetime, root ancestry, replacement, bounds and allocation-failure
+FD cleanup. It requires OPENHDK_ENABLE_TEST_SEAMS=1 only on its CMake target;
+the collector includes that target in its seam list. Missing mount-ID and
+root-mount mismatch are explicit injected tests. `/proc` exercises real
+other-mount rejection without modifying that mount. The lexical-bypass seam
+checks the ancestor algorithm, not bind-mount support.
+
+Mount-alias namespace coverage is reported Skipped; no namespace harness is
+implemented. Local runs bypass ext4 eligibility only under seams. Collector
+runs with OPENHDK_NATIVE_CHECKPOINT_DIR use production lease eligibility and
+retain the Pending native acceptance marker. The final coordinator fence and
+native factory tests remain separate work. There are 27 core / 30 audio-enabled
+suites. Historical evidence bundles stay unchanged.

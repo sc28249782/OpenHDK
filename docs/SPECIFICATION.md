@@ -426,8 +426,9 @@ completion, callback rules, channel-volume semantics, or CLI argument behavior
 are compatibility changes. They MUST update this document, regression tests,
 and release notes together.
 
-The proposed [native service binding plan](NATIVE-SERVICE-BINDING-PLAN.md)
-requires lease-epoch authority and bounded retained-handle admission before
-native durable service publication. Its same-mount and active-root restrictions
-require review; they do not change implemented discovery or checkpoint schema
-limits. Native service acceptance requires fresh integration evidence.
+The accepted [native service binding plan](NATIVE-SERVICE-BINDING-PLAN.md)
+now has private lease-epoch and retained-handle ancestry primitives. They reject
+stale/foreign bindings, root overlap and different observed mount IDs; they
+retain at most 32 active roots under a conservative 45-descriptor cap. They
+perform no save or memory publication. Discovery and checkpoint schema limits
+remain separate. Native factory/coordinator fence integration is pending. Native service acceptance requires fresh integration evidence.

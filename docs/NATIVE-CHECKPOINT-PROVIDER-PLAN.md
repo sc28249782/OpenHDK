@@ -447,10 +447,10 @@ synchronization protocol is unresolved. Do not implement acknowledged Windows
 saves by substituting an unconditional success or by weakening OHK-STORE-030.
 Live capture and durable-first wiring remain separate slices.
 
-## 17. Proposed durable service admission
+## 17. Durable service binding primitive
 
-[OHK-BIND-030](NATIVE-SERVICE-BINDING-PLAN.md) proposes an owning capability
-from the retained provider lease and bounded same-mount root containment.
-Exported authority expires on release/reacquire. The plan adds no provider API
-or native service support; changed integration needs a fresh pinned run and
+[OHK-BIND-030](NATIVE-SERVICE-BINDING-PLAN.md) is accepted. Its private primitive
+retains an owning capability from the provider lease and checks bounded
+same-mount root containment. Authority expires on release/reacquire. No public
+provider export or native service factory exists; changed integration needs a fresh pinned run and
 explicit scoped acceptance. Existing revision-bound evidence stays unchanged.

@@ -72,7 +72,7 @@ for src in "$source_root"/tests/*_tests.cpp; do
   suite="$(basename -- "$src" .cpp)"
   seam=()
   case "$suite" in
-    linux_checkpoint_lease_tests|linux_checkpoint_provider_tests|linux_checkpoint_evidence_tests|root_reattachment_tests|catalog_override_display_tests|media_clock_publication_tests|durable_library_service_tests)
+    linux_checkpoint_lease_tests|linux_checkpoint_provider_tests|linux_checkpoint_evidence_tests|root_reattachment_tests|catalog_override_display_tests|media_clock_publication_tests|native_store_binding_tests|durable_library_service_tests)
       seam=(-DOPENHDK_ENABLE_TEST_SEAMS=1) ;;
   esac
   run_receipt compile "$suite" "$out/$suite.compile.log" 180s g++ "${flags[@]}" "${seam[@]}" "$src" -o "$out/bin/$suite"

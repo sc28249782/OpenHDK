@@ -321,10 +321,11 @@ A future collector run must pin its own new revision; this change does not relab
 `6a6337d` or prove native service acceptance. Windows synchronization, other durable
 mutation staging, NCN, application wiring and manual validation remain open.
 
-## 11. Proposed native binding interface
+## 11. Native binding primitive and pending factory
 
-[OHK-BIND-030](NATIVE-SERVICE-BINDING-PLAN.md) proposes the missing lease-epoch
-capability, retained-handle containment checks and private prepublication fence.
+[OHK-BIND-030](NATIVE-SERVICE-BINDING-PLAN.md) is accepted. Private lease-epoch
+capability and retained-handle containment primitives are implemented; the
+coordinator fence and production native factory remain pending.
 Its first factory would reject active roots on different mounts and cap active
-roots at 32. These are proposed admission restrictions, not current runtime
-behavior. Review and fresh affected native evidence precede factory acceptance.
+roots at 32. These are implemented primitive limits, not enabled native service support.
+Fresh affected native evidence and review precede factory acceptance.

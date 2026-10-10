@@ -1,7 +1,7 @@
 # Native durable service binding and admission plan
 
 **Plan:** OHK-BIND-030
-**Status:** Proposed; requires review and acceptance
+**Status:** Accepted; binding/ancestry primitive implemented, native factory and affected evidence pending
 **Scope:** Linux binding capability and store/root admission for
 [OHK-DURABLE-030](DURABLE-LIBRARY-SERVICE-CONTRACT.md), slice 2.
 
@@ -9,13 +9,14 @@
 
 PR #70 implements service baseline admission and durable user overrides with a
 test-only provider category. There is no production native service factory.
-The Linux provider retains a directory and lock lease, but its public interface
-does not export the binding capability required by OHK-DURABLE-030 section 3.
+The Linux provider retains a directory and lock lease. A private binding
+primitive now retains that lease epoch; no public provider interface exports it.
 
-This plan proposes that capability, a bounded containment check, and the evidence
-needed before native factory acceptance. It adds no API, runtime behavior,
-completed test, dependency or release support. The existing detached checkpoint
-provider and capture APIs retain their current scope.
+The accepted plan specifies that capability, a bounded containment check, and
+the evidence needed before native factory acceptance. The first implementation
+adds private binding/ancestry primitives and a seam-only test entry point. It
+adds no production service factory, dependency or released storage support.
+The existing detached checkpoint provider and capture APIs retain their scope.
 
 The Linux acceptance remains tied to provider/test revision
 `6a6337df03fb69326cc5096eb2ef34b6e32bac11` on the recorded WSL2 `/dev/sdd` ext4
@@ -59,7 +60,7 @@ Check the statx result mask; absence of a requested mount ID is unsupported.
 
 The first native service factory supports active roots on the same observed mount
 as the store parent. Different or unavailable mount IDs fail closed with
-UnsupportedStorage. This is a proposed service admission restriction; it does
+UnsupportedStorage. This is the first primitive admission restriction; it does
 not lower checkpoint schema limits or change detached discovery behavior.
 It deliberately leaves cross-mount and bind-mount admission for later review.
 
@@ -94,7 +95,7 @@ mount IDs reject alias cases rather than silently treating them as safe.
 
 ## 4. Bounds and one operation ledger
 
-| Admission resource | Proposed default and maximum | Rule |
+| Admission resource | Default and maximum | Rule |
 |---|---|---|
 | Active roots | 32 | Unattached roots do not count; no partial admission. |
 | Root path | 4096 UTF-8 bytes | Preserve mapping; no truncation. |
@@ -221,8 +222,9 @@ bare-metal, NTFS, cross-OS or hostile-writer guarantees.
 5. Continue durable root lifecycle transactions and application/CLI orchestration.
 
 NCN evidence, manual device/lyric validation and the Windows gate remain separate.
-This docs-only proposal leaves suite counts at 26 core / 29 audio-enabled and
-changes no completed roadmap checkbox.
+The initial docs-only proposal changed no tests or completed roadmap checkbox.
+The binding primitive adds one suite: current counts are 27 core / 30
+audio-enabled. The storage completion checkbox remains open.
 
 Primary API references:
 
@@ -236,3 +238,47 @@ Primary API references:
   bind mounts and per-mount observations.
 
 These references explain API semantics, not runtime evidence or acceptance.
+
+## 10. Current binding/ancestry primitive
+
+[NativeStoreBinding.hpp](../library/NativeStoreBinding.hpp) implements private
+binding export and admission helpers. The public descriptive object has no
+constructor, raw descriptor or write/lock authority. Export lazily duplicates
+one close-on-exec directory handle and caches one immutable value per lease.
+Release clears the cache and epoch before closing the lease. Existing detached
+provider operations do not export a binding or allocate its token/duplicate.
+
+The helper accepts active mapping views only through its private plumbing.
+Production service factories remain unavailable. TestAccess behind
+OPENHDK_ENABLE_TEST_SEAMS can supply harness paths to the primitive; it cannot
+create a writable native service. Structured primitive errors identify a root
+by its input index. The future owner factory must map that index to its RootId;
+the ordinal is not authority or a serialized identity.
+
+Admission stages at most 32 retained root handles. It rejects different observed
+mount IDs and checks both component containment and retained handle ancestry.
+Recheck reopens root mappings with per-component no-follow rules and repeats
+ancestry checks. It does not perform store saves, final coordinator fences,
+owner attachment or durable mutation publication.
+
+The helper's alreadyOwned argument excludes the binding/root strings it is
+about to charge. The lease's retainedBytes contribution includes its cached
+binding strings. Future service ledger handoff must deduplicate that same
+capability when charging provider and admission storage. This integration is
+not implemented here. Descriptor preflight reserves eight provider descriptors,
+one binding descriptor and four transient descriptors, plus the active roots.
+This conservative upper bound is at most 45; unrelated process descriptors are
+outside it. The fixed guard records and kernel allocation are not logical text
+payload bytes.
+
+Tests cover private construction, stale/foreign epochs, lifetime, component and
+ancestor containment, real different-mount rejection, missing-field injection,
+root/store replacement, exact/beyond bounds and allocation-failure FD sweeps.
+A seam that disables the lexical fast reject exercises real handle ancestry;
+it is not evidence of bind-mount acceptance. The private mount-namespace case
+is explicitly Skipped because its harness is not implemented. Local filesystem
+eligibility bypass is test-only; native collector runs disable it.
+
+Binding/factory receipt instrumentation and fresh native evidence remain pending.
+The existing scoped acceptance at 6a6337d is unchanged. No production service
+factory or coordinator fence is added by this primitive slice.

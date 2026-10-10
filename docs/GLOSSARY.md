@@ -98,3 +98,16 @@ v0.2.0 behavior.
 
 - **Durable library service**: Accepted exclusive owner/store boundary that stages a mutation and publishes memory only after confirmed storage commit. The override primitive has fake-provider tests; native construction is pending. Existing in-memory APIs remain separate.
 - **Acknowledged baseline**: In the durable service primitive, the matching owner snapshot/counter/root context and internal store expectation established by confirmed initialization or mutation. A store token alone does not establish this association.
+
+## Native binding epoch
+
+A private lifetime token for one acquired checkpoint lease. It becomes invalid
+for admission when that lease is released or reacquired. Descriptive directory
+identity equality does not revive authority. See
+[OHK-BIND-030](NATIVE-SERVICE-BINDING-PLAN.md).
+
+## Native root admission guard
+
+An owning set of active root directory handles and mappings used by the private
+same-mount containment primitive. It retains directory identity during checks.
+It does not attach roots, save a checkpoint or prove hostile-writer isolation.

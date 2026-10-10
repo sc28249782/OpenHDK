@@ -247,10 +247,10 @@ belongs in any layer.
 
 Audio callbacks must not perform file I/O, allocation, parsing, or UI work.
 
-## Proposed native service binding
+## Native binding primitive
 
-[OHK-BIND-030](NATIVE-SERVICE-BINDING-PLAN.md) defines a proposed private lease
-epoch capability, retained root/ancestor handles and a final prepublication
-admission fence for durable service slice 2. Canonical text alone is insufficient
-for containment. The initial proposal admits only same-mount active roots, with
+[OHK-BIND-030](NATIVE-SERVICE-BINDING-PLAN.md) is accepted. Its private lease
+epoch capability and retained root/ancestor guard primitives are implemented.
+The final coordinator admission fence remains pending in durable service slice 2. Canonical text alone is insufficient
+for containment. The primitive admits only same-mount active roots, with
 32 active roots and bounded handle/path budgets. No native factory exists yet.
