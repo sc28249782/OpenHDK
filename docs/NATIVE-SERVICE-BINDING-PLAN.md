@@ -1,7 +1,8 @@
 # Native durable service binding and admission plan
 
 **Plan:** OHK-BIND-030
-**Status:** Accepted; binding/ancestry and experimental factory/fence implemented; affected evidence pending
+**Status:** Accepted; binding/ancestry and experimental factory/fence implemented;
+scoped WSL2 ext4 factory/fence acceptance recorded for tested revision `4f69246`
 **Scope:** Linux binding capability and store/root admission for
 [OHK-DURABLE-030](DURABLE-LIBRARY-SERVICE-CONTRACT.md), slice 2.
 
@@ -208,8 +209,8 @@ allocation/descriptor bounds and the new admission matrix. Preserve historical
 bundles. Apply the existing documented username-redaction procedure to new logs;
 record original/published hashes and replacement counts separately.
 
-The native factory remains experimental pending that run and explicit reviewer
-acceptance for its exact revision and environment. Do not relabel `6a6337d`,
+Native factory acceptance requires that run and explicit reviewer acceptance
+for its exact revision and environment. The scoped decision is recorded below. Do not relabel `6a6337d`,
 borrow its receipts for changed service code, or infer universal power-loss,
 bare-metal, NTFS, cross-OS or hostile-writer guarantees.
 
@@ -337,7 +338,7 @@ ancestor termination and the final changed/NoChange fence. The existing collecto
 verifies both logs with Python 3 and records its verification exit code. Current
 counts remain 28 core / 31 audio-enabled; binding checks are 74 and native service
 checks are 33. A fresh pinned ext4 run is recorded in the evidence section below; explicit
-scoped native factory acceptance remains pending. Historical evidence and the `6a6337d` provider acceptance are
+scoped native factory acceptance is recorded below. Historical evidence and the `6a6337d` provider acceptance are
 unchanged. Windows checkpoint acknowledgment remains blocked.
 
 ## Recorded WSL2 ext4 admission run
@@ -349,5 +350,18 @@ binding/service logs use bypass zero and contain 13 traces, 364 identity
 observations and three fence cases. The published logs redact the local username
 with original/published hashes and replacement counts. This is supplied execution
 evidence, not independent source/run authentication. Explicit scoped factory
-acceptance remains pending; mount-namespace alias evidence remains Skipped.
+acceptance is recorded in the final decision below; mount-namespace alias evidence remains Skipped.
 Historical `6a6337d` acceptance, Windows blockage and roadmap checkboxes are unchanged.
+
+## Scoped native factory acceptance
+
+The maintainer [explicitly accepted the factory/fence](NATIVE-ADMISSION-EVIDENCE.md#explicit-scoped-factory-acceptance--2026-10-10)
+on 2026-10-10 for tested revision
+`4f6924670d4272736984342c8294967650c60edb`, on WSL2 `/dev/sdd` ext4
+`data=ordered`. This closes the OHK-BIND-030 factory/fence evidence gate only
+within the recorded scope. Documentation merges do not relabel the tested
+revision. Earlier Pending statements and supplied logs retain their historical
+meaning; this final decision is authoritative. The `6a6337d` provider decision
+remains separate and unchanged. Mount-namespace alias evidence remains Skipped;
+Windows checkpoint acknowledgment, durable root mutations, application/CLI wiring,
+NCN evidence and manual validation remain open. No storage release checkbox changes.

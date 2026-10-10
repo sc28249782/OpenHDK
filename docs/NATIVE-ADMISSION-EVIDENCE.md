@@ -1,7 +1,8 @@
 # Native service admission receipts
 
 Status: Instrumentation implemented; fresh pinned WSL2 ext4 run recorded;
-explicit scoped native factory acceptance remains pending. This does not extend the provider acceptance for
+explicit scoped native factory acceptance recorded for `4f69246` on the tested
+WSL2 `/dev/sdd` ext4 environment. This does not relabel the provider acceptance for
 `6a6337d`.
 
 ## Scope and format
@@ -106,5 +107,41 @@ binding/service logs use bypass zero and contain 13 traces, 364 identity
 observations and three fence cases. The published logs redact the local username
 with original/published hashes and replacement counts. This is supplied execution
 evidence, not independent source/run authentication. Explicit scoped factory
-acceptance remains pending; mount-namespace alias evidence remains Skipped.
+acceptance is recorded in the final decision below; mount-namespace alias evidence remains Skipped.
 Historical `6a6337d` acceptance, Windows blockage and roadmap checkboxes are unchanged.
+
+## Explicit scoped factory acceptance — 2026-10-10
+
+Decision: Accepted by the maintainer at 2026-10-10 12:56:19 Asia/Bangkok.
+The maintainer supplied the run, reviewed PR #75 and explicitly confirmed merge
+and acceptance of the native factory/fence at `4f69246` on WSL2 `/dev/sdd` ext4
+within the recorded evidence scope. This is a maintainer decision, not independent
+source/run authentication or an inference from passing CI.
+
+| Decision field | Accepted scope |
+| --- | --- |
+| Exact tested revision | `4f6924670d4272736984342c8294967650c60edb` |
+| Evidence | [2026-10-10 supplied admission bundle](evidence/native-admission/2026-10-10-wsl2-ext4/README.md), reviewed in PR #75 |
+| Environment | WSL2 kernel 6.18.40.1-microsoft-standard-WSL2; GCC 13.3.0; `/dev/sdd` ext4 `data=ordered` |
+| Execution | Clean revision capture, direct g++ with SANITIZERS=0; 28 compile/run exits, verifier and overall zero; bypass zero |
+| Accepted observations | Lease-bound binding/export/epoch checks, retained identity/mount/ancestry admission, Create/Open baseline and override path, changed/NoChange final fence drift preservation |
+| Bounds and cleanup | Fixed traces with overflow zero, recorded 49 factory allocation failures before success and FD counts six/six |
+| Evidence limits | Selected observations and trusted-directory checks, injected faults separated from actual results; harness artifacts removed, observations retained in logs |
+
+This closes the OHK-BIND-030 native factory/fence evidence-and-acceptance gate for
+this revision and environment. It does not relabel documentation merge `cbf4c05`
+as a tested runtime revision. Later documentation commits do not advance the
+accepted tested revision either. The historical provider acceptance at `6a6337d`
+remains a separate decision; its original evidence is unchanged.
+
+The private mount-namespace alias case remains Skipped. No bare-metal Linux,
+Windows/NTFS, DrvFS/cross-OS, hostile-writer isolation, atomic pathname CAS or
+power-loss recovery approval is implied. Windows checkpoint acknowledgment stays
+blocked. Durable root lifecycle and application/CLI wiring need their own
+implementation and affected evidence. NCN evidence and manual device/lyric
+validation remain open; the storage release checkbox stays unchecked.
+
+Earlier Pending statements in the plan and the supplied bundle record the
+sequence before this decision. Keep all supplied logs, hashes, manifests,
+verification/redaction records and bundle READMEs unchanged. This final decision
+is the authoritative current acceptance record.
