@@ -307,3 +307,15 @@ metadata/override records count once while distinct path/locator copies count
 separately. Registration remains a fake-provider test primitive; the current
 native fence cannot admit a prospective root. Native mutation support still
 requires shared guards, operation-aware fencing and fresh scoped evidence.
+
+## Private prospective guard ownership
+
+[The prospective primitive](DURABLE-ROOT-LIFECYCLE-PLAN.md#11-current-prospective-guard-primitive)
+retains immutable shared root guards containing mapping, native identity, mount
+and directory handle. A candidate reuses unchanged guards by validated prior
+index and owns a distinct new guard. Retired guards stay owned by the old context
+through commit/rollback. Stage charges the union of retained paths once and
+checks the 45-descriptor peak before opening a target. No guard refresh from
+path text, service publication, native mutation API or audio callback work is
+added. Service RootId/generation association and operation-aware fencing remain
+the next integration boundary.

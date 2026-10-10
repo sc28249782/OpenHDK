@@ -276,3 +276,13 @@ fencing/registration/reattachment, then scan and logical song relocation/removal
 Fresh affected native receipts and scoped acceptance remain required. This does
 not complete storage or application/CLI work; Windows, NCN and manual gates stay
 open, and existing roadmap completion checkboxes remain unchanged.
+
+## Durable root lifecycle prospective primitive
+
+[Slice 3.2 guard preparation](DURABLE-ROOT-LIFECYCLE-PLAN.md#11-current-prospective-guard-primitive)
+now shares unchanged retained guards and privately stages one new/replacement
+guard with bounded rollback coexistence. Next: owned RootId/generation mapping,
+operation-aware service fence and native registration/targeted reattachment.
+Those mutations remain unavailable, followed by scan/song lifecycle and fresh
+scoped native evidence. No storage checkbox changes; Windows checkpoint
+acknowledgment, NCN, app/CLI and manual validation remain separate gates.

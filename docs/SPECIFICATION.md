@@ -485,3 +485,14 @@ registration returns no RootId, snapshot or success receipt and leaves counters
 and mappings unpublished. Uncertain/protocol outcomes require recovery. This is
 not a public/native registration API; native services reject the test seam
 before filesystem work. Other root mutations and application wiring stay pending.
+
+## Private prospective admission boundary
+
+[OHK-DURABLE-ROOT-030](DURABLE-ROOT-LIFECYCLE-PLAN.md#11-current-prospective-guard-primitive)
+now implements private shared guard staging. It rejects duplicate/missing prior
+correspondence, retirement of more than one target, same-path changed-target
+requests, unrelated identity drift, mount/containment violations and excessive
+old-plus-new descriptor peaks. Stage root indices identify candidate rows for
+future service RootId mapping. No production native root mutation/fence is
+implemented here. Earlier native acceptances do not advance to this runtime
+revision without a fresh pinned affected run and scoped review.

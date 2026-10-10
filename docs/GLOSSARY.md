@@ -134,3 +134,12 @@ allocator high-water counters and root mappings/hints. Slice 3.1 captures its
 checkpoint and publishes the whole owner only after confirmed save. Current
 registration access is test-only; prospective native root guards remain pending.
 See [OHK-DURABLE-ROOT-030](DURABLE-ROOT-LIFECYCLE-PLAN.md#10-current-slice-31-boundary).
+
+## Shared prospective root guard
+
+An immutable mapping/identity/mount/handle object reused by a private prospective
+admission when its prior index and path match. Sharing preserves original
+identity authority and avoids descriptor duplication. A changed target gets a
+distinct guard; its retired guard remains in the old context until commit or
+rollback. The owning service's RootId/generation association is still pending.
+See [OHK-DURABLE-ROOT-030](DURABLE-ROOT-LIFECYCLE-PLAN.md#11-current-prospective-guard-primitive).

@@ -2,8 +2,9 @@
 
 **Plan:** OHK-DURABLE-ROOT-030
 **Status:** Accepted by review and merge of PR #77; private complete-owner staging
-and fake-provider durable registration implemented. Prospective native guards,
-native root mutations and remaining lifecycle operations are pending.
+and fake-provider durable registration implemented. Private prospective shared
+guards implemented; service fence integration, native root mutations and remaining
+lifecycle operations are pending.
 **Target:** OHK-DURABLE-030 slice 3, after scoped native factory/fence acceptance.
 
 ## 1. Purpose and current boundary
@@ -255,3 +256,39 @@ remain unchanged. Next: prospective shared guards and operation-aware fencing
 before native registration/reattachment, then scan/song relocation/removal and
 fresh affected native receipts/acceptance. Windows checkpoint acknowledgment
 remains BLOCKED; app/CLI, NCN and manual validation stay separate.
+
+## 11. Current prospective guard primitive
+
+[NativeStoreAdmission](../library/NativeStoreBinding.hpp) now owns immutable shared
+guards instead of per-admission descriptor copies. Private Stage accepts a
+complete prospective list associated by prior guard indices. Each unchanged
+index is used once with its exact stored path; every old guard must be retained
+except one explicit retired target. At most one new guard is admitted. Retirement
+requires a different target path and does not authorize same-path identity drift.
+
+Unchanged guards are rewalked against original identities before staging and
+again in the candidate's final recheck. A designated old target may be missing;
+unrelated drift remains a failure. New targets retain separate handles and must
+pass same-mount, root/root and reciprocal store/root containment checks. Errors
+with a Stage root index identify candidate rows; missing correspondence without
+a candidate row has no index. The owning service must still validate RootId and
+generation correspondence. No public caller can construct admission guards.
+
+Stage accounts for binding and old guard paths once, plus distinct new guard
+paths. Its alreadyOwned input excludes those guard strings and includes other
+coexisting operation payload; this is one allowance, not an extra budget. It
+checks the 13 + old guards + new guards descriptor peak against both configured
+bounds before opening the candidate. Active-root/descriptor bounds cannot grow
+through staged contexts. Caller/service must retain the current admission until
+commit/rollback so retired handles remain alive. Guard object/allocator overhead
+is bounded by counts, not represented as a total process-memory measurement.
+
+The [binding suite](../tests/native_store_binding_tests.cpp) now has 108 checks,
+including exact/beyond payload and descriptor boundaries, sharing/lifetime,
+missing targeted roots, unrelated and late drift, mount faults, allocation sweeps
+and epochs. Native service behavior and its registration rejection remain
+unchanged. This slice supplies no operation-aware fence, durable native mutation
+or complete new receipt matrix. Next: service-owned candidate mapping/fence and
+registration/reattachment integration, then fresh affected native receipts and
+pinned execution/acceptance. Historical `6a6337d` and `4f69246` decisions remain
+revision-bound; no later runtime revision borrows their acceptance.
