@@ -26,9 +26,9 @@ continue to apply independently of feature plans.
 | [KARAOKE-LIBRARY-CONTRACT](KARAOKE-LIBRARY-CONTRACT.md) | Accepted 0.3.0 contract; catalog/discovery/preparation slices implemented, full services gated. |
 | [CATALOG-METADATA-POLICY-CONTRACT](CATALOG-METADATA-POLICY-CONTRACT.md) | Accepted member/metadata and root-policy contract; models, scan/preparation and override/display transactions implemented. |
 | [CATALOG-PERSISTENCE-CONTRACT](CATALOG-PERSISTENCE-CONTRACT.md) | Accepted schema-1 contract with pure codec, fresh-owner restore and fake-provider store protocol implemented; scoped Linux evidence accepted and live capture implemented; Windows and durable-first wiring pending. |
-| [NATIVE-ADMISSION-EVIDENCE](NATIVE-ADMISSION-EVIDENCE.md) | Bounded admission receipts/verifier implemented; pinned WSL2 ext4 run recorded; scoped factory acceptance pending. |
-| [NATIVE-SERVICE-BINDING-PLAN](NATIVE-SERVICE-BINDING-PLAN.md) | Accepted lease-epoch/ancestry plan; private binding/guards and experimental Linux factory/fence implemented; fresh native evidence pending. |
-| [DURABLE-LIBRARY-SERVICE-CONTRACT](DURABLE-LIBRARY-SERVICE-CONTRACT.md) | Accepted exclusive service/baseline contract; override primitive, fake tests and experimental Linux factory/fence implemented; other mutations/native evidence pending. |
+| [NATIVE-ADMISSION-EVIDENCE](NATIVE-ADMISSION-EVIDENCE.md) | Bounded admission receipts/verifier implemented; pinned WSL2 ext4 run and scoped factory acceptance recorded for `4f69246`. |
+| [NATIVE-SERVICE-BINDING-PLAN](NATIVE-SERVICE-BINDING-PLAN.md) | Accepted lease-epoch/ancestry plan; private binding/guards and experimental Linux factory/fence implemented; scoped acceptance recorded for `4f69246`. |
+| [DURABLE-LIBRARY-SERVICE-CONTRACT](DURABLE-LIBRARY-SERVICE-CONTRACT.md) | Accepted exclusive service/baseline contract; override primitive, fake tests and experimental Linux factory/fence implemented and scoped acceptance recorded; other mutations pending. |
 | [NATIVE-LINUX-CHECKPOINT-EVIDENCE](NATIVE-LINUX-CHECKPOINT-EVIDENCE.md) | Scoped acceptance recorded for 6a6337d on WSL2 /dev/sdd ext4; evidence bundles retained. |
 | [NATIVE-CHECKPOINT-PROVIDER-PLAN](NATIVE-CHECKPOINT-PROVIDER-PLAN.md) | Accepted API/evidence plan; Linux lease and experimental provider implemented; scoped Linux acceptance recorded; Windows synchronization BLOCKED. |
 | [ROOT-REATTACHMENT-CONTRACT](ROOT-REATTACHMENT-CONTRACT.md) | Accepted attachment-generation/transaction rules; local SMF/KAR reattachment implemented, CLI/storage gated. |
@@ -95,4 +95,17 @@ multi-SoundFont, bus, effects, and output-routing work keeps the ordering in
 [ROADMAP.md](ROADMAP.md).
 
 The [2026-10-10 native admission bundle](evidence/native-admission/2026-10-10-wsl2-ext4/README.md)
-records revision `4f6924670d4272736984342c8294967650c60edb`; acceptance remains pending.
+records revision `4f6924670d4272736984342c8294967650c60edb`; the scoped decision is linked below.
+
+## Scoped native factory acceptance
+
+The maintainer [explicitly accepted the factory/fence](NATIVE-ADMISSION-EVIDENCE.md#explicit-scoped-factory-acceptance--2026-10-10)
+on 2026-10-10 for tested revision
+`4f6924670d4272736984342c8294967650c60edb`, on WSL2 `/dev/sdd` ext4
+`data=ordered`. This closes the OHK-BIND-030 factory/fence evidence gate only
+within the recorded scope. Documentation merges do not relabel the tested
+revision. Earlier Pending statements and supplied logs retain their historical
+meaning; this final decision is authoritative. The `6a6337d` provider decision
+remains separate and unchanged. Mount-namespace alias evidence remains Skipped;
+Windows checkpoint acknowledgment, durable root mutations, application/CLI wiring,
+NCN evidence and manual validation remain open. No storage release checkbox changes.
