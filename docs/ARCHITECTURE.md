@@ -296,3 +296,14 @@ meaning; this final decision is authoritative. The `6a6337d` provider decision
 remains separate and unchanged. Mount-namespace alias evidence remains Skipped;
 Windows checkpoint acknowledgment, durable root mutations, application/CLI wiring,
 NCN evidence and manual validation remain open. No storage release checkbox changes.
+
+## Proposed complete-owner durable staging
+
+[OHK-DURABLE-ROOT-030](DURABLE-ROOT-LIFECYCLE-PLAN.md) proposes a private candidate
+that associates the catalog snapshot, allocator high-water counters, registered
+root mappings, checkpoint projection and prospective admission guards. Confirmed
+store commit must precede nonthrowing installation of that complete context.
+Unchanged roots retain their original identity guards; targeted changed-root
+repair cannot silently adopt unrelated replacements. Old/candidate descriptor
+peaks share the existing bound. This plan awaits acceptance and adds no runtime
+mutation, publication or native acceptance.

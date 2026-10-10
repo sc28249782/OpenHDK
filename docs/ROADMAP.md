@@ -266,3 +266,13 @@ meaning; this final decision is authoritative. The `6a6337d` provider decision
 remains separate and unchanged. Mount-namespace alias evidence remains Skipped;
 Windows checkpoint acknowledgment, durable root mutations, application/CLI wiring,
 NCN evidence and manual validation remain open. No storage release checkbox changes.
+
+## Proposed durable root lifecycle sequence
+
+[OHK-DURABLE-ROOT-030](DURABLE-ROOT-LIFECYCLE-PLAN.md) proposes slice 3 after the
+recorded native factory/fence decision: complete-owner staging and fake-provider
+registration first, then shared prospective guards/native registration and
+targeted reattachment, followed by scan and logical song relocation/removal.
+Affected native receipts, a fresh pinned run and explicit acceptance precede new
+support claims. The plan awaits review; application/CLI wiring follows, and the
+storage checkbox, Windows checkpoint gate, NCN and manual validation stay open.

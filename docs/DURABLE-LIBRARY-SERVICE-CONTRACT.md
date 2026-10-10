@@ -2,8 +2,9 @@
 
 **Contract:** OHK-DURABLE-030
 **Status:** Accepted by review and merge of PR #69; override service primitive
-and fake-provider lifecycle/commit tests implemented. Native admission and other
-durable mutations remain pending.
+and fake-provider lifecycle/commit tests implemented. Experimental native
+admission/fence implemented with scoped acceptance for tested revision `4f69246`;
+other durable mutations remain pending.
 **Target:** 0.3.0 storage slice 5, after immutable live capture.
 
 ## 1. Purpose and scope
@@ -382,3 +383,13 @@ meaning; this final decision is authoritative. The `6a6337d` provider decision
 remains separate and unchanged. Mount-namespace alias evidence remains Skipped;
 Windows checkpoint acknowledgment, durable root mutations, application/CLI wiring,
 NCN evidence and manual validation remain open. No storage release checkbox changes.
+
+## Proposed remaining mutation staging
+
+[OHK-DURABLE-ROOT-030](DURABLE-ROOT-LIFECYCLE-PLAN.md) proposes the complete-owner
+staging, operation semantics, targeted repair and prospective admission needed
+for slice 3. It preserves scan revision publication, logical relocation/removal,
+attachment generations and same-path no-op semantics while requiring exact
+candidate counter/mapping association. Peak old/candidate guards share one
+descriptor bound. Review and acceptance precede implementation; this proposal
+changes neither the current override protocol nor recorded native acceptance.
