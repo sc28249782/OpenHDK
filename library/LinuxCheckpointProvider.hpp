@@ -196,6 +196,7 @@ class LinuxCheckpointProvider final : public CheckpointStoreProvider {
   }
  private:
   friend class NativeStoreAdmission;
+  friend class DurableLibraryService;
 #ifdef OPENHDK_ENABLE_TEST_SEAMS
   friend struct LinuxCheckpointProviderTestAccess;
   bool tracing_=false,traceOverflow_=false;

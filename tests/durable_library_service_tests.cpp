@@ -373,4 +373,20 @@ int main() {
   readyService.service.reset();
   OPENHDK_FAIL_IF(64, prepared.prepared->lyrics()->cues().size() != 1 || readyEdit.snapshot->songs[0].overrides->title->bytes() != "User title");
 
+
+  // Private owner fence also rejects in the independent fake namespace.
+  Image fenceImage;auto fp=std::make_unique<Fake>(fenceImage);auto* fraw=fp.get();
+  auto fence=Access::create(owner(projection()),std::move(fp));
+  OPENHDK_FAIL_IF(65,!fence.succeeded());
+  auto fenceOld=fence.service->snapshot();const auto fenceWire=*fenceImage.primary;const auto fencePublications=fraw->publications;
+  StoreControl fenceControl;fenceControl.checkpoint=[&](StoreCheckpoint point){if(point==StoreCheckpoint::BeforePublication)Access::failAdmission(*fence.service,true);};
+  auto rejectedFence=fence.service->replaceUserOverrides(fenceOld->songs[0].id,{"Fence rejects",{}},fenceControl);
+  OPENHDK_FAIL_IF(66,rejectedFence.succeeded() || !rejectedFence.error->binding || rejectedFence.error->store->outcome!=StoreOutcome::NotCommitted
+      || *fenceImage.primary!=fenceWire || fraw->publications!=fencePublications || fence.service->snapshot()!=fenceOld);
+  Image noopImage;auto noopFence=Access::create(owner(projection()),std::make_unique<Fake>(noopImage));
+  auto noopOld=noopFence.service->snapshot();const auto noopWire=*noopImage.primary;
+  StoreControl noopControl;noopControl.cancelled=[&]{Access::failAdmission(*noopFence.service,true);return false;};
+  auto noopRejected=noopFence.service->replaceUserOverrides(noopOld->songs[0].id,{"Old","Artist"},noopControl);
+  OPENHDK_FAIL_IF(67,noopRejected.succeeded() || !noopRejected.error->binding || *noopImage.primary!=noopWire || noopFence.service->snapshot()!=noopOld);
+  OPENHDK_FAIL_IF(68,noopFence.service->state()!=DurableServiceState::RecoveryRequired);
 }

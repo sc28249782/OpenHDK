@@ -70,9 +70,9 @@ first service slice. Saved hints for unattached roots are advisory and establish
 no active containment boundary. Attaching a hinted root later requires the same
 reciprocal admission check.
 
-The current provider interface does not expose this binding capability. Native
-factory integration therefore requires a reviewed interface/implementation slice
-and its affected acceptance evidence. Do not substitute a guessed parent path.
+The provider interface does not publicly expose this binding capability. The
+experimental owning Linux factory uses private export/admission. Its affected
+acceptance evidence remains pending. Do not substitute a guessed parent path.
 Fake-provider service tests may use a harness-owned capability behind test seams.
 That capability MUST NOT enable a native provider or claim filesystem acceptance.
 
@@ -273,12 +273,13 @@ It exposes snapshot/state queries, override replacement and close. It exposes
 no mutable owner/store, arbitrary candidate projection or expectation input.
 The query surface does not yet add library/application preparation orchestration.
 
-There is no production construction factory. Under OPENHDK_ENABLE_TEST_SEAMS,
+The initial PR #70 slice had no production construction factory. Under OPENHDK_ENABLE_TEST_SEAMS,
 `DurableLibraryServiceTestAccess` admits only an owned
 `DurableLibraryTestProvider`, an in-memory test provider category. A native
 LinuxCheckpointProvider cannot be passed to these factories. This is a protocol
 primitive tested with an independent two-slot namespace model, not native durable
-library support. Native binding/root containment admission remains slice 2.
+library support. Slice 2 now adds the separate experimental Linux factory
+described below; its affected native evidence remains pending.
 
 Create consumes an owner, opens ExpectedAbsent and saves its current capture.
 Open validates/reconciles a primary, restores a fresh unattached owner and
@@ -325,7 +326,23 @@ mutation staging, NCN, application wiring and manual validation remain open.
 
 [OHK-BIND-030](NATIVE-SERVICE-BINDING-PLAN.md) is accepted. Private lease-epoch
 capability and retained-handle containment primitives are implemented; the
-coordinator fence and production native factory remain pending.
+coordinator fence and experimental Linux factory are implemented; affected
+native evidence and explicit acceptance remain pending.
 Its first factory would reject active roots on different mounts and cap active
 roots at 32. These are implemented primitive limits, not enabled native service support.
 Fresh affected native evidence and review precede factory acceptance.
+
+The [experimental factory boundary](NATIVE-SERVICE-BINDING-PLAN.md#11-experimental-factory-and-final-admission-fence)
+records explicit Create/Open, private final and NoChange admission checks, and
+shared binding/guard accounting. Future durable root lifecycle and application
+wiring remain separate slices; new native receipts/run/acceptance remain pending.
+
+## 12. Current experimental native service
+
+The public Linux factories own their concrete provider and retain native root
+admission guards. Fake factories remain seam-only. Errors preserve a nested
+NativeBindingError and map an input root index to the service-owned RootId.
+Create requires ExpectedAbsent; Open reconciles and restores unattached roots.
+The private coordinator fence protects both final publication and NoChange.
+These paths are experimental pending fresh pinned native evidence/acceptance.
+No new durable root mutation or application API is supplied.

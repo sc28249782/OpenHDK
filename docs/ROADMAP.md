@@ -104,12 +104,12 @@ occurs when a SoundFont or audio device is unavailable.
   explicit maintainer confirmation. It does not approve broader environments or
   power-loss guarantees. The Windows synchronization gate remains BLOCKED;
   Live checkpoint capture now owns matching snapshot/counter/root context;
-  commit-before-publish mutation wiring still prevents completing this checkbox.
+  remaining durable mutations and fresh service evidence prevent completing this checkbox.
   The [accepted durable service contract](DURABLE-LIBRARY-SERVICE-CONTRACT.md)
   defines exclusive owner/store admission and override-first staging. The service
   primitive and fake-provider lifecycle/commit tests are implemented; construction
-  is test-only. Native binding/containment and other durable mutations remain
-  separate slices. This does not complete the storage checkbox.
+  has seam-only fake construction and experimental owning Linux factories.
+  Native service evidence and other durable mutations remain separate slices. This does not complete the storage checkbox.
 - [ ] Integrate library preparation and lyric observation without changing
   released MIDI, mixer, or limiter semantics; validate Windows playback.
 - Research staged runtime layout and installers separately; this proposal
@@ -223,5 +223,10 @@ file I/O, allocation, parsing, or UI work.
 Native durable service slice 2 now implements the accepted
 [binding/admission primitives](NATIVE-SERVICE-BINDING-PLAN.md): lease-epoch
 capability and bounded same-mount root ancestry. The final prepublication fence
-and native factory remain pending, followed by fresh pinned integration evidence.
+and experimental native factory are implemented; fresh pinned integration evidence remains pending.
 The accepted detached Linux revision and Windows BLOCKED gate remain unchanged.
+
+The [experimental factory boundary](NATIVE-SERVICE-BINDING-PLAN.md#11-experimental-factory-and-final-admission-fence)
+records explicit Create/Open, private final and NoChange admission checks, and
+shared binding/guard accounting. Future durable root lifecycle and application
+wiring remain separate slices; new native receipts/run/acceptance remain pending.

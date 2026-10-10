@@ -3,13 +3,14 @@
 #include "library/CatalogCheckpointCapture.hpp"
 #include "library/CatalogCheckpointRestore.hpp"
 #include "library/CatalogCheckpointStore.hpp"
+#include "library/LinuxCheckpointProvider.hpp"
 
 namespace OpenHDK {
 enum class DurableServiceState { Unbound, Ready, RecoveryRequired, Closed };
 enum class DurableServiceOperation { Create, Open, ReplaceOverrides, Close };
 enum class DurableServiceErrorCode {
   InvalidConfiguration, Busy, RecoveryRequired, MetadataFailure, CheckpointFailure,
-  StoreFailure, StorageFailure, BaselineMismatch, ProtocolFault
+  StoreFailure, StorageFailure, BaselineMismatch, ProtocolFault, NativeAdmissionFailure
 };
 struct DurableServiceError {
   DurableServiceErrorCode code;
@@ -19,6 +20,8 @@ struct DurableServiceError {
   std::optional<StoreError> store;
   std::optional<StoreProviderError> cleanupWarning;
   std::optional<StoreArtifact> candidate, prior;
+  std::optional<NativeBindingError> binding;
+  std::optional<RootId> root;
 };
 enum class DurableOverrideStatus { Updated, NoChange };
 struct DurableCommitReceipt {
@@ -42,13 +45,24 @@ struct DurableServiceOpenResult {
 };
 #ifdef OPENHDK_ENABLE_TEST_SEAMS
 // In-memory test provider category only. Native providers cannot be passed to
-// these factories. No production factory exists until native binding admission.
+// these fake factories. Experimental Linux factories use separate owning admission.
 class DurableLibraryTestProvider : public CheckpointStoreProvider {};
 struct DurableLibraryServiceTestAccess;
 #endif
 
 class DurableLibraryService {
  public:
+  // Experimental: requires fresh revision-bound native evidence/acceptance.
+  // Explicit Create transfers the owner; Open restores an unattached fresh owner.
+  static DurableServiceOpenResult createLinux(std::unique_ptr<SongDiscovery> owner,
+      std::string parent,std::string primary,CatalogCheckpointLimits limits={},
+      NativeStoreAdmissionLimits admission={},std::size_t alreadyOwned=0) {
+    return nativeFactory(std::move(owner),std::move(parent),std::move(primary),true,limits,admission,alreadyOwned,false);
+  }
+  static DurableServiceOpenResult openLinux(std::string parent,std::string primary,
+      CatalogCheckpointLimits limits={},NativeStoreAdmissionLimits admission={},std::size_t alreadyOwned=0) {
+    return nativeFactory(nullptr,std::move(parent),std::move(primary),false,limits,admission,alreadyOwned,false);
+  }
   DurableLibraryService(const DurableLibraryService&) = delete;
   DurableLibraryService& operator=(const DurableLibraryService&) = delete;
   // Queries use the serialized control path. Only returned snapshots may be
@@ -64,6 +78,10 @@ class DurableLibraryService {
       return failed(error(state_ == DurableServiceState::RecoveryRequired
           ? DurableServiceErrorCode::RecoveryRequired : DurableServiceErrorCode::InvalidConfiguration, op));
     try {
+      lastAdmissionError_.reset();
+      if (auto e=admissionCheck(this)) {
+        (void)e;state_=DurableServiceState::RecoveryRequired;return failed(admissionError(op));
+      }
       if (!baselineMatches()) {
         state_ = DurableServiceState::RecoveryRequired;
         return failed(error(DurableServiceErrorCode::BaselineMismatch, op));
@@ -119,6 +137,7 @@ class DurableLibraryService {
       auto failure = error(DurableServiceErrorCode::StoreFailure, DurableServiceOperation::Close);
       failure.store = e; return failure;
     }
+    nativeAdmission_.reset();
     state_ = DurableServiceState::Closed; return {};
     // No reopen-in-place: explicit recovery constructs a fresh service/lineage.
   }
@@ -126,6 +145,7 @@ class DurableLibraryService {
 #ifdef OPENHDK_ENABLE_TEST_SEAMS
   friend struct DurableLibraryServiceTestAccess;
   bool corruptAcknowledgment_ = false;
+  bool forcedAdmissionFailure_ = false;
 #endif
   struct Guard {
     std::atomic_flag& flag; bool held;
@@ -136,10 +156,14 @@ class DurableLibraryService {
       std::unique_ptr<CheckpointStoreProvider> provider, CatalogCheckpointLimits limits)
       : provider_(std::move(provider)), owner_(std::move(owner)), store_(*provider_), limits_(limits) {}
   static DurableServiceError error(DurableServiceErrorCode code, DurableServiceOperation op) noexcept {
-    return {code, op, {}, {}, {}, {}, {}, {}};
+    return {code, op, {}, {}, {}, {}, {}, {}, {}, {}};
   }
   static DurableOverrideResult failed(DurableServiceError e) noexcept { return {{}, nullptr, {}, e}; }
   DurableOverrideResult saveFailure(const StoreSaveResult& saved, DurableServiceOperation op) noexcept {
+    if (lastAdmissionError_) {
+      state_=DurableServiceState::RecoveryRequired;auto e=admissionError(op);
+      e.store=saved.error;e.cleanupWarning=saved.cleanupWarning;e.candidate=saved.candidate;e.prior=saved.prior;return failed(e);
+    }
     if (!saved.error || saved.error->code == StoreErrorCode::CommitUncertain
         || saved.error->code == StoreErrorCode::StaleCheckpoint)
       state_ = DurableServiceState::RecoveryRequired;
@@ -162,6 +186,7 @@ class DurableLibraryService {
       CheckpointDetail::add(total, units * unitBytes, limits_.stagedBytes);
       if (root.savedHint) CheckpointDetail::add(total, root.savedHint->size(), limits_.stagedBytes);
     }
+    CheckpointDetail::add(total,admissionExtraBytes(),limits_.stagedBytes);
     return total;
   }
   std::size_t projectionBytes() const { return baseline_ ? CheckpointDetail::shape(baseline_->projection(), limits_).strings : 0U; }
@@ -244,12 +269,13 @@ class DurableLibraryService {
   }
   static DurableServiceOpenResult initialize(std::unique_ptr<SongDiscovery> owner,
       std::unique_ptr<CheckpointStoreProvider> provider, bool create, CatalogCheckpointLimits limits,
-      std::size_t alreadyOwned) {
+      std::size_t alreadyOwned, bool native=false,NativeStoreAdmissionLimits admission={}) {
     const auto op = create ? DurableServiceOperation::Create : DurableServiceOperation::Open;
     if (!provider || (create && !owner) || !CheckpointDetail::validLimits(limits) || alreadyOwned > limits.stagedBytes)
       return {nullptr, {}, error(DurableServiceErrorCode::InvalidConfiguration, op)};
     try {
       auto service = std::unique_ptr<DurableLibraryService>(new DurableLibraryService(std::move(owner), std::move(provider), limits));
+      if(native)service->nativeProvider_=static_cast<LinuxCheckpointProvider*>(service->provider_.get());
       auto opened = service->store_.open(limits, create
           ? service->retainedBytes(alreadyOwned, service->owner_->snapshot(), false) : alreadyOwned);
       if (!opened.succeeded()) {
@@ -272,6 +298,15 @@ class DurableLibraryService {
         }
         service->owner_ = std::move(restored.owner);
         CheckpointDetail::add(retained, CheckpointDetail::shape(*opened.projection, limits).strings, limits.stagedBytes);
+      }
+      if(native) {
+        if(auto e=service->prepareAdmission(admission,op,alreadyOwned,opened.projection?CheckpointDetail::shape(*opened.projection,limits).strings:0U))
+          return {nullptr,{},*e};
+        retained=alreadyOwned;
+        CheckpointDetail::add(retained,service->provider_->retainedBytes(),limits.stagedBytes);
+        CheckpointDetail::add(retained,service->admissionExtraBytes(),limits.stagedBytes);
+        if(opened.projection)CheckpointDetail::add(retained,CheckpointDetail::shape(*opened.projection,limits).strings,limits.stagedBytes);
+        service->installAdmissionFence();
       }
       const auto captured = CatalogCheckpointCapture::acquire(*service->owner_, limits, retained);
       if (!captured.succeeded()) {
@@ -300,6 +335,75 @@ class DurableLibraryService {
       return {nullptr, {}, failure};
     } catch (const std::bad_alloc&) { return {nullptr, {}, error(DurableServiceErrorCode::StorageFailure, op)}; }
   }
+  void installAdmissionFence() noexcept {store_.setAdmissionFence(this,admissionCheck);}
+  std::size_t admissionExtraBytes() const noexcept {
+    return nativeAdmission_ ? nativeAdmission_->retainedBytes()-nativeAdmission_->binding_->retainedBytes() : 0U;
+  }
+  DurableServiceError admissionError(DurableServiceOperation op) const noexcept {
+    auto e=error(DurableServiceErrorCode::NativeAdmissionFailure,op);e.binding=lastAdmissionError_;
+    if(e.binding && e.binding->rootIndex && *e.binding->rootIndex<admissionRoots_.size())
+      e.root=admissionRoots_[*e.binding->rootIndex];
+    return e;
+  }
+  static std::optional<StoreProviderError> admissionCheck(void* context) noexcept {
+    auto& s=*static_cast<DurableLibraryService*>(context);
+#ifdef OPENHDK_ENABLE_TEST_SEAMS
+    if(s.forcedAdmissionFailure_) {
+      s.lastAdmissionError_=NativeBindingError{NativeBindingErrorCode::SourceChanged,NativeBindingOperation::Recheck,{},{}};
+      return StoreProviderError{StoreErrorCode::SourceChanged,0};
+    }
+#endif
+    if(!s.nativeAdmission_)return {};
+    s.lastAdmissionError_=s.nativeAdmission_->recheck(s.nativeProvider_->lease_);
+    if(!s.lastAdmissionError_)return {};
+    return StoreProviderError{StoreErrorCode::SourceChanged,s.lastAdmissionError_->providerError?
+        s.lastAdmissionError_->providerError->nativeError:0};
+  }
+  std::optional<DurableServiceError> prepareAdmission(NativeStoreAdmissionLimits limits,DurableServiceOperation op,
+      std::size_t caller,std::size_t decodedStrings) {
+#ifdef __linux__
+    std::array<std::string_view,32> paths{};std::size_t count=0;
+    for(const auto& root:owner_->roots_)if(root.attached) {
+      if(count>=limits.activeRoots || count>=paths.size()) {
+        lastAdmissionError_=NativeBindingError{NativeBindingErrorCode::LimitExceeded,NativeBindingOperation::Admit,{},{}};
+        return admissionError(op);
+      }
+      paths[count]=root.path.native();admissionRoots_[count]=root.id;++count;
+    }
+    auto retained=retainedBytes(caller,owner_->snapshot(),false);
+    CheckpointDetail::add(retained,provider_->retainedBytes(),limits_.stagedBytes);
+    CheckpointDetail::add(retained,decodedStrings,limits_.stagedBytes);
+    limits.stagedBytes=std::min(limits.stagedBytes,limits_.stagedBytes);
+    auto binding=NativeStoreAdmission::exportBinding(nativeProvider_->lease_,limits,retained);
+    if(binding.error){lastAdmissionError_=binding.error;return admissionError(op);}
+    auto admitted=NativeStoreAdmission::admit(nativeProvider_->lease_,std::move(binding.binding),
+        std::span<const std::string_view>(paths).first(count),limits,retained);
+    if(admitted.error){lastAdmissionError_=admitted.error;return admissionError(op);}
+    nativeAdmission_=std::move(admitted.admission);return {};
+#else
+    (void)limits;(void)caller;(void)decodedStrings;return error(DurableServiceErrorCode::InvalidConfiguration,op);
+#endif
+  }
+  static DurableServiceOpenResult nativeFactory(std::unique_ptr<SongDiscovery> owner,
+      std::string parent,std::string primary,bool create,CatalogCheckpointLimits limits,
+      NativeStoreAdmissionLimits admission,std::size_t caller,bool bypass) {
+    const auto op=create?DurableServiceOperation::Create:DurableServiceOperation::Open;
+    if(!CheckpointDetail::validLimits(limits) || !NativeStoreAdmission::valid(admission) || caller>limits.stagedBytes || (create && !owner))
+      return {nullptr,{},error(DurableServiceErrorCode::InvalidConfiguration,op)};
+    try {
+      auto provider=std::make_unique<LinuxCheckpointProvider>(std::move(parent),std::move(primary));
+#ifdef OPENHDK_ENABLE_TEST_SEAMS
+      if(bypass)LinuxCheckpointProviderTestAccess::filesystem(*provider);
+#else
+      (void)bypass;
+#endif
+      return initialize(std::move(owner),std::move(provider),create,limits,caller,true,admission);
+    } catch(const std::bad_alloc&) {return {nullptr,{},error(DurableServiceErrorCode::StorageFailure,op)};}
+  }
+  LinuxCheckpointProvider* nativeProvider_=nullptr; // Owned by provider_; never injected publicly.
+  std::shared_ptr<const NativeStoreAdmission> nativeAdmission_;
+  std::array<std::optional<RootId>,32> admissionRoots_{};
+  std::optional<NativeBindingError> lastAdmissionError_;
   // Field order guarantees store destruction/releases before provider destruction.
   std::unique_ptr<CheckpointStoreProvider> provider_;
   std::unique_ptr<SongDiscovery> owner_;
@@ -318,6 +422,14 @@ class DurableLibraryService {
 };
 #ifdef OPENHDK_ENABLE_TEST_SEAMS
 struct DurableLibraryServiceTestAccess {
+  static DurableServiceOpenResult createNative(std::unique_ptr<SongDiscovery> owner,std::string parent,std::string primary,
+      CatalogCheckpointLimits limits={},NativeStoreAdmissionLimits admission={},std::size_t caller=0) {
+    return DurableLibraryService::nativeFactory(std::move(owner),std::move(parent),std::move(primary),true,limits,admission,caller,true);
+  }
+  static DurableServiceOpenResult openNative(std::string parent,std::string primary,CatalogCheckpointLimits limits={},NativeStoreAdmissionLimits admission={}) {
+    return DurableLibraryService::nativeFactory(nullptr,std::move(parent),std::move(primary),false,limits,admission,0,true);
+  }
+
   static DurableServiceOpenResult create(std::unique_ptr<SongDiscovery> owner,
       std::unique_ptr<DurableLibraryTestProvider> provider, CatalogCheckpointLimits limits = {}, std::size_t alreadyOwned = 0U) {
     return DurableLibraryService::initialize(std::move(owner), std::move(provider), true, limits, alreadyOwned);
@@ -326,6 +438,11 @@ struct DurableLibraryServiceTestAccess {
       CatalogCheckpointLimits limits = {}, std::size_t alreadyOwned = 0U) {
     return DurableLibraryService::initialize(nullptr, std::move(provider), false, limits, alreadyOwned);
   }
+  static void failAdmission(DurableLibraryService& s,bool fail) noexcept {
+    s.forcedAdmissionFailure_=fail;s.installAdmissionFence();
+  }
+  static void nativeFault(DurableLibraryService& s,LinuxProviderFault fault) {LinuxCheckpointProviderTestAccess::fault(*s.nativeProvider_,fault);}
+  static void nativeAfterPublication(DurableLibraryService& s,void (*hook)() noexcept) {LinuxCheckpointProviderTestAccess::afterPublication(*s.nativeProvider_,hook);}
   static void corruptAcknowledgment(DurableLibraryService& service) { service.corruptAcknowledgment_ = true; }
 };
 #endif

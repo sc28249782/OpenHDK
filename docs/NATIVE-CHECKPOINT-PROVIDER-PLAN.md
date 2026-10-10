@@ -452,5 +452,11 @@ Live capture and durable-first wiring remain separate slices.
 [OHK-BIND-030](NATIVE-SERVICE-BINDING-PLAN.md) is accepted. Its private primitive
 retains an owning capability from the provider lease and checks bounded
 same-mount root containment. Authority expires on release/reacquire. No public
-provider export or native service factory exists; changed integration needs a fresh pinned run and
+provider export exists; the experimental Linux service factory owns its binding.
+Changed integration needs a fresh pinned run and
 explicit scoped acceptance. Existing revision-bound evidence stays unchanged.
+
+The [experimental factory boundary](NATIVE-SERVICE-BINDING-PLAN.md#11-experimental-factory-and-final-admission-fence)
+records explicit Create/Open, private final and NoChange admission checks, and
+shared binding/guard accounting. Future durable root lifecycle and application
+wiring remain separate slices; new native receipts/run/acceptance remain pending.

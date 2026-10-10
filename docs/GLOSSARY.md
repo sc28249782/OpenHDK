@@ -111,3 +111,10 @@ identity equality does not revive authority. See
 An owning set of active root directory handles and mappings used by the private
 same-mount containment primitive. It retains directory identity during checks.
 It does not attach roots, save a checkpoint or prove hostile-writer isolation.
+
+## Service admission fence
+
+A private fixed check installed by the owning durable service in the checkpoint
+coordinator. It revalidates retained store/root admission before final publication
+and before a NoChange acknowledgment. It cannot be supplied by a public caller
+and does not run after confirmed save before memory publication.
