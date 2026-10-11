@@ -177,6 +177,11 @@ bundle, with no inferred timing, truncation, duplicated cursor, or partial
 lyric result. Empty body plus empty CUR is NoLyrics; a nonempty body with empty
 CUR is invalid. This rule is deliberately stricter than a tolerant legacy UI.
 
+The [NCN24 format evidence supplement](NCN24-FORMAT-EVIDENCE-SUPPLEMENT.md)
+records competing timing, line-mapping and high-byte hypotheses. Its byte
+vectors describe this target; they do not prove generic NCN compatibility or
+change the rules above. Representative observations and review remain Pending.
+
 ## 5. NCN evidence gate before implementation
 
 The layout, TIS-620 use, and integer cursor formula are observations from one

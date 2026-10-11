@@ -438,3 +438,13 @@ This adds no production behavior, native acceptance, playback or release checkbo
 Fresh pinned WSL2 ext4 execution and explicit scoped review are Pending. Earlier
 `6a6337d` / `4f69246` / `54f404a` acceptances and bundles do not advance; Windows
 checkpoint acknowledgment remains BLOCKED, and NCN/manual gates remain open.
+
+## NCN24 format evidence review
+
+The [proposed format evidence supplement](docs/NCN24-FORMAT-EVIDENCE-SUPPLEMENT.md) records
+competing cursor timing, line/scalar mapping and high-byte FF behavior, with
+independently authored byte vectors and a lawful bundle comparison procedure.
+Source inspection and arithmetic do not close the NCN evidence gate. The
+current NCN24 target is unchanged; representative observations and explicit
+review remain Pending. No NCN parser/normalizer, suite-count, release-checkbox
+or historical native acceptance change is introduced.
