@@ -295,3 +295,24 @@ and positive/negative verifiers are implemented. Next: fresh pinned WSL2 ext4
 execution with no eligibility bypass, evidence review and explicit scoped
 acceptance, then application/CLI wiring. Historical acceptances and storage
 checkbox status do not advance. Windows/NCN/manual gates remain open.
+
+## Pinned WSL2 ext4 mutation evidence
+
+The maintainer supplied a [fresh mutation run](evidence/native-mutations/2026-10-11-wsl2-ext4/README.md) at exact tested revision
+`54f404ae8422499de950f5c96527c9023274a9b6` on WSL2 `/dev/sdd` ext4,
+`data=ordered`. All 28 compile/run exits, three verifier exits and overall exit
+are zero; filesystem bypass is zero. The rerun verifier matches 34 mutation
+cases, 69 primary receipts, 32 admission traces, 25 IO traces, 45 artifact
+observations and five allocation sweeps. Ten altered-log variants are rejected.
+
+The artifact cap remains 256 bytes: seven captures are available and 38 report
+oversize EFBIG/unavailable; raw mutation bytes are omitted. Supplied observations
+are not independent byte/source/run authentication. Scan allocation injection
+starts at store staging, not standard-library traversal. Username redaction has
+original/published hash records; historical bundles are unchanged.
+
+Fresh execution is now recorded; explicit scoped mutation acceptance remains
+Pending. Earlier preparation statements describe the pre-run sequence. This
+documentation does not advance `6a6337d` or `4f69246` acceptance. Namespace aliases
+remain Skipped; Windows checkpoint acknowledgment remains BLOCKED. App/CLI,
+NCN and manual validation remain open, with no storage release checkbox change.
