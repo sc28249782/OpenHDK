@@ -1,7 +1,8 @@
 # Durable library CLI and playback orchestration plan
 
 **Plan:** OHK-CLI-030
-**Status:** Proposed; requires review and acceptance before implementation.
+**Status:** Accepted by review and merge of PR #85; pure grammar/output models
+implemented. Session/service/preparation/playback integration remains pending.
 **Target:** OHK-DURABLE-030 slice 4, after scoped mutation acceptance.
 
 ## 1. Purpose and current boundary
@@ -223,3 +224,46 @@ Pending/Skipped with reason, never Passed. Keep historical bundles immutable.
 Review command grammar, output/exit semantics, preparation authority-drift policy
 and playback exclusion before implementation. Windows native checkpoint remains
 BLOCKED until its unprivileged publication-sync protocol is separately reviewed.
+
+## Pure library CLI models
+
+[OHK-CLI-030](LIBRARY-CLI-ORCHESTRATION-PLAN.md) is accepted. The first slice supplies pure
+entry/command parsing, numeric selectors and bounded JSON Lines output models.
+It dispatches no service operation, constructs no live ID, reads no filesystem
+and creates no executable/session. Preparation and playback remain later slices.
+The new hardware-free target raises current counts to 29 core / 32 audio-enabled;
+earlier slice counts describe their historical development stages. Windows
+checkpoint acknowledgment remains BLOCKED; native evidence labels and release
+checkboxes do not advance. Application execution, NCN and manual validation
+remain open.
+
+### Implemented model boundary
+
+[LibraryCliGrammar](../app/LibraryCliGrammar.hpp) handles fixed 16 KiB line,
+eight-token and 4 KiB token bounds. The incremental reader drains oversized or
+allocation-failed input through LF, accepts CRLF framing, and preserves an error
+for the adapter; the adapter must reset after each complete/rejected line. EOF
+returns a pending bounded line to the parser, which rejects unclosed quotes.
+Only quote/backslash escapes are accepted. Quoted TAB/CR bytes are retained;
+other raw C0 bytes and DEL are rejected. LF is command framing, not payload. Leading decimal zeroes are allowed,
+without signs/overflow; live selectors reject zero and UINT64_MAX. Track zero
+and representable SIZE_MAX remain policy values, not track-existence claims.
+Entry mode syntax checks native path/name shape and reserved staging/lock names
+without filesystem access; native provider admission remains authoritative.
+
+[LibraryCliOutput](../app/LibraryCliOutput.hpp) owns all-or-error JSON records
+(maximum 64 KiB, 64 distinct ASCII keys) and response batches (2 MiB). Text fields
+are limited to 4 KiB; C0, DEL and UTF-8 C1 control scalars are escaped. Native text is tagged as utf8 or
+bytes-hex, so invalid UTF-8 bytes are preserved without emitting raw controls.
+Payload/keys/candidate buffers coexist during construction; these are logical
+output bounds, not a total allocation limit. Future adapters must charge that
+retention to their application/service ledger. Allocation failure returns no
+partial command/record/batch. A pure delivery classification retains its known
+commit outcome on output failure and forbids automatic retry; it performs no
+actual output I/O or commit.
+
+The [model suite](../tests/library_cli_models_tests.cpp) covers 63 numbered
+checks including byte bounds, policies, quoted absence/empty, overflow selectors,
+escaping, all-or-error batches and entry/parser/reader/output allocation failures.
+No test seam define is needed. There is no native or durable CLI acceptance
+claim from these pure models. Next: hardware-free management session adapter.
