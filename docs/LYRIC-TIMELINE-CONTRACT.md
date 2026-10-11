@@ -176,6 +176,11 @@ Offline tools implement it; no application NCN normalizer exists yet.
 The proposed CUR profile is a headerless stream of unsigned 16-bit
 little-endian positions. Odd byte length fails InvalidCursor; no padded last
 value is allowed. Values must be nondecreasing; equal values are valid.
+The [OHK-NCN-CUR-030 proposal](NCN24-CUR-FRAMING-PROPOSAL.md) requests
+review of optional singleton terminal FF framing. It is not accepted by this
+contract; the odd-length rejection above remains current until explicit
+acceptance and a separate contract/tooling migration.
+
 For a cursor value `u` and primary MIDI PPQN `q`, normalize to the integer tick
 `floor(u*q/24)` using checked multiplication/division. Interpret the 24 divisor
 as this profile's cursor units per quarter note. This is a compatibility choice
