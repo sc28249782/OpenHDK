@@ -35,7 +35,8 @@ continue to apply independently of feature plans.
 | [NATIVE-CHECKPOINT-PROVIDER-PLAN](NATIVE-CHECKPOINT-PROVIDER-PLAN.md) | Accepted API/evidence plan; Linux lease and experimental provider implemented; scoped Linux acceptance recorded; Windows synchronization BLOCKED. |
 | [ROOT-REATTACHMENT-CONTRACT](ROOT-REATTACHMENT-CONTRACT.md) | Accepted attachment-generation/transaction rules; local SMF/KAR reattachment implemented, CLI/storage gated. |
 | [LYRIC-TIMELINE-CONTRACT](LYRIC-TIMELINE-CONTRACT.md) | Accepted KAR/media timing contract; extraction/consumer and backend observation implemented; application/NCN24 gated. |
-| [NCN24-FORMAT-EVIDENCE-SUPPLEMENT](NCN24-FORMAT-EVIDENCE-SUPPLEMENT.md) | Proposed source comparison and independent byte vectors; timing/mapping/high-byte corpus review Pending, NCN gate OPEN. |
+| [NCN24-FORMAT-EVIDENCE-SUPPLEMENT](NCN24-FORMAT-EVIDENCE-SUPPLEMENT.md) | Reviewed source comparison with offline synthetic fixture/checker tools; timing/mapping/high-byte corpus review Pending, NCN gate OPEN. |
+| [NCN24 fixture tools](../tests/fixtures/ncn24/README.md) | Bounded 33-case original fixture checker/export and SMF/text cross-probe; synthetic verification only, no NCN acceptance. |
 | [MEDIA-CLOCK-HANDOFF-CONTRACT](MEDIA-CLOCK-HANDOFF-CONTRACT.md) | Accepted backend-clock handoff; FluidSynth publication implemented, generation-bound observer implemented; application integration pending. |
 | [POC-RUNBOOK](POC-RUNBOOK.md) | Windows build, diagnostics, playback, and console operations. |
 | [Test README](../tests/README.md) | Test scope and failure diagnostics. |

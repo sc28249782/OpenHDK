@@ -180,7 +180,9 @@ CUR is invalid. This rule is deliberately stricter than a tolerant legacy UI.
 The [NCN24 format evidence supplement](NCN24-FORMAT-EVIDENCE-SUPPLEMENT.md)
 records competing timing, line-mapping and high-byte hypotheses. Its byte
 vectors describe this target; they do not prove generic NCN compatibility or
-change the rules above. Representative observations and review remain Pending.
+change the rules above. The [offline fixture/checker tools](../tests/fixtures/ncn24/README.md)
+verify synthetic target expectations only. Representative observations and
+profile acceptance remain Pending; no application NCN parser is added.
 
 ## 5. NCN evidence gate before implementation
 

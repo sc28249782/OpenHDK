@@ -1,0 +1,886 @@
+{
+  "schema": 1,
+  "scope": "synthetic-only",
+  "ncn_acceptance": "Pending",
+  "midis": {
+    "M480": {
+      "hex": "4d546864000000060000000101e04d54726b000000058b20ff2f00",
+      "ppqn": 480,
+      "last_tick": 1440,
+      "last_us": 1500000
+    },
+    "M3": {
+      "hex": "4d546864000000060000000100034d54726b0000000403ff2f00",
+      "ppqn": 3,
+      "last_tick": 3,
+      "last_us": 500000
+    },
+    "Mhigh": {
+      "hex": "4d546864000000060000000101e04d54726b00000006cfff6cff2f00",
+      "ppqn": 480,
+      "last_tick": 1310700,
+      "last_us": 1365312500
+    },
+    "Mtempo": {
+      "hex": "4d546864000000060000000101e04d54726b0000001400ff510307a1208360ff51030f42408740ff2f00",
+      "ppqn": 480,
+      "last_tick": 1440,
+      "last_us": 2500000
+    }
+  },
+  "cases": [
+    {
+      "id": "empty",
+      "midi": "M480",
+      "lyr_hex": "540a410a430a0a",
+      "cur_hex": "",
+      "expected": {
+        "status": "NoLyrics",
+        "scalars": [],
+        "member_offsets": [],
+        "positions": [],
+        "ticks": [],
+        "media_us": []
+      }
+    },
+    {
+      "id": "quarter",
+      "midi": "M480",
+      "lyr_hex": "540a410a430a0a41",
+      "cur_hex": "1800",
+      "expected": {
+        "status": "Candidate",
+        "scalars": [
+          65
+        ],
+        "member_offsets": [
+          7
+        ],
+        "positions": [
+          24
+        ],
+        "ticks": [
+          480
+        ],
+        "media_us": [
+          500000
+        ]
+      }
+    },
+    {
+      "id": "lf",
+      "midi": "M480",
+      "lyr_hex": "540a410a430a0a410a42",
+      "cur_hex": "180030004800",
+      "expected": {
+        "status": "Candidate",
+        "scalars": [
+          65,
+          10,
+          66
+        ],
+        "member_offsets": [
+          7,
+          8,
+          9
+        ],
+        "positions": [
+          24,
+          48,
+          72
+        ],
+        "ticks": [
+          480,
+          960,
+          1440
+        ],
+        "media_us": [
+          500000,
+          1000000,
+          1500000
+        ]
+      }
+    },
+    {
+      "id": "crlf",
+      "midi": "M480",
+      "lyr_hex": "540a410a430a0a410d0a42",
+      "cur_hex": "180030004800",
+      "expected": {
+        "status": "Candidate",
+        "scalars": [
+          65,
+          10,
+          66
+        ],
+        "member_offsets": [
+          7,
+          8,
+          10
+        ],
+        "positions": [
+          24,
+          48,
+          72
+        ],
+        "ticks": [
+          480,
+          960,
+          1440
+        ],
+        "media_us": [
+          500000,
+          1000000,
+          1500000
+        ]
+      }
+    },
+    {
+      "id": "cr",
+      "midi": "M480",
+      "lyr_hex": "540a410a430a0a410d42",
+      "cur_hex": "180030004800",
+      "expected": {
+        "status": "Candidate",
+        "scalars": [
+          65,
+          10,
+          66
+        ],
+        "member_offsets": [
+          7,
+          8,
+          9
+        ],
+        "positions": [
+          24,
+          48,
+          72
+        ],
+        "ticks": [
+          480,
+          960,
+          1440
+        ],
+        "media_us": [
+          500000,
+          1000000,
+          1500000
+        ]
+      }
+    },
+    {
+      "id": "terminal-lf",
+      "midi": "M480",
+      "lyr_hex": "540a410a430a0a410a",
+      "cur_hex": "18003000",
+      "expected": {
+        "status": "Candidate",
+        "scalars": [
+          65,
+          10
+        ],
+        "member_offsets": [
+          7,
+          8
+        ],
+        "positions": [
+          24,
+          48
+        ],
+        "ticks": [
+          480,
+          960
+        ],
+        "media_us": [
+          500000,
+          1000000
+        ]
+      }
+    },
+    {
+      "id": "blank-line",
+      "midi": "M480",
+      "lyr_hex": "540a410a430a0a410a0a42",
+      "cur_hex": "0000180030004800",
+      "expected": {
+        "status": "Candidate",
+        "scalars": [
+          65,
+          10,
+          10,
+          66
+        ],
+        "member_offsets": [
+          7,
+          8,
+          9,
+          10
+        ],
+        "positions": [
+          0,
+          24,
+          48,
+          72
+        ],
+        "ticks": [
+          0,
+          480,
+          960,
+          1440
+        ],
+        "media_us": [
+          0,
+          500000,
+          1000000,
+          1500000
+        ]
+      }
+    },
+    {
+      "id": "space",
+      "midi": "M480",
+      "lyr_hex": "540a410a430a0a412042",
+      "cur_hex": "180030004800",
+      "expected": {
+        "status": "Candidate",
+        "scalars": [
+          65,
+          32,
+          66
+        ],
+        "member_offsets": [
+          7,
+          8,
+          9
+        ],
+        "positions": [
+          24,
+          48,
+          72
+        ],
+        "ticks": [
+          480,
+          960,
+          1440
+        ],
+        "media_us": [
+          500000,
+          1000000,
+          1500000
+        ]
+      }
+    },
+    {
+      "id": "tab",
+      "midi": "M480",
+      "lyr_hex": "540a410a430a0a410942",
+      "cur_hex": "180030004800",
+      "expected": {
+        "status": "Candidate",
+        "scalars": [
+          65,
+          9,
+          66
+        ],
+        "member_offsets": [
+          7,
+          8,
+          9
+        ],
+        "positions": [
+          24,
+          48,
+          72
+        ],
+        "ticks": [
+          480,
+          960,
+          1440
+        ],
+        "media_us": [
+          500000,
+          1000000,
+          1500000
+        ]
+      }
+    },
+    {
+      "id": "line-entry-hypothesis",
+      "midi": "M480",
+      "lyr_hex": "540a410a430a0a41",
+      "cur_hex": "18003000",
+      "expected": {
+        "status": "Rejected",
+        "code": "CountMismatch",
+        "member": "CUR",
+        "byte_offset": 4
+      }
+    },
+    {
+      "id": "thai-combining",
+      "midi": "M480",
+      "lyr_hex": "540a410a430a0aa1d4e8",
+      "cur_hex": "180030004800",
+      "expected": {
+        "status": "Candidate",
+        "scalars": [
+          3585,
+          3636,
+          3656
+        ],
+        "member_offsets": [
+          7,
+          8,
+          9
+        ],
+        "positions": [
+          24,
+          48,
+          72
+        ],
+        "ticks": [
+          480,
+          960,
+          1440
+        ],
+        "media_us": [
+          500000,
+          1000000,
+          1500000
+        ]
+      }
+    },
+    {
+      "id": "thai-am",
+      "midi": "M480",
+      "lyr_hex": "540a410a430a0aa1d3",
+      "cur_hex": "18003000",
+      "expected": {
+        "status": "Candidate",
+        "scalars": [
+          3585,
+          3635
+        ],
+        "member_offsets": [
+          7,
+          8
+        ],
+        "positions": [
+          24,
+          48
+        ],
+        "ticks": [
+          480,
+          960
+        ],
+        "media_us": [
+          500000,
+          1000000
+        ]
+      }
+    },
+    {
+      "id": "thai-am-decomposed",
+      "midi": "M480",
+      "lyr_hex": "540a410a430a0aa1edd2",
+      "cur_hex": "180030004800",
+      "expected": {
+        "status": "Candidate",
+        "scalars": [
+          3585,
+          3661,
+          3634
+        ],
+        "member_offsets": [
+          7,
+          8,
+          9
+        ],
+        "positions": [
+          24,
+          48,
+          72
+        ],
+        "ticks": [
+          480,
+          960,
+          1440
+        ],
+        "media_us": [
+          500000,
+          1000000,
+          1500000
+        ]
+      }
+    },
+    {
+      "id": "equal-positions",
+      "midi": "M480",
+      "lyr_hex": "540a410a430a0a4142",
+      "cur_hex": "18001800",
+      "expected": {
+        "status": "Candidate",
+        "scalars": [
+          65,
+          66
+        ],
+        "member_offsets": [
+          7,
+          8
+        ],
+        "positions": [
+          24,
+          24
+        ],
+        "ticks": [
+          480,
+          480
+        ],
+        "media_us": [
+          500000,
+          500000
+        ]
+      }
+    },
+    {
+      "id": "floor-collision",
+      "midi": "M3",
+      "lyr_hex": "540a410a430a0a414243",
+      "cur_hex": "070008000800",
+      "expected": {
+        "status": "Candidate",
+        "scalars": [
+          65,
+          66,
+          67
+        ],
+        "member_offsets": [
+          7,
+          8,
+          9
+        ],
+        "positions": [
+          7,
+          8,
+          8
+        ],
+        "ticks": [
+          0,
+          1,
+          1
+        ],
+        "media_us": [
+          0,
+          166666,
+          166666
+        ]
+      }
+    },
+    {
+      "id": "floor-all-zero",
+      "midi": "M3",
+      "lyr_hex": "540a410a430a0a414243",
+      "cur_hex": "010002000300",
+      "expected": {
+        "status": "Candidate",
+        "scalars": [
+          65,
+          66,
+          67
+        ],
+        "member_offsets": [
+          7,
+          8,
+          9
+        ],
+        "positions": [
+          1,
+          2,
+          3
+        ],
+        "ticks": [
+          0,
+          0,
+          0
+        ],
+        "media_us": [
+          0,
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "id": "tempo-change",
+      "midi": "Mtempo",
+      "lyr_hex": "540a410a430a0a414243",
+      "cur_hex": "180030004800",
+      "expected": {
+        "status": "Candidate",
+        "scalars": [
+          65,
+          66,
+          67
+        ],
+        "member_offsets": [
+          7,
+          8,
+          9
+        ],
+        "positions": [
+          24,
+          48,
+          72
+        ],
+        "ticks": [
+          480,
+          960,
+          1440
+        ],
+        "media_us": [
+          500000,
+          1500000,
+          2500000
+        ]
+      }
+    },
+    {
+      "id": "decreasing",
+      "midi": "M480",
+      "lyr_hex": "540a410a430a0a4142",
+      "cur_hex": "18001700",
+      "expected": {
+        "status": "Rejected",
+        "code": "Decreasing",
+        "member": "CUR",
+        "byte_offset": 2
+      }
+    },
+    {
+      "id": "odd",
+      "midi": "M480",
+      "lyr_hex": "540a410a430a0a41",
+      "cur_hex": "18",
+      "expected": {
+        "status": "Rejected",
+        "code": "OddLength",
+        "member": "CUR",
+        "byte_offset": 0
+      }
+    },
+    {
+      "id": "nul",
+      "midi": "M480",
+      "lyr_hex": "540a410a430a0a00",
+      "cur_hex": "1800",
+      "expected": {
+        "status": "Rejected",
+        "code": "InvalidText",
+        "member": "LYR",
+        "byte_offset": 7
+      }
+    },
+    {
+      "id": "undefined-tis",
+      "midi": "M480",
+      "lyr_hex": "540a410a430a0adb",
+      "cur_hex": "1800",
+      "expected": {
+        "status": "Rejected",
+        "code": "InvalidText",
+        "member": "LYR",
+        "byte_offset": 7
+      }
+    },
+    {
+      "id": "beyond-primary",
+      "midi": "M480",
+      "lyr_hex": "540a410a430a0a41",
+      "cur_hex": "4900",
+      "expected": {
+        "status": "Rejected",
+        "code": "BeyondPrimary",
+        "member": "CUR",
+        "byte_offset": 0
+      }
+    },
+    {
+      "id": "low-ff",
+      "midi": "Mhigh",
+      "lyr_hex": "540a410a430a0a41",
+      "cur_hex": "ff00",
+      "expected": {
+        "status": "Candidate",
+        "scalars": [
+          65
+        ],
+        "member_offsets": [
+          7
+        ],
+        "positions": [
+          255
+        ],
+        "ticks": [
+          5100
+        ],
+        "media_us": [
+          5312500
+        ]
+      }
+    },
+    {
+      "id": "high-fe",
+      "midi": "Mhigh",
+      "lyr_hex": "540a410a430a0a41",
+      "cur_hex": "fffe",
+      "expected": {
+        "status": "Candidate",
+        "scalars": [
+          65
+        ],
+        "member_offsets": [
+          7
+        ],
+        "positions": [
+          65279
+        ],
+        "ticks": [
+          1305580
+        ],
+        "media_us": [
+          1359979166
+        ]
+      }
+    },
+    {
+      "id": "high-ff-zero",
+      "midi": "Mhigh",
+      "lyr_hex": "540a410a430a0a41",
+      "cur_hex": "00ff",
+      "expected": {
+        "status": "Candidate",
+        "scalars": [
+          65
+        ],
+        "member_offsets": [
+          7
+        ],
+        "positions": [
+          65280
+        ],
+        "ticks": [
+          1305600
+        ],
+        "media_us": [
+          1360000000
+        ]
+      }
+    },
+    {
+      "id": "high-ff-max",
+      "midi": "Mhigh",
+      "lyr_hex": "540a410a430a0a41",
+      "cur_hex": "ffff",
+      "expected": {
+        "status": "Candidate",
+        "scalars": [
+          65
+        ],
+        "member_offsets": [
+          7
+        ],
+        "positions": [
+          65535
+        ],
+        "ticks": [
+          1310700
+        ],
+        "media_us": [
+          1365312500
+        ]
+      }
+    },
+    {
+      "id": "missing-header",
+      "midi": "M480",
+      "lyr_hex": "540a410a430a",
+      "cur_hex": "",
+      "expected": {
+        "status": "Rejected",
+        "code": "HeaderTermination",
+        "member": "LYR",
+        "byte_offset": 6
+      }
+    },
+    {
+      "id": "empty-cur",
+      "midi": "M480",
+      "lyr_hex": "540a410a430a0a41",
+      "cur_hex": "",
+      "expected": {
+        "status": "Rejected",
+        "code": "CountMismatch",
+        "member": "CUR",
+        "byte_offset": 0
+      }
+    },
+    {
+      "id": "empty-body",
+      "midi": "M480",
+      "lyr_hex": "540a410a430a0a",
+      "cur_hex": "1800",
+      "expected": {
+        "status": "Rejected",
+        "code": "CountMismatch",
+        "member": "CUR",
+        "byte_offset": 2
+      }
+    },
+    {
+      "id": "header-crlf",
+      "midi": "M480",
+      "lyr_hex": "540d0a410d0a430d0a0d0a41",
+      "cur_hex": "1800",
+      "expected": {
+        "status": "Candidate",
+        "scalars": [
+          65
+        ],
+        "member_offsets": [
+          11
+        ],
+        "positions": [
+          24
+        ],
+        "ticks": [
+          480
+        ],
+        "media_us": [
+          500000
+        ]
+      }
+    },
+    {
+      "id": "header-cr",
+      "midi": "M480",
+      "lyr_hex": "540d410d430d0d41",
+      "cur_hex": "1800",
+      "expected": {
+        "status": "Candidate",
+        "scalars": [
+          65
+        ],
+        "member_offsets": [
+          7
+        ],
+        "positions": [
+          24
+        ],
+        "ticks": [
+          480
+        ],
+        "media_us": [
+          500000
+        ]
+      }
+    },
+    {
+      "id": "leading-lf",
+      "midi": "M480",
+      "lyr_hex": "540a410a430a0a0a41",
+      "cur_hex": "00001800",
+      "expected": {
+        "status": "Candidate",
+        "scalars": [
+          10,
+          65
+        ],
+        "member_offsets": [
+          7,
+          8
+        ],
+        "positions": [
+          0,
+          24
+        ],
+        "ticks": [
+          0,
+          480
+        ],
+        "media_us": [
+          0,
+          500000
+        ]
+      }
+    },
+    {
+      "id": "high-ff-middle",
+      "midi": "Mhigh",
+      "lyr_hex": "540a410a430a0a414243",
+      "cur_hex": "fffe00ffffff",
+      "expected": {
+        "status": "Candidate",
+        "scalars": [
+          65,
+          66,
+          67
+        ],
+        "member_offsets": [
+          7,
+          8,
+          9
+        ],
+        "positions": [
+          65279,
+          65280,
+          65535
+        ],
+        "ticks": [
+          1305580,
+          1305600,
+          1310700
+        ],
+        "media_us": [
+          1359979166,
+          1360000000,
+          1365312500
+        ]
+      }
+    }
+  ],
+  "timing": [
+    {
+      "bpm": 60,
+      "wiki_units": [
+        24,
+        1
+      ],
+      "musical_units": 24
+    },
+    {
+      "bpm": 90,
+      "wiki_units": [
+        16,
+        1
+      ],
+      "musical_units": 24
+    },
+    {
+      "bpm": 120,
+      "wiki_units": [
+        12,
+        1
+      ],
+      "musical_units": 24
+    },
+    {
+      "bpm": 180,
+      "wiki_units": [
+        8,
+        1
+      ],
+      "musical_units": 24
+    }
+  ]
+}
