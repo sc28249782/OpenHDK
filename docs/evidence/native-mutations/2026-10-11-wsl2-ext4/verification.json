@@ -1,0 +1,121 @@
+{
+  "tested_revision": "54f404ae8422499de950f5c96527c9023274a9b6",
+  "archive_sha256": "98491eeaacdeebb20ab36ad5a3bc153c9f8068ef8db7b82d1ddf110f6930d779",
+  "archive_files": 63,
+  "log_files": 62,
+  "manifest_entries_verified": 62,
+  "compile_exits_zero": 28,
+  "run_exits_zero": 28,
+  "verifier_exits_zero": 3,
+  "overall_exit": 0,
+  "source_after_revision_only": true,
+  "sanitizers": 0,
+  "mutation_verification": {
+    "admission_traces": 32,
+    "allocation_sweeps": 5,
+    "artifact_receipts": 45,
+    "io_traces": 25,
+    "mutation_cases": 34,
+    "native_acceptance": "Pending",
+    "operations": 5,
+    "primary_receipts": 69,
+    "scope": "selected observations; paths and raw hint-bearing wires omitted; no independent byte/provenance proof",
+    "status": "verified"
+  },
+  "negative_verification": {
+    "native_acceptance": "Pending",
+    "negative_cases": 10,
+    "positive_cases": 1,
+    "status": "passed"
+  },
+  "admission_verification": {
+    "fence_cases": 3,
+    "identity_observations": 364,
+    "native_acceptance": "Pending",
+    "scope": "selected observations and consistency only; mount namespace case remains Skipped",
+    "status": "verified",
+    "traces": 13
+  },
+  "mutation_receipt_counts": {
+    "MUTATION_ACK": 25,
+    "MUTATION_ADMISSION_RECORD": 1409,
+    "MUTATION_ADMISSION_TRACE": 32,
+    "MUTATION_ALLOCATION": 5,
+    "MUTATION_ARTIFACT": 45,
+    "MUTATION_CASE": 25,
+    "MUTATION_IO": 440,
+    "MUTATION_IO_TRACE": 25,
+    "MUTATION_PRIMARY": 69,
+    "MUTATION_RECOVERY": 5,
+    "MUTATION_ROOT": 140,
+    "MUTATION_SONG": 65,
+    "MUTATION_SPECIAL": 9,
+    "MUTATION_SUMMARY": 1
+  },
+  "mutation_artifacts": {
+    "total": 45,
+    "capture_available": 7,
+    "oversize_unavailable_efbig": 38,
+    "raw_bytes_omitted": true
+  },
+  "allocation_sweeps": [
+    {
+      "operation": "register",
+      "scope": "entry",
+      "failures": "54",
+      "success": "1",
+      "fd_before": "10",
+      "fd_after": "11",
+      "rollback_fd_after": "10",
+      "rollback_preserved": "1",
+      "pending_cleared": "1"
+    },
+    {
+      "operation": "reattach",
+      "scope": "entry",
+      "failures": "84",
+      "success": "1",
+      "fd_before": "11",
+      "fd_after": "11",
+      "rollback_fd_after": "11",
+      "rollback_preserved": "1",
+      "pending_cleared": "1"
+    },
+    {
+      "operation": "scan",
+      "scope": "store-staging",
+      "failures": "14",
+      "success": "1",
+      "fd_before": "11",
+      "fd_after": "11",
+      "rollback_fd_after": "11",
+      "rollback_preserved": "1",
+      "pending_cleared": "1"
+    },
+    {
+      "operation": "relocate",
+      "scope": "entry",
+      "failures": "73",
+      "success": "1",
+      "fd_before": "11",
+      "fd_after": "11",
+      "rollback_fd_after": "11",
+      "rollback_preserved": "1",
+      "pending_cleared": "1"
+    },
+    {
+      "operation": "remove",
+      "scope": "entry",
+      "failures": "64",
+      "success": "1",
+      "fd_before": "11",
+      "fd_after": "11",
+      "rollback_fd_after": "11",
+      "rollback_preserved": "1",
+      "pending_cleared": "1"
+    }
+  ],
+  "independent_provider_full_wire_hash_checks": 384,
+  "native_acceptance": "Pending",
+  "scope": "Maintainer-supplied selected observations on WSL2 /dev/sdd ext4. Hash consistency is not independent source/run authentication. Mutation raw hint-bearing bytes are omitted; oversize artifacts unavailable. Namespace aliases Skipped; no bare-metal/NTFS/DrvFS/cross-OS/hostile-writer/power-loss acceptance."
+}

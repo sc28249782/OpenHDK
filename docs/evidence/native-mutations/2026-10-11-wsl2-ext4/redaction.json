@@ -1,0 +1,275 @@
+{
+  "policy": "Replace the literal local username with maintainer only. Original log hashes were verified before redaction. No numeric, wire, identity, outcome or exit-code fields changed; published SHA256SUMS covers published logs.",
+  "original_manifest_sha256": "d9e36daa2b4385d7b8a9c9f6139998bc662ef1aa1f7ed94a74267678c199479b",
+  "published_manifest_sha256": "920fe60ea71b89be4129dc93f23d85c135753c0c939dad7af0ab782d14d2a7b9",
+  "changed_logs": [
+    {
+      "path": "environment.log",
+      "replacements": 3,
+      "original_sha256": "29d671b3216ceeb7232d78d8d66c02e703191865c70be39f1a824f4686a4bad6",
+      "published_sha256": "a05bdd81ade18a495edb96e96d72b0329cab464401fb196b864afd2d3db75b81"
+    },
+    {
+      "path": "linux_checkpoint_evidence_tests.run.log",
+      "replacements": 1,
+      "original_sha256": "4f80f1964979ef29d724594b7e4380972646af8564e240091f32f068186685ca",
+      "published_sha256": "5583c188a579b2d6a20404bb63366d941a65dff7d2c7268cc6655e07eed1c943"
+    },
+    {
+      "path": "linux_checkpoint_provider_tests.run.log",
+      "replacements": 1,
+      "original_sha256": "61bbc073fadb9568c2faa1c6b83f03aec4d068cca5ab6bd2d174d3f2563cd641",
+      "published_sha256": "0109214871dda1029709077025361f5a4df29956bd596c52fdfa0e348ad15ca4"
+    }
+  ],
+  "original_log_hashes": [
+    {
+      "path": "catalog_checkpoint_capture_tests.compile.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "catalog_checkpoint_capture_tests.run.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "catalog_checkpoint_codec_tests.compile.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "catalog_checkpoint_codec_tests.run.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "catalog_checkpoint_restore_tests.compile.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "catalog_checkpoint_restore_tests.run.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "catalog_checkpoint_store_tests.compile.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "catalog_checkpoint_store_tests.run.log",
+      "sha256": "de450e7d845b0508f2411002e58a3f023dcf1d015b76047a89f88d6d442f6d2d"
+    },
+    {
+      "path": "catalog_metadata_integration_tests.compile.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "catalog_metadata_integration_tests.run.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "catalog_metadata_tests.compile.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "catalog_metadata_tests.run.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "catalog_override_display_tests.compile.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "catalog_override_display_tests.run.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "durable_library_service_tests.compile.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "durable_library_service_tests.run.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "environment.log",
+      "sha256": "29d671b3216ceeb7232d78d8d66c02e703191865c70be39f1a824f4686a4bad6"
+    },
+    {
+      "path": "kar_lyric_timeline_tests.compile.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "kar_lyric_timeline_tests.run.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "linux_checkpoint_evidence_tests.compile.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "linux_checkpoint_evidence_tests.run.log",
+      "sha256": "4f80f1964979ef29d724594b7e4380972646af8564e240091f32f068186685ca"
+    },
+    {
+      "path": "linux_checkpoint_lease_tests.compile.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "linux_checkpoint_lease_tests.run.log",
+      "sha256": "2f7c110f9346ec40399e44ceca90b96f69463831c164408373d785db677a347c"
+    },
+    {
+      "path": "linux_checkpoint_provider_tests.compile.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "linux_checkpoint_provider_tests.run.log",
+      "sha256": "61bbc073fadb9568c2faa1c6b83f03aec4d068cca5ab6bd2d174d3f2563cd641"
+    },
+    {
+      "path": "lyric_clock_observer_tests.compile.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "lyric_clock_observer_tests.run.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "lyric_media_consumer_tests.compile.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "lyric_media_consumer_tests.run.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "lyric_text_decoder_tests.compile.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "lyric_text_decoder_tests.run.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "media_clock_publication_tests.compile.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "media_clock_publication_tests.run.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "midi_diagnostics_cli_tests.compile.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "midi_diagnostics_cli_tests.run.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "midi_mixer_preset_tests.compile.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "midi_mixer_preset_tests.run.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "midi_velocity_curve_tests.compile.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "midi_velocity_curve_tests.run.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "native-admission-verification.log",
+      "sha256": "e95842f1885b359b72e34480c8e272f48709daeefe1835f738fce2b840a10d52"
+    },
+    {
+      "path": "native-mutation-verification.log",
+      "sha256": "226e31c9d5caa571175a9b1fd76a2ef82c7cf457ff110afc1e1fa9887573e2a6"
+    },
+    {
+      "path": "native-mutation-verifier-tests.log",
+      "sha256": "a1912597503200d017e6afa71bb451f90d13400282d9ad437df05e8ebc34ce7d"
+    },
+    {
+      "path": "native_durable_service_tests.compile.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "native_durable_service_tests.run.log",
+      "sha256": "c188cf1cd6ce55007344c405dfd6109b6e168fdb0bbe398e7fde2ab554d7152d"
+    },
+    {
+      "path": "native_store_binding_tests.compile.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "native_store_binding_tests.run.log",
+      "sha256": "bdc8b8e63e525a531afba77bc6d8937f41cd3b4f3a6592b1c9ff5ebedee47d4f"
+    },
+    {
+      "path": "receipts.log",
+      "sha256": "223f53d8ea53226fbd8f58835bf945bb2297a422da70e5c74ebea5f43142a426"
+    },
+    {
+      "path": "root_reattachment_tests.compile.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "root_reattachment_tests.run.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "runtime_mixer_console_tests.compile.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "runtime_mixer_console_tests.run.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "smf_parser_tests.compile.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "smf_parser_tests.run.log",
+      "sha256": "b6438e0f09f13280b479e50ef0fff9d318bc1213ea954c1a43208845d4068d9b"
+    },
+    {
+      "path": "song_catalog_tests.compile.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "song_catalog_tests.run.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "song_discovery_tests.compile.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "song_discovery_tests.run.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "song_preparation_tests.compile.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "song_preparation_tests.run.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "source-after.log",
+      "sha256": "c065e85626aaa4ac7f35525d9c31b535d3625778c5f7555d9f1b2fbe2a732ee5"
+    },
+    {
+      "path": "stereo_peak_limiter_tests.compile.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "stereo_peak_limiter_tests.run.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ]
+}

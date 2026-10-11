@@ -1,0 +1,1 @@
+{"admission_traces": 32, "allocation_sweeps": 5, "artifact_receipts": 45, "io_traces": 25, "mutation_cases": 34, "native_acceptance": "Pending", "operations": 5, "primary_receipts": 69, "scope": "selected observations; paths and raw hint-bearing wires omitted; no independent byte/provenance proof", "status": "verified"}
