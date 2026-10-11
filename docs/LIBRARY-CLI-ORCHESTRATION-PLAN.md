@@ -335,3 +335,15 @@ Next: fresh pinned management/preparation session evidence and scoped review,
 then playback controller. Prior `6a6337d`/`4f69246`/`54f404a` acceptances and bundles
 stay unchanged; Windows checkpoint acknowledgment is BLOCKED and NCN/manual/
 release gates stay open.
+
+## Management/preparation CLI evidence instrumentation
+
+[CLI evidence procedure](LIBRARY-CLI-EVIDENCE.md) adds a bounded 37-case production-executable
+subprocess matrix, six child-exit receipts, before/after checkpoint observations,
+a strict verifier and 15 supplied-log negative checks. The pinned collector builds
+OpenHDKLibrary without seams and runs the matrix on an eligible ext4 parent.
+Eight offline Python checks run in Linux CI; CTest counts remain 32 core / 35 audio.
+This adds no production behavior, native acceptance, playback or release checkbox.
+Fresh pinned WSL2 ext4 execution and explicit scoped review are Pending. Earlier
+`6a6337d` / `4f69246` / `54f404a` acceptances and bundles do not advance; Windows
+checkpoint acknowledgment remains BLOCKED, and NCN/manual gates remain open.

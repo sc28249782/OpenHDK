@@ -34,3 +34,7 @@ jobs:
         run: cmake --build build-linux-core --parallel
       - name: Test
         run: ctest --test-dir build-linux-core --output-on-failure
+      - name: Check CLI evidence tools (offline)
+        run: |
+          bash -n tests/run-linux-checkpoint-evidence.sh
+          python3 tests/library_cli_evidence_tools_tests.py
