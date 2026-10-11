@@ -116,3 +116,8 @@ records. Do not distribute private songs. Review mapping/sentinel rules and
 amend OHK-LYR-030 if needed before implementing a production normalizer.
 NCN gate remains OPEN; native storage acceptances and Windows checkpoint gate
 are unchanged. CLI evidence/playback work remains a separate track.
+
+For lawful real members, use the separate [representative observation runbook](../../../docs/NCN-REPRESENTATIVE-OBSERVATION-RUNBOOK.md).
+Its inventory is read-only and counts hypotheses; its verifier checks supplied
+record structure/binding. Neither runs playback, validates the full tempo map
+or accepts NCN. Do not submit synthetic/mock data as representative evidence.

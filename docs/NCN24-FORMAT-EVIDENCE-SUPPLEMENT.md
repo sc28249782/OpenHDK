@@ -204,6 +204,11 @@ retain `ncn_acceptance=Pending`; representative observations remain Pending.
 Tool bounds, diagnostic precedence and export effects are explicit in the tool
 README. Production profile limits/error APIs remain unchanged.
 
+The [representative observation runbook](NCN-REPRESENTATIVE-OBSERVATION-RUNBOOK.md)
+now supplies a bounded read-only member inventory and a supplied-record verifier.
+They do not run a legacy player or validate a primary tempo map. Tool tests use
+synthetic members/mock records; actual representative execution remains Pending.
+
 ## 7. Review decisions and work order
 
 | Gate item | Status after this proposal |

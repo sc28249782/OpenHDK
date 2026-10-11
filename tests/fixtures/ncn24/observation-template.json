@@ -1,0 +1,43 @@
+{
+  "schema": 1,
+  "sample_id": "sample-001",
+  "inventory_sha256": "Pending",
+  "reader": {
+    "name": "Pending",
+    "version": "Pending",
+    "build_ref": "Pending"
+  },
+  "run": {
+    "status": "Pending",
+    "platform": "Pending",
+    "observation_method": "Pending"
+  },
+  "observations": [],
+  "coverage": {
+    "timing-non60": {
+      "status": "Pending",
+      "reason": "not-collected"
+    },
+    "tempo-change": {
+      "status": "Pending",
+      "reason": "not-collected"
+    },
+    "newline": {
+      "status": "Pending",
+      "reason": "not-collected"
+    },
+    "thai-mark": {
+      "status": "Pending",
+      "reason": "not-collected"
+    },
+    "high-ff": {
+      "status": "Pending",
+      "reason": "not-collected"
+    },
+    "line-entry": {
+      "status": "Pending",
+      "reason": "not-collected"
+    }
+  },
+  "ncn_acceptance": "Pending"
+}
