@@ -37,6 +37,7 @@ continue to apply independently of feature plans.
 | [LYRIC-TIMELINE-CONTRACT](LYRIC-TIMELINE-CONTRACT.md) | Accepted KAR/media timing contract; extraction/consumer and backend observation implemented; application/NCN24 gated. |
 | [NCN24-FORMAT-EVIDENCE-SUPPLEMENT](NCN24-FORMAT-EVIDENCE-SUPPLEMENT.md) | Reviewed source comparison with offline synthetic fixture/checker tools; timing/mapping/high-byte corpus review Pending, NCN gate OPEN. |
 | [NCN representative observations](NCN-REPRESENTATIVE-OBSERVATION-RUNBOOK.md) | Read-only privacy-limited inventory, manual playback record and bounded verifier; actual representative execution and NCN acceptance Pending. |
+| [NCN24 terminal SUB proposal](NCN24-TERMINAL-SUB-PROPOSAL.md) | Proposed first-SUB logical EOF for LYR; requires acceptance, current strict rejection and NCN gate unchanged. |
 | [NCN legacy edge analysis](NCN-LEGACY-EDGE-ANALYSIS.md) | Pinned reader edge inspection and four original strict-rejection vectors; NCN acceptance Pending. |
 | [NCN24 fixture tools](../tests/fixtures/ncn24/README.md) | Bounded 33-case original fixture checker/export and SMF/text cross-probe; synthetic verification only, no NCN acceptance. |
 | [MEDIA-CLOCK-HANDOFF-CONTRACT](MEDIA-CLOCK-HANDOFF-CONTRACT.md) | Accepted backend-clock handoff; FluidSynth publication implemented, generation-bound observer implemented; application integration pending. |

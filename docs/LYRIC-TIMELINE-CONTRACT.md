@@ -361,3 +361,13 @@ preparation now verifies one SMF/KAR source and owns both timelines;
 application orchestration remains pending. Headless tests feed
 actual PlaybackSession frame-derived positions, including pause, completion,
 and stop/reprepare; they do not establish device/GUI lyric synchronization.
+
+## Proposed NCN24 SUB logical EOF
+
+The [terminal SUB amendment proposal](NCN24-TERMINAL-SUB-PROPOSAL.md) defines first-SUB
+logical EOF for LYR, excluding the marker and all following bytes from text
+decoding and Cursor counts while retaining the bounded raw member. It requires
+review and acceptance. Current strict fixtures still reject SUB; no parser,
+contract rule, CUR policy or acceptance gate changes in this proposal.
+NCN evidence remains OPEN; runtime, counts, checkboxes and historical evidence
+remain unchanged.

@@ -692,3 +692,13 @@ lyrics/paths and do not run playback or validate the full tempo map. Tests use
 synthetic members/mock records only. Actual representative execution, mapping/
 sentinel review and NCN acceptance remain Pending; no runtime, CTest-count,
 checkbox, historical evidence bundle or native acceptance change is introduced.
+
+## Proposed NCN24 SUB logical EOF
+
+The [terminal SUB amendment proposal](NCN24-TERMINAL-SUB-PROPOSAL.md) defines first-SUB
+logical EOF for LYR, excluding the marker and all following bytes from text
+decoding and Cursor counts while retaining the bounded raw member. It requires
+review and acceptance. Current strict fixtures still reject SUB; no parser,
+contract rule, CUR policy or acceptance gate changes in this proposal.
+NCN evidence remains OPEN; runtime, counts, checkboxes and historical evidence
+remain unchanged.
