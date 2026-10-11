@@ -43,8 +43,7 @@ public:
       LibraryCliJsonRecord record;
       if(c.verb==LibraryCliVerb::Help) {
         record.text("type","help");
-        record.text("commands","help quit roots songs register reattach scan relocate remove overrides");
-        record.text("prepare","Unavailable in this slice");
+        record.text("commands","help quit roots songs register reattach scan relocate remove overrides prepare");
       } else if(c.verb==LibraryCliVerb::Quit) {
         record.text("type","quit");batch.add(record);return {batch.finish(),lastCommit_,0,true};
       } else if(c.verb==LibraryCliVerb::Roots || c.verb==LibraryCliVerb::Songs) {
@@ -92,7 +91,24 @@ public:
           }
         }
         return complete(batch);
-      } else if(c.verb==LibraryCliVerb::Prepare) return localError("PreparationUnavailable");
+      } else if(c.verb==LibraryCliVerb::Prepare) {
+        auto prepared=service_->prepare(song->id,{},{},kCallerBytes);
+        if(prepared.error) return serviceError(*prepared.error);
+        const auto& p=*prepared.prepared;
+        record.text("type","prepared");record.number("song",p.song().id.diagnosticValue());
+        record.number("revision",p.catalogSnapshot()->revision);
+        record.number("event_count",p.midi().events().size());
+        record.number("last_event_us",p.midi().events().empty()?0U:p.midi().events().back().timeMicroseconds());
+        record.number("cue_count",p.lyrics()->cues().size());
+        record.number("lyric_profile",static_cast<std::uint64_t>(p.lyrics()->profile()));
+        if(p.lyrics()->trackIndex()) record.number("track",*p.lyrics()->trackIndex());else record.null("track");
+        record.text("encoding",p.effectivePolicy().encoding==LyricTextEncoding::Utf8?"utf8":"tis620");
+        record.number("source_bytes",p.song().sourceRevision()->byteCount);
+        record.text("title",p.displayMetadata().title.text);
+        record.number("title_origin",static_cast<std::uint64_t>(p.displayMetadata().title.origin));
+        if(p.displayMetadata().artist) record.text("artist",p.displayMetadata().artist->text);else record.null("artist");
+        batch.add(record);return complete(batch); // Query, no commit receipt or playback.
+      }
       else if(c.verb==LibraryCliVerb::Register) {
         auto r=service_->registerRoot(std::filesystem::path(std::u8string_view(reinterpret_cast<const char8_t*>(c.path.data()),c.path.size())),c.policy,{},kCallerBytes);
         if(r.error) return serviceError(*r.error);
@@ -177,23 +193,27 @@ private:
   static void discovery(LibraryCliJsonRecord& row,const DiscoveryDiagnostic& d) {
     row.number("discovery_code",static_cast<std::uint64_t>(d.code));
     row.number("discovery_operation",static_cast<std::uint64_t>(d.operation));row.nativeText("locator",d.locator);
-    if(d.parseError) {
-      row.number("parse_code",static_cast<std::uint64_t>(d.parseError->code));
-      row.number("parse_offset",d.parseError->offset);
+    nested(row,d.parseError,d.timelineError,d.lyricError);
+  }
+  static void nested(LibraryCliJsonRecord& row,const std::optional<SmfParseError>& parse,
+      const std::optional<SmfTimelineError>& timeline,const std::optional<KarLyricError>& lyric) {
+    if(parse) {
+      row.number("parse_code",static_cast<std::uint64_t>(parse->code));
+      row.number("parse_offset",parse->offset);
     }
-    if(d.timelineError) {
-      row.number("timeline_code",static_cast<std::uint64_t>(d.timelineError->code()));
-      if(d.timelineError->trackIndex()) row.number("timeline_track",*d.timelineError->trackIndex());
-      if(const auto* track=d.timelineError->trackDecodeError()) {
+    if(timeline) {
+      row.number("timeline_code",static_cast<std::uint64_t>(timeline->code()));
+      if(timeline->trackIndex()) row.number("timeline_track",*timeline->trackIndex());
+      if(const auto* track=timeline->trackDecodeError()) {
         row.number("track_code",static_cast<std::uint64_t>(track->code));row.number("track_offset",track->offset);
       }
     }
-    if(d.lyricError) {
-      row.number("lyric_code",static_cast<std::uint64_t>(d.lyricError->code));
-      if(d.lyricError->payloadByteOffset) row.number("lyric_offset",*d.lyricError->payloadByteOffset);
-      if(d.lyricError->position) {
-        row.number("lyric_track",d.lyricError->position->trackIndex);
-        row.number("lyric_event",d.lyricError->position->sourceIndex);
+    if(lyric) {
+      row.number("lyric_code",static_cast<std::uint64_t>(lyric->code));
+      if(lyric->payloadByteOffset) row.number("lyric_offset",*lyric->payloadByteOffset);
+      if(lyric->position) {
+        row.number("lyric_track",lyric->position->trackIndex);
+        row.number("lyric_event",lyric->position->sourceIndex);
       }
     }
   }
@@ -228,6 +248,12 @@ private:
       if(e.binding->rootIndex) row.number("root_index",*e.binding->rootIndex);
     }
     if(e.discovery) discovery(row,*e.discovery);
+    if(e.preparation) {
+      row.number("preparation_code",static_cast<std::uint64_t>(e.preparation->code));
+      row.number("preparation_operation",static_cast<std::uint64_t>(e.preparation->operation));
+      row.nativeText("locator",e.preparation->locator);
+      nested(row,e.preparation->parseError,e.preparation->timelineError,e.preparation->lyricError);
+    }
     if(e.cleanupWarning) row.number("cleanup_warning",static_cast<std::uint64_t>(e.cleanupWarning->code));
   }
   LibraryCliResponse serviceError(const DurableServiceError& e) {

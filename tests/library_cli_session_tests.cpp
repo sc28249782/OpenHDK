@@ -131,7 +131,7 @@ int main() {
   auto* service=created.service.get();LibraryCliSession session(std::move(created.service));
   const auto original=service->snapshot();
   OPENHDK_FAIL_IF(2,!has(session.dispatch("roots"),"\"count\":0"));
-  OPENHDK_FAIL_IF(3,!has(session.dispatch("help"),"Unavailable"));
+  OPENHDK_FAIL_IF(3,!has(session.dispatch("help"),"prepare"));
   auto registered=session.dispatch("register \""+a.generic_string()+"\"");
   OPENHDK_FAIL_IF(4,registered.commit!=LibraryCliCommitOutcome::Saved || !has(registered,"\"root\":1"));
   OPENHDK_FAIL_IF(5,original->roots.size()!=0 || service->snapshot()->roots.size()!=1);
@@ -172,7 +172,7 @@ int main() {
   OPENHDK_FAIL_IF(26,repair.commit!=LibraryCliCommitOutcome::Saved || disk(image).roots[0].attachmentGeneration!=2);
   OPENHDK_FAIL_IF(27,session.dispatch("reattach 1 \""+b.generic_string()+"\"").commit!=LibraryCliCommitOutcome::NoChange);
   OPENHDK_FAIL_IF(28,session.dispatch("scan 1").commit!=LibraryCliCommitOutcome::Saved);
-  OPENHDK_FAIL_IF(29,!has(session.dispatch("prepare 2"),"PreparationUnavailable"));
+  OPENHDK_FAIL_IF(29,!has(session.dispatch("prepare 2"),"\"type\":\"prepared\""));
   OPENHDK_FAIL_IF(30,session.dispatch("remove +2").exit!=1);
   auto contender=Access::open(std::make_unique<Fake>(image));
   OPENHDK_FAIL_IF(31,!contender.error || LibraryCliSession::factoryExit(*contender.error)!=75);

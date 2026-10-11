@@ -128,7 +128,8 @@ class SongDiscovery {
   // Reject snapshots with foreign or absent catalog lineage before any I/O.
   // Older snapshots remain usable if source bytes still match.
   SongPreparationResult prepare(std::shared_ptr<const CatalogSnapshot> snapshot,
-      SongId id, PreparationOptions options = {}, const PreparationControl& control = {}) const {
+      SongId id, PreparationOptions options = {}, const PreparationControl& control = {},
+      std::size_t alreadyOwned = 0U) const {
     const auto failure=[](PreparationErrorCode code) {
       return SongPreparationResult{nullptr,PreparationError{code,PreparationOperation::Resolve,{},{},{},{}}};
     };
@@ -152,7 +153,8 @@ class SongDiscovery {
     if (!isValidRootSourcePolicy(captured->policy) || !isValidLyricSelectionPolicy(effective))
       return failure(PreparationErrorCode::InvalidConfiguration);
     return SongPreparation::prepare(root->path,snapshot,
-        static_cast<std::size_t>(song-snapshot->songs.begin()),options,effective,control,savedHintBytes());
+        static_cast<std::size_t>(song-snapshot->songs.begin()),options,effective,control,alreadyOwned > MetadataPayloadBudget::kMaxBytes-savedHintBytes()
+          ? MetadataPayloadBudget::kMaxBytes : alreadyOwned+savedHintBytes());
   }
 
  private:
