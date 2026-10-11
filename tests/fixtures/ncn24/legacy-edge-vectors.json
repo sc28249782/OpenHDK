@@ -1,0 +1,53 @@
+{
+  "schema": 1,
+  "scope": "original-synthetic-only",
+  "ncn_acceptance": "Pending",
+  "ppqn": 192,
+  "last_tick": 100000,
+  "cases": [
+    {
+      "id": "sub-tail",
+      "lyr_hex": "540a410a430a0a581a0d0a",
+      "cur_hex": "1800",
+      "expected": {
+        "status": "Rejected",
+        "code": "InvalidText",
+        "member": "LYR",
+        "byte_offset": 8
+      }
+    },
+    {
+      "id": "odd-ff-tail",
+      "lyr_hex": "540a410a430a0a58",
+      "cur_hex": "1800ff",
+      "expected": {
+        "status": "Rejected",
+        "code": "OddLength",
+        "member": "CUR",
+        "byte_offset": 2
+      }
+    },
+    {
+      "id": "decreasing-pair",
+      "lyr_hex": "540a410a430a0a58595a",
+      "cur_hex": "30002f003100",
+      "expected": {
+        "status": "Rejected",
+        "code": "Decreasing",
+        "member": "CUR",
+        "byte_offset": 2
+      }
+    },
+    {
+      "id": "combined",
+      "lyr_hex": "540a410a430a0a58595a1a",
+      "cur_hex": "30002f003100ff",
+      "expected": {
+        "status": "Rejected",
+        "code": "InvalidText",
+        "member": "LYR",
+        "byte_offset": 10
+      }
+    }
+  ]
+}

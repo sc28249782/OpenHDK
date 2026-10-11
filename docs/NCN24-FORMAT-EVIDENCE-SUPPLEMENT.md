@@ -230,3 +230,11 @@ Pinned management/preparation CLI execution and playback-controller work remain
 separate pending tracks. This supplement does not advance the accepted native
 provider/factory/mutation revisions, close Windows checkpoint acknowledgment,
 change roadmap checkboxes or replace manual device/lyric validation.
+
+## Legacy edge hypotheses
+
+The [legacy edge analysis](NCN-LEGACY-EDGE-ANALYSIS.md) examines pinned reader handling
+of SUB text, incomplete CUR words and decreasing cursor positions.
+Four original synthetic vectors and six offline tests preserve strict rejection.
+No measured mapping, authenticated playback or normalizer acceptance is claimed.
+NCN evidence remains OPEN; no contract, CTest-count or checkbox change.
