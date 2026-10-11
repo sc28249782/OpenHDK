@@ -29,7 +29,7 @@ continue to apply independently of feature plans.
 | [NATIVE-ADMISSION-EVIDENCE](NATIVE-ADMISSION-EVIDENCE.md) | Bounded admission receipts/verifier implemented; pinned WSL2 ext4 run and scoped factory acceptance recorded for `4f69246`. |
 | [NATIVE-SERVICE-BINDING-PLAN](NATIVE-SERVICE-BINDING-PLAN.md) | Accepted lease-epoch/ancestry plan; private binding/guards and experimental Linux factory/fence implemented; scoped acceptance recorded for `4f69246`. |
 | [DURABLE-LIBRARY-SERVICE-CONTRACT](DURABLE-LIBRARY-SERVICE-CONTRACT.md) | Accepted exclusive service/baseline contract; override primitive, fake tests and experimental Linux factory/fence implemented and scoped acceptance recorded; all five mutations implemented with scoped acceptance for `54f404a`; application wiring pending. |
-| [LIBRARY-CLI-ORCHESTRATION-PLAN](LIBRARY-CLI-ORCHESTRATION-PLAN.md) | Proposed bounded management/preparation/playback plan; no runtime CLI implementation. |
+| [LIBRARY-CLI-ORCHESTRATION-PLAN](LIBRARY-CLI-ORCHESTRATION-PLAN.md) | Accepted bounded management/preparation/playback plan; pure command/output models implemented, runtime session pending. |
 | [DURABLE-ROOT-LIFECYCLE-PLAN](DURABLE-ROOT-LIFECYCLE-PLAN.md) | Accepted complete-owner staging/repair plan; shared guards and experimental operation-aware register/reattach integration implemented; experimental durable scan/logical relocate/remove implemented; 34-case bounded mutation receipts/verifier implemented; pinned native execution/scoped acceptance recorded for `54f404a`; app/CLI pending. |
 | [NATIVE-LINUX-CHECKPOINT-EVIDENCE](NATIVE-LINUX-CHECKPOINT-EVIDENCE.md) | Scoped acceptance recorded for 6a6337d on WSL2 /dev/sdd ext4; evidence bundles retained. |
 | [NATIVE-CHECKPOINT-PROVIDER-PLAN](NATIVE-CHECKPOINT-PROVIDER-PLAN.md) | Accepted API/evidence plan; Linux lease and experimental provider implemented; scoped Linux acceptance recorded; Windows synchronization BLOCKED. |
@@ -164,3 +164,15 @@ It adds no runtime CLI, tests, dependencies or completed checkbox. Restored root
 remain unattached until explicit user action; Windows checkpoint acknowledgment
 remains BLOCKED. Fresh affected application evidence, NCN and manual validation
 remain open; historical scoped runtime acceptances do not advance.
+
+## Pure library CLI models
+
+[OHK-CLI-030](LIBRARY-CLI-ORCHESTRATION-PLAN.md) is accepted. The first slice supplies pure
+entry/command parsing, numeric selectors and bounded JSON Lines output models.
+It dispatches no service operation, constructs no live ID, reads no filesystem
+and creates no executable/session. Preparation and playback remain later slices.
+The new hardware-free target raises current counts to 29 core / 32 audio-enabled;
+earlier slice counts describe their historical development stages. Windows
+checkpoint acknowledgment remains BLOCKED; native evidence labels and release
+checkboxes do not advance. Application execution, NCN and manual validation
+remain open.

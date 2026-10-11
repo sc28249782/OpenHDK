@@ -1,6 +1,6 @@
 # Test coverage and failure diagnostics
 
-The hardware-free configuration registers twenty-eight CTest suites: catalog checkpoint codec/restore/store protocol,
+The hardware-free configuration registers twenty-nine CTest suites: catalog checkpoint codec/restore/store protocol,
 parser fixtures, MIDI diagnostics CLI, runtime mixer console, velocity curves, mixer presets,
 stereo peak limiter, song catalog core, filesystem discovery, lyric text
 decoding, KAR lyric extraction, media-clock consumption, media-clock
@@ -8,9 +8,9 @@ publication, generation-bound lyric observation, single-song preparation,
 root reattachment, pure catalog metadata/policy models, and catalog metadata
 scan/preparation integration, and override/display transactions, plus durable override service protocol.
 The audio-enabled test configuration adds FluidSynth headless
-playback, CLI help, and diagnostics error cases, for thirty-one suites.
+playback, CLI help, and diagnostics error cases, for thirty-two suites.
 These counts describe the development tree; v0.2.0 has six/nine respectively.
-Linux core CI runs twenty-eight hardware-free suites; Windows bootstrap runs all thirty-one.
+Linux core CI runs twenty-nine hardware-free suites; Windows bootstrap runs all thirty-two.
 
 ## Planned 0.3.0 acceptance
 
@@ -611,3 +611,22 @@ It adds no runtime CLI, tests, dependencies or completed checkbox. Restored root
 remain unattached until explicit user action; Windows checkpoint acknowledgment
 remains BLOCKED. Fresh affected application evidence, NCN and manual validation
 remain open; historical scoped runtime acceptances do not advance.
+
+## Pure library CLI models
+
+[OHK-CLI-030](../docs/LIBRARY-CLI-ORCHESTRATION-PLAN.md) is accepted. The first slice supplies pure
+entry/command parsing, numeric selectors and bounded JSON Lines output models.
+It dispatches no service operation, constructs no live ID, reads no filesystem
+and creates no executable/session. Preparation and playback remain later slices.
+The new hardware-free target raises current counts to 29 core / 32 audio-enabled;
+earlier slice counts describe their historical development stages. Windows
+checkpoint acknowledgment remains BLOCKED; native evidence labels and release
+checkboxes do not advance. Application execution, NCN and manual validation
+remain open.
+
+`library-cli-models` checks pure entry/command syntax, 16 KiB line draining,
+8-token/4 KiB bounds, byte-preserving quoted text, absent/empty override semantics,
+policy/selector ranges, JSON escape/native byte representation, complete output
+limits and allocation-failure withholding. It also checks the pure known-commit
+receipt-loss classification; no actual service mutation/output stream is invoked.
+The suite requires no test-seam define, audio dependency or native filesystem.

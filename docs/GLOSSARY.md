@@ -182,3 +182,15 @@ remain open; historical scoped runtime acceptances do not advance.
   not construct identity authority or promise cross-store uniqueness.
 - **Committed receipt loss:** Storage/memory commit is known, but result output
   fails. This is not rollback and must not trigger an automatic mutation retry.
+
+## Pure library CLI models
+
+[OHK-CLI-030](LIBRARY-CLI-ORCHESTRATION-PLAN.md) is accepted. The first slice supplies pure
+entry/command parsing, numeric selectors and bounded JSON Lines output models.
+It dispatches no service operation, constructs no live ID, reads no filesystem
+and creates no executable/session. Preparation and playback remain later slices.
+The new hardware-free target raises current counts to 29 core / 32 audio-enabled;
+earlier slice counts describe their historical development stages. Windows
+checkpoint acknowledgment remains BLOCKED; native evidence labels and release
+checkboxes do not advance. Application execution, NCN and manual validation
+remain open.

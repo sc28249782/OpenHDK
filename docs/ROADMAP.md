@@ -348,3 +348,15 @@ It adds no runtime CLI, tests, dependencies or completed checkbox. Restored root
 remain unattached until explicit user action; Windows checkpoint acknowledgment
 remains BLOCKED. Fresh affected application evidence, NCN and manual validation
 remain open; historical scoped runtime acceptances do not advance.
+
+## Pure library CLI models
+
+[OHK-CLI-030](LIBRARY-CLI-ORCHESTRATION-PLAN.md) is accepted. The first slice supplies pure
+entry/command parsing, numeric selectors and bounded JSON Lines output models.
+It dispatches no service operation, constructs no live ID, reads no filesystem
+and creates no executable/session. Preparation and playback remain later slices.
+The new hardware-free target raises current counts to 29 core / 32 audio-enabled;
+earlier slice counts describe their historical development stages. Windows
+checkpoint acknowledgment remains BLOCKED; native evidence labels and release
+checkboxes do not advance. Application execution, NCN and manual validation
+remain open.
