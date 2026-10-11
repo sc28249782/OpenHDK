@@ -441,10 +441,16 @@ checkpoint acknowledgment remains BLOCKED, and NCN/manual gates remain open.
 
 ## NCN24 format evidence review
 
-The [proposed format evidence supplement](NCN24-FORMAT-EVIDENCE-SUPPLEMENT.md) records
+The [format evidence supplement](NCN24-FORMAT-EVIDENCE-SUPPLEMENT.md) records
 competing cursor timing, line/scalar mapping and high-byte FF behavior, with
 independently authored byte vectors and a lawful bundle comparison procedure.
 Source inspection and arithmetic do not close the NCN evidence gate. The
 current NCN24 target is unchanged; representative observations and explicit
 review remain Pending. No NCN parser/normalizer, suite-count, release-checkbox
 or historical native acceptance change is introduced.
+
+Offline [NCN24 fixture tools](../tests/fixtures/ncn24/README.md) now check 33 original synthetic cases,
+with an independent four-SMF/three-TIS-620 API probe and negative/boundary tests.
+This is fixture tooling, not an application NCN parser/normalizer. All receipts
+keep representative observations and NCN acceptance Pending. Existing CTest
+counts, roadmap checkboxes, evidence bundles and native acceptances are unchanged.

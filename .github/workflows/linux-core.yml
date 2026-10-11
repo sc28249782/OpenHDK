@@ -38,3 +38,9 @@ jobs:
         run: |
           bash -n tests/run-linux-checkpoint-evidence.sh
           python3 tests/library_cli_evidence_tools_tests.py
+      - name: Check original NCN24 fixtures (offline; acceptance Pending)
+        run: |
+          python3 tests/ncn24_fixture_tools_tests.py
+          python3 tests/check-ncn24-fixtures.py --export build-linux-core/ncn24-fixtures
+          g++ -std=c++20 -Wall -Wextra -Werror -pedantic -fsanitize=address,undefined -fno-omit-frame-pointer -I. tests/ncn24_fixture_smf_probe.cpp -o build-linux-core/ncn24-fixture-probe
+          build-linux-core/ncn24-fixture-probe build-linux-core/ncn24-fixtures

@@ -2,7 +2,7 @@
 
 Supplement ID: `OHK-NCN-EVIDENCE-030`
 Related contract: [OHK-LYR-030](LYRIC-TIMELINE-CONTRACT.md), sections 4–7
-Status: Proposed; source inspection and independent arithmetic only.
+Status: Reviewed proposal; offline synthetic fixture/checker tooling implemented.
 NCN evidence gate: **OPEN**. Representative bundle observations and explicit
 review remain Pending. No NCN parser or normalizer is added by this supplement.
 
@@ -188,18 +188,34 @@ is needed, retain original/published hash mapping and replacement counts. Hashes
 prove consistency of supplied bytes, not independent source/run authentication.
 Independent tools must report actual observations separately from injected cases.
 
-## 6. Review decisions and work order
+## 6. Offline fixture tooling
+
+[Original fixture tools](../tests/fixtures/ncn24/README.md) now materialize the
+four MIDI vectors and 33 explicit LYR/CUR cases. The bounded Python checker
+compares independently authored expected scalars, source offsets, positions,
+ticks and rational media times. It includes both M3 `7,8,8` -> `0,1,1` and
+`1,2,3` -> `0,0,0`. A separate C++ probe cross-checks exported primary/Thai
+bytes with the existing OpenHDK SMF/timeline/text APIs.
+
+These tools validate synthetic target expectations. They are not an application
+NCN parser/normalizer or a private-song/legacy-playback analyzer. Per-line marker
+and high-byte filtering compatibility remains unresolved. All successful outputs
+retain `ncn_acceptance=Pending`; representative observations remain Pending.
+Tool bounds, diagnostic precedence and export effects are explicit in the tool
+README. Production profile limits/error APIs remain unchanged.
+
+## 7. Review decisions and work order
 
 | Gate item | Status after this proposal |
 | --- | --- |
-| Source disagreement and constant-tempo algebra | Recorded; source inspection/arithmetic only. |
+| Source disagreement and constant-tempo algebra | Recorded; offline fixture comparison implemented. |
 | Independent vector execution against future NCN normalizer | Pending; no normalizer exists. |
 | Representative timing, line/Thai and high-byte observations | Pending. |
 | Count/line-position and sentinel policy acceptance | Pending; amend OHK-LYR-030 first if evidence conflicts. |
 | NCN24 implementation admission | OPEN; no support claim. |
 
-Review this supplement, then add independent fixture/checker tooling and obtain
-lawful representative observations. Review whether the strict profile is useful
+Review the fixture/checker tooling, then obtain lawful representative
+observations. Review whether the strict profile is useful
 and accurate; revise its mapping or introduce an explicitly named profile if
 needed. Do not add a silent tolerant fallback. Close the existing evidence gate
 only with the required observations and explicit acceptance, then implement the
