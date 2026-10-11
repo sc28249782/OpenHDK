@@ -413,3 +413,25 @@ Fresh pinned WSL2 ext4 execution and scoped mutation acceptance remain pending.
 Historical evidence and the `6a6337d`/`4f69246` accepted revisions stay unchanged.
 Windows remains BLOCKED; namespace aliases Skipped; application/CLI, NCN and
 manual validation remain open. No storage release checkbox is completed.
+
+## Scoped native mutation acceptance
+
+The maintainer confirmed the reviewed native mutation evidence on
+2026-10-11 at 11:25:58 +07:00. The [decision record](NATIVE-ADMISSION-EVIDENCE.md#explicit-scoped-native-mutation-acceptance)
+accepts exact tested revision `54f404ae8422499de950f5c96527c9023274a9b6`
+on WSL2 `/dev/sdd` ext4 with `data=ordered`, within the supplied selected
+transaction observations. This closes the OHK-DURABLE-ROOT-030 slice 3
+native mutation evidence-and-acceptance gate only for that revision/environment.
+Documentation merge `001732d` is not a tested runtime revision; later docs
+commits do not advance the accepted tested revision. Historical provider
+`6a6337d` and factory/fence `4f69246` decisions remain separate and unchanged.
+
+Earlier Pending text records the pre-decision sequence; supplied bundles,
+READMEs, logs, hashes and verification/redaction records stay unchanged.
+Mutation bytes omitted from receipts are not independently hashed; 38 oversize
+artifact observations remain EFBIG/unavailable. Scan allocation coverage starts
+at store staging. Namespace aliases remain Skipped. This does not approve
+bare-metal Linux, Windows/NTFS, DrvFS/cross-OS, hostile-writer isolation, atomic
+pathname CAS or power-loss recovery. Windows checkpoint acknowledgment remains
+BLOCKED. App/CLI wiring, NCN evidence and manual validation remain open; the
+storage release checkbox stays unchecked. Next work is slice 4 app/CLI wiring.
