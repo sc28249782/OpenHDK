@@ -7,10 +7,10 @@
 
 namespace OpenHDK {
 enum class DurableServiceState { Unbound, Ready, RecoveryRequired, Closed };
-enum class DurableServiceOperation { Create, Open, ReplaceOverrides, Close, RegisterRoot, ReattachRoot, Scan, RelocateSong, RemoveSong };
+enum class DurableServiceOperation { Create, Open, ReplaceOverrides, Close, RegisterRoot, ReattachRoot, Scan, RelocateSong, RemoveSong, Prepare };
 enum class DurableServiceErrorCode {
   InvalidConfiguration, Busy, RecoveryRequired, MetadataFailure, CheckpointFailure,
-  StoreFailure, StorageFailure, BaselineMismatch, ProtocolFault, NativeAdmissionFailure, DiscoveryFailure, CatalogFailure
+  StoreFailure, StorageFailure, BaselineMismatch, ProtocolFault, NativeAdmissionFailure, DiscoveryFailure, CatalogFailure, PreparationFailure
 };
 struct DurableServiceError {
   DurableServiceErrorCode code;
@@ -24,6 +24,7 @@ struct DurableServiceError {
   std::optional<RootId> root;
   std::optional<DiscoveryDiagnostic> discovery;
   std::optional<CatalogError> catalog;
+  std::optional<PreparationError> preparation = std::nullopt;
 };
 enum class DurableOverrideStatus { Updated, NoChange };
 struct DurableCommitReceipt {
@@ -65,6 +66,11 @@ struct DurableScanResult {
   std::vector<DiscoveryDiagnostic> diagnostics;
   std::optional<DurableServiceError> error;
   bool succeeded() const noexcept { return snapshot && receipt && !error; }
+};
+struct DurablePreparationResult {
+  std::shared_ptr<const PreparedSong> prepared;
+  std::optional<DurableServiceError> error;
+  bool succeeded() const noexcept { return prepared && !error; }
 };
 class DurableLibraryService;
 struct DurableServiceOpenResult {
@@ -112,6 +118,68 @@ class DurableLibraryService {
       CheckpointDetail::add(n, provider_->retainedBytes(), limits_.stagedBytes);
       return MetadataPayloadBudget::create(limits_.stagedBytes, n);
     } catch (...) { return {}; } // Queries publish nothing on allocation/limit failure.
+  }
+  // Serialized read-only preparation. Uses only the current owned snapshot;
+  // no caller snapshot, root mapping, projection or store expectation enters.
+  // Content failures retain Ready. Failed authority checks before/after reading
+  // require explicit recovery and withhold even an otherwise valid PreparedSong.
+  DurablePreparationResult prepare(SongId id, PreparationOptions options = {},
+      const PreparationControl& control = {}, std::size_t caller = 0U) {
+    constexpr auto op=DurableServiceOperation::Prepare;
+    const auto failure=[](DurableServiceError e) {return DurablePreparationResult{nullptr,std::move(e)};};
+    const auto preparationFailure=[&](PreparationErrorCode code) {
+      auto e=error(DurableServiceErrorCode::PreparationFailure,op);
+      e.preparation=PreparationError{code,PreparationOperation::Resolve,{},{},{},{}};
+      return failure(std::move(e));
+    };
+    Guard guard(busy_);
+    if(!guard.held) return failure(error(DurableServiceErrorCode::Busy,op));
+    if(state_!=DurableServiceState::Ready) return failure(error(state_==DurableServiceState::RecoveryRequired
+        ?DurableServiceErrorCode::RecoveryRequired:DurableServiceErrorCode::InvalidConfiguration,op));
+    lastAdmissionError_.reset();lastAdmissionRoot_.reset();
+    if(!baselineMatches()) {
+      state_=DurableServiceState::RecoveryRequired;return failure(error(DurableServiceErrorCode::BaselineMismatch,op));
+    }
+    if(options.smfBytes==0U || options.smfBytes>64U*1048576U
+        || (options.lyricOverride && !isValidLyricSelectionPolicy(*options.lyricOverride))
+        || !validKarLyricLimits(options.lyricLimits) || !MetadataPayloadBudget::create(options.stagedBytes))
+      return preparationFailure(PreparationErrorCode::InvalidConfiguration);
+    const auto authority=[&]() -> std::optional<DurableServiceError> {
+      if(auto e=provider_->checkDirectory()) {
+        state_=DurableServiceState::RecoveryRequired;
+        auto f=error(DurableServiceErrorCode::StoreFailure,op);
+        f.store=StoreError{e->code,StoreOperation::Recheck,StoreOutcome::NotCommitted,e->nativeError,{}};
+        return f;
+      }
+      if(admissionCheck(this)) {
+        state_=DurableServiceState::RecoveryRequired;return admissionError(op);
+      }
+      return {};
+    };
+    try {
+      options.stagedBytes=std::min(options.stagedBytes,limits_.stagedBytes);
+      auto external=externalBytes(caller,true);
+      // Discovery charges its current snapshot and saved hints. Other retained
+      // paths, baseline projection/provider/admission and caller payload are paid
+      // here once. No catalog strings or saved hints are charged twice.
+      external-=owner_->savedHintBytes();
+      if(!MetadataPayloadBudget::create(options.stagedBytes,external))
+        return preparationFailure(PreparationErrorCode::LimitExceeded);
+      if(auto e=authority()) return failure(*e);
+      SongPreparationResult result;
+      try {result=owner_->prepare(snapshot(),id,options,control,external);}
+      catch(const std::bad_alloc&) {
+        result.error=PreparationError{PreparationErrorCode::StorageFailure,PreparationOperation::Resolve,{},{},{},{}};
+      }
+
+      if(auto e=authority()) {e->preparation=std::move(result.error);return failure(std::move(*e));}
+      if(result.error) {
+        auto e=error(DurableServiceErrorCode::PreparationFailure,op);
+        e.preparation=std::move(result.error);return failure(std::move(e));
+      }
+      return {std::move(result.prepared),{}};
+    } catch(const CheckpointDetail::Failure&) {return preparationFailure(PreparationErrorCode::LimitExceeded);}
+      catch(const std::bad_alloc&) {return preparationFailure(PreparationErrorCode::StorageFailure);}
   }
   DurableOverrideResult replaceUserOverrides(SongId id, CatalogOverrideRequest request,
       const StoreControl& control = {}, std::size_t alreadyOwned = 0U) {
@@ -605,7 +673,7 @@ class DurableLibraryService {
       std::unique_ptr<CheckpointStoreProvider> provider, CatalogCheckpointLimits limits)
       : provider_(std::move(provider)), owner_(std::move(owner)), store_(*provider_), limits_(limits) {}
   static DurableServiceError error(DurableServiceErrorCode code, DurableServiceOperation op) noexcept {
-    return {code, op, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}};
+    return {code, op, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}};
   }
   static DurableOverrideResult failed(DurableServiceError e) noexcept { return {{}, nullptr, {}, e}; }
   DurableOverrideResult saveFailure(const StoreSaveResult& saved, DurableServiceOperation op) noexcept {

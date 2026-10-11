@@ -18,8 +18,8 @@ int main(int argc,char** argv) {
     if(entry.error) {std::cerr<<"Invalid OpenHDKLibrary entry; use --help.\n";return 64;}
     if(entry.entry->mode==LibraryCliMode::Help) {
       std::cout<<"OpenHDKLibrary --store-dir ABSOLUTE_DIR --store-name PRIMARY create|session\n"
-        <<"Commands: help quit roots songs register reattach scan relocate remove overrides\n"
-        <<"Experimental Linux/ext4 management; preparation/playback are pending.\n";
+        <<"Commands: help quit roots songs register reattach scan relocate remove overrides prepare\n"
+        <<"Experimental Linux/ext4 management; playback remains pending.\n";
       return std::cout?0:74;
     }
     const auto caller=LibraryCliSession::kCallerBytes+entry.entry->parent.size()+entry.entry->primary.size();

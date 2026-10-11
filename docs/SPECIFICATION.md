@@ -619,3 +619,41 @@ experimental pending fresh pinned session evidence and explicit scoped review;
 prior acceptances at `6a6337d`, `4f69246` and `54f404a` do not advance. Windows
 checkpoint acknowledgment remains BLOCKED; NCN, manual validation and release
 checkboxes remain open.
+
+## Service-owned preparation (OHK-CLI-030 step 3)
+
+`DurableLibraryService::prepare` now accepts a typed SongId, bounded options and
+cancellation through the same serialized reentry/state guard. It acquires only
+its current owned snapshot and reuses `SongDiscovery::prepare`; caller snapshots,
+root mappings and store expectations cannot be injected. The result owns
+PreparedSong or a structured service/preparation error, without a commit receipt.
+No catalog revision, sequence, primary bytes or publication changes for this query.
+
+Authority policy: provider directory/lease and all retained native root guards
+are checked before and after preparation. Failed authority validation requires
+RecoveryRequired and withholds any prepared value; a late content error is retained
+as nested preparation detail. SourceChanged/InvalidLyrics/NotReady/unattached-root
+errors remain preparation failures while authority is valid and service stays
+Ready. Content changes do not become storage failures. Closed/RecoveryRequired
+and Busy reject before owner access. These checks are consistency observations,
+not an atomic filesystem snapshot or primary checkpoint freshness proof.
+
+The application/provider/admission/baseline/root-path retention shares the same
+bounded preparation allowance. Discovery charges catalog strings and saved hints
+once; its new caller retention parameter defaults to zero for existing callers.
+`prepare SONG` emits a bounded JSON summary with snapshot revision, event count,
+last event time, lyric profile/track/cue count, effective encoding, source byte
+count and display title/artist/origin. `last_event_us` is not audio duration.
+Summary has no Saved acknowledgment, playback start, raw payload or native hint.
+Nested preparation/SMF/track/lyric diagnostics preserve their own families.
+
+Current counts are 32 core / 35 audio-enabled (31 hardware-free C++ suites plus
+library help). The new preparation suite covers 35 numbered checks, allocation
+sweeps and Linux root replacement under the private filesystem bypass locally;
+Windows runs the hardware-free subset. The collector's seams list includes both
+new CLI/preparation targets so the forthcoming pinned collector run can build
+all current targets. This does not supply CLI session acceptance receipts.
+Next: fresh pinned management/preparation session evidence and scoped review,
+then playback controller. Prior `6a6337d`/`4f69246`/`54f404a` acceptances and bundles
+stay unchanged; Windows checkpoint acknowledgment is BLOCKED and NCN/manual/
+release gates stay open.
