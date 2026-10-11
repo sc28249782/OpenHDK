@@ -735,3 +735,10 @@ with an independent four-SMF/three-TIS-620 API probe and negative/boundary tests
 This is fixture tooling, not an application NCN parser/normalizer. All receipts
 keep representative observations and NCN acceptance Pending. Existing CTest
 counts, roadmap checkboxes, evidence bundles and native acceptances are unchanged.
+
+The [NCN representative observation procedure](../docs/NCN-REPRESENTATIVE-OBSERVATION-RUNBOOK.md) now has a bounded
+read-only member inventory and supplied-record verifier. They expose no private
+lyrics/paths and do not run playback or validate the full tempo map. Tests use
+synthetic members/mock records only. Actual representative execution, mapping/
+sentinel review and NCN acceptance remain Pending; no runtime, CTest-count,
+checkbox, historical evidence bundle or native acceptance change is introduced.
