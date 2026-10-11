@@ -191,7 +191,7 @@ Independent tools must report actual observations separately from injected cases
 ## 6. Offline fixture tooling
 
 [Original fixture tools](../tests/fixtures/ncn24/README.md) now materialize the
-four MIDI vectors and 33 explicit LYR/CUR cases. The bounded Python checker
+four MIDI vectors and 51 explicit LYR/CUR cases. The bounded Python checker
 compares independently authored expected scalars, source offsets, positions,
 ticks and rational media times. It includes both M3 `7,8,8` -> `0,1,1` and
 `1,2,3` -> `0,0,0`. A separate C++ probe cross-checks exported primary/Thai
@@ -235,16 +235,20 @@ change roadmap checkboxes or replace manual device/lyric validation.
 
 The [legacy edge analysis](NCN-LEGACY-EDGE-ANALYSIS.md) examines pinned reader handling
 of SUB text, incomplete CUR words and decreasing cursor positions.
-Four original synthetic vectors and six offline tests preserve strict rejection.
+Four original edge vectors and 18 offline tests now admit first-SUB EOF while
+preserving CUR odd/decreasing rejection and checking EOF/limit/schema boundaries.
 No measured mapping, authenticated playback or normalizer acceptance is claimed.
 NCN evidence remains OPEN; no contract, CTest-count or checkbox change.
 
-## Proposed NCN24 SUB logical EOF
+## Accepted NCN24 SUB logical EOF tooling
 
-The [terminal SUB amendment proposal](NCN24-TERMINAL-SUB-PROPOSAL.md) defines first-SUB
-logical EOF for LYR, excluding the marker and all following bytes from text
-decoding and Cursor counts while retaining the bounded raw member. It requires
-review and acceptance. Current strict fixtures still reject SUB; no parser,
-contract rule, CUR policy or acceptance gate changes in this proposal.
-NCN evidence remains OPEN; runtime, counts, checkboxes and historical evidence
-remain unchanged.
+The [first-SUB EOF amendment](NCN24-TERMINAL-SUB-PROPOSAL.md) was accepted with PR #94.
+The planning contract and offline fixture/checker/inventory tools now select
+logical text before the first `1A`. They retain complete raw members for hashes,
+source caps and accounting. Shared decoders and CUR rules remain unchanged.
+Fixture manifest/receipts and inventory use schema 2. The observation verifier
+labels schema 1 as historical strict-C0 interpretation and schema 2 as first-SUB
+EOF; it does not reinterpret or backfill old receipts.
+No application NCN parser/normalizer exists. NCN evidence remains OPEN, with
+runtime counts, release checkboxes, historical bundles and storage acceptance
+revisions unchanged.

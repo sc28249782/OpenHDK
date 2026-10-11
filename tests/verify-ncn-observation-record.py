@@ -76,12 +76,26 @@ def verify(inventory_bytes, record_bytes):
     # Validate the inventory fields consumed here. This does not re-read members
     # or assert that an arbitrary supplied inventory is authentic/complete.
     need(type(inv) is dict and inv.get('scope') == 'member-inventory-only'
-         and inv.get('schema') == 1 and type(inv.get('schema')) is int
+         and inv.get('schema') in (1, 2) and type(inv.get('schema')) is int
          and inv.get('ncn_acceptance') == 'Pending' and inv.get('legacy_observations') == 'Pending'
          and inv.get('count_equality_is_compatibility') is False)
     shape(inv['members'], ('MID', 'LYR', 'CUR'))
     for member in inv['members'].values():
         shape(member, ('bytes', 'sha256')); number(member['bytes']); hash_value(member['sha256'])
+    if inv['schema'] == 2:
+        # Schema 1 remains legacy strict-C0 inventory; never reinterpret it.
+        eof = inv['lyr']['logical_eof']
+        shape(eof, ('kind', 'marker_byte_offset', 'logical_text_bytes', 'ignored_bytes'))
+        number(eof['logical_text_bytes']); number(eof['ignored_bytes'])
+        size = inv['members']['LYR']['bytes']
+        need(eof['kind'] in ('Physical', 'Sub'))
+        if eof['kind'] == 'Physical':
+            need(eof['marker_byte_offset'] is None and eof['logical_text_bytes'] == size
+                 and eof['ignored_bytes'] == 0)
+        else:
+            number(eof['marker_byte_offset'])
+            need(eof['marker_byte_offset'] == eof['logical_text_bytes'] < size
+                 and eof['ignored_bytes'] == size - eof['logical_text_bytes'] - 1)
     number(inv['cur']['words'])
     need(inv['cur']['words'] == inv['members']['CUR']['bytes'] // 2)
     need(type(inv['cur']['selected']) is list and len(inv['cur']['selected']) <= 64)
@@ -135,7 +149,9 @@ def verify(inventory_bytes, record_bytes):
              and record['reader']['name'] != 'Pending' and record['reader']['version'] != 'Pending')
     else:
         need(record['run']['status'] == 'Pending' and record['inventory_sha256'] in ('Pending', hashlib.sha256(inventory_bytes).hexdigest()))
-    return dict(status='observation-record-checked', observations=len(observations),
+    return dict(status='observation-record-checked', inventory_schema=inv['schema'],
+                inventory_text_interpretation='StrictC0' if inv['schema'] == 1 else 'FirstSubEof',
+                observations=len(observations),
                 observed_topics=len(observed_topics), pending_topics=pending, skipped_topics=skipped,
                 playback_authentication='NotIndependent', tempo_map_validation='Pending',
                 mapping_and_sentinel_review='Pending', ncn_acceptance='Pending',

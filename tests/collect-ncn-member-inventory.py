@@ -75,6 +75,14 @@ def scalar(byte):
 
 
 def lyr_counts(data):
+    # First-SUB logical EOF is NCN24 framing, not decoder leniency.
+    marker = data.find(b'\x1a')
+    logical_length = len(data) if marker < 0 else marker
+    eof = dict(kind='Physical' if marker < 0 else 'Sub',
+               marker_byte_offset=None if marker < 0 else marker,
+               logical_text_bytes=logical_length,
+               ignored_bytes=0 if marker < 0 else len(data) - marker - 1)
+    data = memoryview(data)[:logical_length]
     # Explicit TIS-620 hypothesis; never guess/retry another encoding.
     at, crlf, cr, lf = 0, 0, 0, 0
     for _ in range(4):
@@ -82,10 +90,10 @@ def lyr_counts(data):
             try:
                 scalar(data[at])
             except (ValueError, UnicodeError):
-                return dict(status='InvalidTextHypothesis', byte_offset=at)
+                return dict(status='InvalidTextHypothesis', byte_offset=at, logical_eof=eof)
             at += 1
         if at == len(data):
-            return dict(status='MissingHeaderTerminator', byte_offset=at)
+            return dict(status='MissingHeaderTerminator', byte_offset=at, logical_eof=eof)
         at += 2 if data[at:at + 2] == b'\r\n' else 1
     start, count, spaces, tabs, marks = at, 0, 0, 0, 0
     previous_lf, blank_lines, terminal_lf = False, 0, False
@@ -94,7 +102,7 @@ def lyr_counts(data):
         try:
             value = scalar(byte)
         except (ValueError, UnicodeError):
-            return dict(status='InvalidTextHypothesis', byte_offset=at)
+            return dict(status='InvalidTextHypothesis', byte_offset=at, logical_eof=eof)
         newline = byte in (10, 13)
         if data[at:at + 2] == b'\r\n':
             crlf += 1; width = 2
@@ -108,8 +116,8 @@ def lyr_counts(data):
         blank_lines += int(newline and (previous_lf or at == start))
         previous_lf, terminal_lf = newline, newline
         at += width
-    return dict(status='CountsObserved', encoding_hypothesis='TIS-620', body_byte_offset=start,
-                raw_body_bytes=len(data) - start, normalized_scalars=count, spaces=spaces,
+    return dict(status='CountsObserved', encoding_hypothesis='TIS-620', logical_eof=eof, body_byte_offset=start,
+                logical_body_bytes=len(data) - start, normalized_scalars=count, spaces=spaces,
                 tabs=tabs, normalized_lf=crlf + cr + lf, crlf=crlf, cr=cr, lf=lf,
                 terminal_lf=terminal_lf, empty_line_breaks=blank_lines,
                 thai_mark_scalars=marks, grapheme_count='NotComputed')
@@ -153,7 +161,7 @@ def inspect(sample_id, members, indices):
     require(reserved <= STAGED_CAP)
     lyric, cursor = lyr_counts(members['LYR']), cur_counts(members['CUR'], indices)
     same_count = (lyric['normalized_scalars'] == cursor['words']) if lyric['status'] == 'CountsObserved' else 'Unavailable'
-    return dict(schema=1, sample_id=sample_id, scope='member-inventory-only',
+    return dict(schema=2, sample_id=sample_id, scope='member-inventory-only',
                 members={k: dict(bytes=len(v), sha256=hashlib.sha256(v).hexdigest()) for k, v in members.items()},
                 primary=smf_container(members['MID']), lyr=lyric, cur=cursor,
                 scalar_count_equals_cursor_words=same_count,

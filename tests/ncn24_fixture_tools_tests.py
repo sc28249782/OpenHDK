@@ -33,7 +33,7 @@ class NcnFixtureTools(unittest.TestCase):
 
     def test_full_original_vectors(self):
         r = checker.check(self.manifest, len(self.data))
-        self.assertEqual((r['cases'], r['primary_vectors'], r['decoded_bytes']), (33, 4, 539))
+        self.assertEqual((r['cases'], r['primary_vectors'], r['decoded_bytes']), (51, 4, 734))
         self.assertEqual(r['status'], 'fixture-verified')
         self.assertEqual(r['ncn_acceptance'], 'Pending')
         self.assertEqual(r['representative_observations'], 'Pending')
@@ -45,6 +45,12 @@ class NcnFixtureTools(unittest.TestCase):
         self.assertEqual([checker.media_time(midi, t) for t in (480, 960, 1440)], [500000, 1500000, 2500000])
         self.row('tempo-change')['expected']['media_us'][1] = 1000000
         self.rejected()  # A first-tempo-only implementation must not validate.
+
+    def test_old_manifest_schema_is_not_silently_reinterpreted(self):
+        self.manifest['schema'] = 1
+        self.rejected()
+        with self.assertRaises(ValueError):
+            checker.parse_manifest(json.dumps(self.manifest).encode())
 
     def test_cursor_endian_tamper(self):
         self.row('quarter')['cur_hex'] = '0018'
@@ -88,7 +94,7 @@ class NcnFixtureTools(unittest.TestCase):
 
     def test_duplicate_json_and_boolean_numeric(self):
         with self.assertRaises(ValueError):
-            checker.parse_manifest(self.data.replace(b'"schema": 1', b'"schema": 1, "schema": 1'))
+            checker.parse_manifest(self.data.replace(b'"schema": 2', b'"schema": 2, "schema": 2'))
         self.row('quarter')['expected']['ticks'][0] = True
         self.rejected()
 
@@ -100,7 +106,7 @@ class NcnFixtureTools(unittest.TestCase):
         with self.assertRaises(ValueError): checker.validate_json({'x': 2**64})
 
     def test_decoded_and_shared_staging_bounds(self):
-        with patch.object(checker, 'DECODED_CAP', 538): self.rejected()
+        with patch.object(checker, 'DECODED_CAP', 733): self.rejected()
         with patch.object(checker, 'STAGED_CAP', 100): self.rejected()
         with patch.object(checker, 'POSITION_CAP', 2): self.rejected()
 
@@ -122,11 +128,11 @@ class NcnFixtureTools(unittest.TestCase):
             out = Path(directory) / 'synthetic'
             checker.check(self.manifest, len(self.data))
             checker.export_fixtures(self.manifest, out)
-            self.assertEqual(len(list(out.rglob('example.*'))), 99)
+            self.assertEqual(len(list(out.rglob('example.*'))), 153)
             self.assertEqual((out / 'thai-combining/Lyrics/example.lyr').read_bytes(), b'T\nA\nC\n\n\xa1\xd4\xe8')
             self.assertEqual((out / 'high-ff-max/Cursor/example.cur').read_bytes(), b'\xff\xff')
             with self.assertRaises(FileExistsError): checker.export_fixtures(self.manifest, out)
-            self.assertEqual(len(list(out.rglob('example.*'))), 99)
+            self.assertEqual(len(list(out.rglob('example.*'))), 153)
 
     def test_cli_failure_has_no_partial_or_private_output(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -158,7 +164,7 @@ class NcnFixtureTools(unittest.TestCase):
         proc = subprocess.run([sys.executable, str(Path(checker.__file__))], capture_output=True, timeout=5, check=False)
         self.assertEqual(proc.returncode, 0)
         result = json.loads(proc.stdout)
-        self.assertEqual(result['cases'], 33)
+        self.assertEqual(result['cases'], 51)
         self.assertEqual(result['ncn_acceptance'], 'Pending')
         self.assertLessEqual(len(proc.stdout), checker.OUTPUT_CAP)
         self.assertNotIn(str(MANIFEST).encode(), proc.stdout)
