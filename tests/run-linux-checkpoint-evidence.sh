@@ -82,6 +82,12 @@ done
 run_receipt verify native-admission "$out/native-admission-verification.log" 120s python3 "$source_root/tests/verify-native-admission-receipts.py" "$out/native_store_binding_tests.run.log" "$out/native_durable_service_tests.run.log"
 run_receipt verify native-mutation "$out/native-mutation-verification.log" 120s python3 "$source_root/tests/verify-native-mutation-receipts.py" "$out/native_durable_service_tests.run.log"
 run_receipt verify native-mutation-negative "$out/native-mutation-verifier-tests.log" 120s python3 "$source_root/tests/check-native-mutation-verifier.py" "$out/native_durable_service_tests.run.log"
+# Build the production management executable without test seams or audio deps.
+run_receipt compile OpenHDKLibrary "$out/OpenHDKLibrary.compile.log" 180s g++ "${flags[@]}" "$source_root/app/library_main.cpp" -o "$out/bin/OpenHDKLibrary"
+run_receipt run library-cli-native "$out/library-cli-native.run.log" 120s python3 "$source_root/tests/run-library-cli-evidence.py" "$out/bin/OpenHDKLibrary" "$parent"
+run_receipt verify library-cli "$out/library-cli-verification.log" 120s python3 "$source_root/tests/verify-library-cli-receipts.py" "$out/library-cli-native.run.log"
+run_receipt verify library-cli-tools "$out/library-cli-tools-tests.log" 120s python3 "$source_root/tests/library_cli_evidence_tools_tests.py"
+run_receipt verify library-cli-negative "$out/library-cli-verifier-tests.log" 120s python3 "$source_root/tests/check-library-cli-verifier.py" "$out/library-cli-native.run.log"
 {
   printf 'REVISION %s\n' "$(git -C "$source_root" rev-parse HEAD)"
   git -C "$source_root" status --porcelain --untracked-files=all
