@@ -569,3 +569,13 @@ bare-metal Linux, Windows/NTFS, DrvFS/cross-OS, hostile-writer isolation, atomic
 pathname CAS or power-loss recovery. Windows checkpoint acknowledgment remains
 BLOCKED. App/CLI wiring, NCN evidence and manual validation remain open; the
 storage release checkbox stays unchecked. Next work is slice 4 app/CLI wiring.
+
+## Library CLI orchestration proposal
+
+[OHK-CLI-030](LIBRARY-CLI-ORCHESTRATION-PLAN.md) proposes a bounded hardware-free
+management session, service-owned preparation query and later acknowledged-generation
+playback controller. Status is Proposed; review and acceptance precede implementation.
+It adds no runtime CLI, tests, dependencies or completed checkbox. Restored roots
+remain unattached until explicit user action; Windows checkpoint acknowledgment
+remains BLOCKED. Fresh affected application evidence, NCN and manual validation
+remain open; historical scoped runtime acceptances do not advance.

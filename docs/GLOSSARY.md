@@ -164,3 +164,21 @@ acknowledgment or failure. It records selected native calls separately from
 injections and omits absolute paths/authority values. Verifier success establishes
 supplied-observation consistency, not independent provenance or acceptance.
 See [OHK-DURABLE-ROOT-030](DURABLE-ROOT-LIFECYCLE-PLAN.md#14-bounded-mutation-receipts-and-verifier).
+
+## Library CLI orchestration proposal
+
+[OHK-CLI-030](LIBRARY-CLI-ORCHESTRATION-PLAN.md) proposes a bounded hardware-free
+management session, service-owned preparation query and later acknowledged-generation
+playback controller. Status is Proposed; review and acceptance precede implementation.
+It adds no runtime CLI, tests, dependencies or completed checkbox. Restored roots
+remain unattached until explicit user action; Windows checkpoint acknowledgment
+remains BLOCKED. Fresh affected application evidence, NCN and manual validation
+remain open; historical scoped runtime acceptances do not advance.
+
+- **Library session:** Proposed serialized control process that owns one durable
+  service and writer lease until explicit close, EOF or terminal failure.
+- **CLI identity selector:** A decimal value resolved against an acquired
+  service snapshot; the existing typed ID is passed onward. The selector does
+  not construct identity authority or promise cross-store uniqueness.
+- **Committed receipt loss:** Storage/memory commit is known, but result output
+  fails. This is not rollback and must not trigger an automatic mutation retry.
