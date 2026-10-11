@@ -2,7 +2,8 @@
 
 **Plan:** OHK-CLI-030
 **Status:** Accepted by review and merge of PR #85; pure grammar/output models
-implemented. Session/service/preparation/playback integration remains pending.
+and owning management session/executable implemented. Preparation query and
+playback integration remain pending; fresh native CLI evidence is pending.
 **Target:** OHK-DURABLE-030 slice 4, after scoped mutation acceptance.
 
 ## 1. Purpose and current boundary
@@ -11,8 +12,8 @@ The durable service implements Create/Open, metadata overrides and all five
 root/song mutations. Scoped mutation acceptance binds revision `54f404a` to the
 recorded WSL2 `/dev/sdd` ext4 environment. The current audio executable still
 plays an arbitrary MIDI path through `readMidiBytes`; it has no library command.
-The service exposes snapshots but no preparation query. This proposal supplies
-no runtime feature, test, dependency, version change or completed checkbox.
+The service exposes snapshots but no preparation query. The original proposal was docs-only; implementation progress is recorded below.
+This step adds no dependency, version change or completed release checkbox.
 
 Use the existing service as the only mutation authority. Do not create a second
 catalog owner, import detached IDs as live authority, edit checkpoint bytes,
@@ -266,4 +267,33 @@ The [model suite](../tests/library_cli_models_tests.cpp) covers 63 numbered
 checks including byte bounds, policies, quoted absence/empty, overflow selectors,
 escaping, all-or-error batches and entry/parser/reader/output allocation failures.
 No test seam define is needed. There is no native or durable CLI acceptance
-claim from these pure models. Next: hardware-free management session adapter.
+claim from these pure models. The management adapter is implemented below; next is the service-owned
+preparation query and prepare command.
+
+## Library management session (OHK-CLI-030 step 2)
+
+`OpenHDKLibrary` now builds independently of the audio proof of concept. The
+serialized owning session dispatches register, reattach, scan, relocate, remove
+and whole-record overrides through `DurableLibraryService`. Decimal selectors
+resolve only against the acquired snapshot; diagnostic ID accessors cannot
+construct identity authority. Read-only `rootAttached` and `queryBudget` expose
+neither native paths nor mutable owner/store state. Open restores unattached
+roots; no saved hint attachment or automatic scan occurs.
+
+Complete JSON Lines batches precede delivery. Confirmed Saved/NoChange is
+recorded before allocating response storage; output failure stops dispatch with
+exit 74 and never retries a mutation. RecoveryRequired ends the session with
+exit 76. Listing has bounded pages, owning display resolution and byte-safe
+locator output; root hints, tickets, pointers and raw checkpoint bytes are not
+printed. Error records preserve nested families; signed native errors are decimal
+strings. A conservative application peak reserve shares the service payload
+ledger. These logical bounds do not claim a total process-memory limit.
+
+The fake-provider session suite adds 52 numbered checks; the executable help
+smoke test also runs with audio OFF. Current CTest counts are 31 core / 34
+audio-enabled (30 hardware-free C++ suites plus the library help smoke test).
+Preparation queries and playback are later slices. Native CLI execution remains
+experimental pending fresh pinned session evidence and explicit scoped review;
+prior acceptances at `6a6337d`, `4f69246` and `54f404a` do not advance. Windows
+checkpoint acknowledgment remains BLOCKED; NCN, manual validation and release
+checkboxes remain open.

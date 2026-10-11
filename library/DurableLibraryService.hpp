@@ -99,6 +99,20 @@ class DurableLibraryService {
   // shared across threads. There is no mutable owner/store/token injection API.
   DurableServiceState state() const noexcept { return state_; }
   std::shared_ptr<const CatalogSnapshot> snapshot() const noexcept { return owner_->snapshot(); }
+  // Serialized read-only management queries; no paths or mutable owner escape.
+  std::optional<bool> rootAttached(RootId id) const noexcept {
+    if (state_ != DurableServiceState::Ready || !owner_) return {};
+    for (const auto& root : owner_->roots_) if (root.id == id) return root.attached;
+    return {};
+  }
+  std::optional<MetadataPayloadBudget> queryBudget(std::size_t caller = 0U) const noexcept {
+    if (state_ != DurableServiceState::Ready || !owner_) return {};
+    try {
+      auto n = retainedBytes(caller, snapshot(), true);
+      CheckpointDetail::add(n, provider_->retainedBytes(), limits_.stagedBytes);
+      return MetadataPayloadBudget::create(limits_.stagedBytes, n);
+    } catch (...) { return {}; } // Queries publish nothing on allocation/limit failure.
+  }
   DurableOverrideResult replaceUserOverrides(SongId id, CatalogOverrideRequest request,
       const StoreControl& control = {}, std::size_t alreadyOwned = 0U) {
     constexpr auto op = DurableServiceOperation::ReplaceOverrides;

@@ -24,6 +24,8 @@ struct CatalogCheckpointProjection;
 class RootId {
  public:
   auto operator<=>(const RootId&) const = default;
+  // Diagnostic selector only; resolving it requires an owned snapshot record.
+  std::uint64_t diagnosticValue() const noexcept { return value_; }
  private:
   explicit RootId(std::uint64_t value) : value_(value) {}
   std::uint64_t value_;
@@ -33,6 +35,8 @@ class RootId {
 class SongId {
  public:
   auto operator<=>(const SongId&) const = default;
+  // Not persistent or cross-library identity authority.
+  std::uint64_t diagnosticValue() const noexcept { return value_; }
  private:
   explicit SongId(std::uint64_t value) : value_(value) {}
   std::uint64_t value_;
