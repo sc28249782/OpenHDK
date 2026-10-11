@@ -27,7 +27,11 @@ CASE_IDS = frozenset('empty quarter lf crlf cr terminal-lf blank-line space tab 
     'line-entry-hypothesis thai-combining thai-am thai-am-decomposed equal-positions '
     'floor-collision floor-all-zero tempo-change decreasing odd nul undefined-tis '
     'beyond-primary low-ff high-fe high-ff-zero high-ff-max missing-header empty-cur '
-    'empty-body header-crlf header-cr leading-lf high-ff-middle'.split())
+    'empty-body header-crlf header-cr leading-lf high-ff-middle '
+    'sub-empty sub-empty-crlf sub-text sub-text-crlf sub-body-crlf sub-body-lf '
+    'sub-following-text sub-repeated sub-following-lf sub-following-cr '
+    'sub-following-invalid sub-prefix-nul sub-prefix-undefined '
+    'sub-header-1 sub-header-2 sub-header-3 sub-header-4 sub-missing-header'.split())
 MIDI_IDS = frozenset(('M480', 'M3', 'Mhigh', 'Mtempo'))
 
 
@@ -92,7 +96,7 @@ def parse_manifest(data):
     manifest = json.loads(data.decode('utf-8'), object_pairs_hook=unique_object)
     validate_json(manifest)
     keys(manifest, ('schema', 'scope', 'ncn_acceptance', 'midis', 'cases', 'timing'))
-    require(manifest['schema'] == 1 and manifest['scope'] == 'synthetic-only'
+    require(manifest['schema'] == 2 and manifest['scope'] == 'synthetic-only'
             and manifest['ncn_acceptance'] == 'Pending', 'scope/acceptance')
     return manifest
 
@@ -164,7 +168,18 @@ def text_scalar(byte, offset):
         raise FixtureError('InvalidText', 'LYR', offset) from None
 
 
+def logical_eof(lyr):
+    marker = lyr.find(b'\x1a')
+    length = len(lyr) if marker < 0 else marker
+    return dict(kind='Physical' if marker < 0 else 'Sub',
+                marker_byte_offset=None if marker < 0 else marker,
+                logical_text_bytes=length,
+                ignored_bytes=0 if marker < 0 else len(lyr) - marker - 1)
+
+
 def body_observation(lyr):
+    # NCN24 framing only; shared text_scalar still rejects C0 SUB.
+    lyr = memoryview(lyr)[:logical_eof(lyr)['logical_text_bytes']]
     at = 0
     for _ in range(4):
         while at < len(lyr) and lyr[at] not in (10, 13):
@@ -221,7 +236,7 @@ def logical_owned(value):
 def check(manifest, manifest_bytes=MANIFEST_CAP):
     validate_json(manifest)
     keys(manifest, ('schema', 'scope', 'ncn_acceptance', 'midis', 'cases', 'timing'))
-    require(manifest['schema'] == 1 and manifest['scope'] == 'synthetic-only'
+    require(manifest['schema'] == 2 and manifest['scope'] == 'synthetic-only'
             and manifest['ncn_acceptance'] == 'Pending', 'scope/acceptance')
     # One conservative coexistence allowance: raw manifest + parsed payload +
     # decoded members + retained/serialized receipts + conversion/work buffers.
@@ -254,6 +269,7 @@ def check(manifest, manifest_bytes=MANIFEST_CAP):
         actual = candidate_observation(midis[row['midi']], lyr, cur)
         require(actual == row['expected'], 'candidate expectation: ' + name)
         results.append(dict(case=name, expected_status=actual['status'],
+            logical_eof=logical_eof(lyr),
             mid_sha256=hashlib.sha256(members[row['midi']]).hexdigest(),
             lyr_sha256=hashlib.sha256(lyr).hexdigest(), cur_sha256=hashlib.sha256(cur).hexdigest()))
     require(used == CASE_IDS, 'case completeness')
@@ -266,7 +282,7 @@ def check(manifest, manifest_bytes=MANIFEST_CAP):
         candidate = Fraction(24 * 60, bpm)
         require(row['wiki_units'] == [candidate.numerator, candidate.denominator]
                 and row['musical_units'] == 24, 'timing expectation')
-    return dict(status='fixture-verified', scope='synthetic-only', cases=len(results),
+    return dict(schema=2, status='fixture-verified', scope='synthetic-only', cases=len(results),
                 primary_vectors=len(midis), decoded_bytes=total, receipts=results,
                 representative_observations='Pending', ncn_acceptance='Pending',
                 limits=dict(manifest_bytes=MANIFEST_CAP, member_bytes=MEMBER_CAP,

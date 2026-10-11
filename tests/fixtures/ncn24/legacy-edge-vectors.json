@@ -1,5 +1,5 @@
 {
-  "schema": 1,
+  "schema": 2,
   "scope": "original-synthetic-only",
   "ncn_acceptance": "Pending",
   "ppqn": 192,
@@ -10,10 +10,22 @@
       "lyr_hex": "540a410a430a0a581a0d0a",
       "cur_hex": "1800",
       "expected": {
-        "status": "Rejected",
-        "code": "InvalidText",
-        "member": "LYR",
-        "byte_offset": 8
+        "status": "Candidate",
+        "scalars": [
+          88
+        ],
+        "member_offsets": [
+          7
+        ],
+        "positions": [
+          24
+        ],
+        "ticks": [
+          192
+        ],
+        "media_us": [
+          500000
+        ]
       }
     },
     {
@@ -44,9 +56,9 @@
       "cur_hex": "30002f003100ff",
       "expected": {
         "status": "Rejected",
-        "code": "InvalidText",
-        "member": "LYR",
-        "byte_offset": 10
+        "code": "OddLength",
+        "member": "CUR",
+        "byte_offset": 6
       }
     }
   ]

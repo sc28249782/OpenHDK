@@ -157,6 +157,17 @@ CLI playback and Windows checkpoint/manual gates remain separate.
 
 The [legacy edge analysis](NCN-LEGACY-EDGE-ANALYSIS.md) examines pinned reader handling
 of SUB text, incomplete CUR words and decreasing cursor positions.
-Four original synthetic vectors and six offline tests preserve strict rejection.
+Four original edge vectors and 18 tests apply first-SUB EOF while retaining
+strict CUR odd/decreasing rejection.
 No measured mapping, authenticated playback or normalizer acceptance is claimed.
 NCN evidence remains OPEN; no contract, CTest-count or checkbox change.
+
+## Inventory interpretation after EOF amendment
+
+Current collector output is inventory schema 2, with first-SUB EOF provenance
+and logical body counts. Member lengths/hashes still cover raw bytes after EOF.
+Schema-1 submitted records retain the previous strict-C0 interpretation. The
+verifier labels both versions and binds observations to exact saved inventory
+bytes. Do not edit an old receipt or reuse its hash for a rerun. Save a new
+receipt separately; use its own hash and CUR selections for new observations.
+EOF acceptance does not accept odd/decreasing CUR or prove mapping/timing.

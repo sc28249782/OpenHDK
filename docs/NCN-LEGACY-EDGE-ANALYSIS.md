@@ -1,6 +1,7 @@
 # NCN legacy edge analysis
 
-Status: source inspection and original synthetic regression tests;
+Status: source inspection and original synthetic regression tests,
+with accepted first-SUB EOF tooling migration;
 NCN evidence gate OPEN. No contract amendment or normalizer admission.
 
 ## Basis
@@ -41,8 +42,9 @@ No media duration is inferred without the full tempo map.
 
 [legacy-edge-vectors.json](../tests/fixtures/ncn24/legacy-edge-vectors.json)
 contains four small authored cases: SUB with a trailing newline, odd FF tail,
-decreasing complete words, and combined anomalies. Their expected strict
-rejections are literal data. They are not copied song members or outputs from
+decreasing complete words and combined anomalies. The SUB case now admits
+logical EOF. The combined case rejects odd CUR length after EOF selection.
+CUR-only rejection expectations remain unchanged. Expectations are literal data. They are not copied song members or outputs from
 a legacy player. The test checks diagnostic precedence without treating it as
 a new production error API.
 
@@ -52,19 +54,20 @@ Run:
 python3 tests/ncn_legacy_edge_tests.py
 ```
 
-Six tests verify the strict rejection, absence of guessed SUB termination,
+Eighteen tests verify accepted SUB EOF, unchanged strict CUR rejection,
 distinction between an incomplete FF tail and a complete FF word, unchanged
 input ordering, tick conversion and coexistence of inventory anomalies.
-Existing 33-case fixtures and their count remain unchanged.
+The main fixture manifest now has 51 cases, including 18 EOF/header additions.
 These tests do not emulate Qt or establish legacy acceptance.
 
 ## Decision still required
 
-Keep the current contract until an explicit review selects its amendment.
+PR #94 accepted first-SUB EOF; the current contract and tooling reflect that
+amendment. Other format decisions still require explicit review.
 Collect reader output, selected cursor observations, a full primary timeline
 and line/scalar mapping first. Record terminal control-byte and odd-byte
 handling as explicit profile decisions if supported by evidence.
-Do not silently strip SUB, pad an incomplete word, sort cursor positions,
+Do not remove raw SUB evidence, pad an incomplete word, sort cursor positions,
 clamp decreasing ticks or truncate text to make counts agree.
 A narrow strict profile can remain valid while excluding legacy edge cases;
 its compatibility scope must be stated accurately.
@@ -73,12 +76,15 @@ CLI pinned evidence, playback-controller integration, Windows checkpoint
 acknowledgment and manual validation remain separate tracks. Historical storage
 acceptances, evidence bundles and release checkboxes do not advance.
 
-## Proposed NCN24 SUB logical EOF
+## Accepted NCN24 SUB logical EOF tooling
 
-The [terminal SUB amendment proposal](NCN24-TERMINAL-SUB-PROPOSAL.md) defines first-SUB
-logical EOF for LYR, excluding the marker and all following bytes from text
-decoding and Cursor counts while retaining the bounded raw member. It requires
-review and acceptance. Current strict fixtures still reject SUB; no parser,
-contract rule, CUR policy or acceptance gate changes in this proposal.
-NCN evidence remains OPEN; runtime, counts, checkboxes and historical evidence
-remain unchanged.
+The [first-SUB EOF amendment](NCN24-TERMINAL-SUB-PROPOSAL.md) was accepted with PR #94.
+The planning contract and offline fixture/checker/inventory tools now select
+logical text before the first `1A`. They retain complete raw members for hashes,
+source caps and accounting. Shared decoders and CUR rules remain unchanged.
+Fixture manifest/receipts and inventory use schema 2. The observation verifier
+labels schema 1 as historical strict-C0 interpretation and schema 2 as first-SUB
+EOF; it does not reinterpret or backfill old receipts.
+No application NCN parser/normalizer exists. NCN evidence remains OPEN, with
+runtime counts, release checkboxes, historical bundles and storage acceptance
+revisions unchanged.

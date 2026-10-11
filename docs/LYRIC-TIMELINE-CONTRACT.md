@@ -105,6 +105,8 @@ errors identify the selected member/event and payload byte offset. No silent
 replacement characters, normalization, transliteration, BOM stripping, or
 platform-codepage conversion is permitted. NUL and other C0 controls except
 CR/LF/tab fail InvalidText. Tab is retained as text; no tab width is implied.
+NCN24 first-SUB EOF is member framing before this decoder, as specified in
+section 4. It does not relax shared text or metadata validation.
 
 | Selected profile | Control policy |
 | --- | --- |
@@ -148,12 +150,28 @@ members must be regular files inside the root under the library containment
 rules. Missing, ambiguous, or unreadable members fail the whole bundle.
 NCN24 accepts `.mid` as its primary member; `.midi` is not a profile alias.
 
-The proposed LYR profile uses explicit TIS-620. Its first four terminated text
-lines are title, artist, key text, and an uninterpreted reserved header line.
-The remaining body is lyrics. Accept CRLF, LF, and CR line endings, normalized
-to LF in the body. Keep empty lines, spaces, and a terminal body newline; do
-not trim them. Missing header terminators fail InvalidText. Key text is
+The NCN24 LYR profile uses first-SUB logical EOF under the accepted
+[OHK-NCN-SUB-030 amendment](NCN24-TERMINAL-SUB-PROPOSAL.md) (PR #94).
+Acquire and bound the complete raw member first. The first raw `0x1A` defines
+logical EOF; if absent, physical EOF defines it. Exclude the marker and every
+following byte from text decoding, scalar counts and CUR correspondence.
+Retain all raw bytes for source revision/digest and raw-source ledger accounting.
+An early marker cannot make an oversized raw member admissible.
+
+Within the logical prefix, use explicit TIS-620. Its first four terminated text
+lines are title, artist, key text and an uninterpreted reserved header line.
+A marker before four complete terminated headers fails InvalidText for header
+termination; ignored bytes cannot complete a header. The remaining logical body
+is lyrics. Accept CRLF, LF and CR, normalized to LF in the body. Keep empty lines,
+spaces and any terminal body newline before EOF; do not trim them. Invalid
+prefix text still fails with its original member byte offset. Key text is
 metadata, not a transposition command. Retain header bytes and provenance.
+
+Retain EOF kind (physical or SUB), marker offset when present, logical text length
+and ignored-byte count strictly after the marker as normalization provenance.
+The marker and ignored bytes produce no text cues, LineBreak operations or cursor
+positions. This framing applies only to NCN24 LYR, outside shared C0 validation.
+Offline tools implement it; no application NCN normalizer exists yet.
 
 The proposed CUR profile is a headerless stream of unsigned 16-bit
 little-endian positions. Odd byte length fails InvalidCursor; no padded last
@@ -169,7 +187,7 @@ BPM, or a wall-clock timer. Reject positions beyond the primary timeline's
 last tick. Floor conversion may collapse adjacent positions at small PPQN;
 retain cursor order and never reorder equal-time cues.
 
-After newline normalization, require one cursor position per Unicode scalar
+After logical EOF selection and newline normalization, require one cursor position per Unicode scalar
 in the body, including spaces and each LF. LF produces LineBreak; other
 scalars produce text cues. Thai combining scalars consume separate positions;
 no grapheme inference is performed. Cursor/body count mismatch fails the
@@ -362,12 +380,15 @@ application orchestration remains pending. Headless tests feed
 actual PlaybackSession frame-derived positions, including pause, completion,
 and stop/reprepare; they do not establish device/GUI lyric synchronization.
 
-## Proposed NCN24 SUB logical EOF
+## Accepted NCN24 SUB logical EOF tooling
 
-The [terminal SUB amendment proposal](NCN24-TERMINAL-SUB-PROPOSAL.md) defines first-SUB
-logical EOF for LYR, excluding the marker and all following bytes from text
-decoding and Cursor counts while retaining the bounded raw member. It requires
-review and acceptance. Current strict fixtures still reject SUB; no parser,
-contract rule, CUR policy or acceptance gate changes in this proposal.
-NCN evidence remains OPEN; runtime, counts, checkboxes and historical evidence
-remain unchanged.
+The [first-SUB EOF amendment](NCN24-TERMINAL-SUB-PROPOSAL.md) was accepted with PR #94.
+The planning contract and offline fixture/checker/inventory tools now select
+logical text before the first `1A`. They retain complete raw members for hashes,
+source caps and accounting. Shared decoders and CUR rules remain unchanged.
+Fixture manifest/receipts and inventory use schema 2. The observation verifier
+labels schema 1 as historical strict-C0 interpretation and schema 2 as first-SUB
+EOF; it does not reinterpret or backfill old receipts.
+No application NCN parser/normalizer exists. NCN evidence remains OPEN, with
+runtime counts, release checkboxes, historical bundles and storage acceptance
+revisions unchanged.

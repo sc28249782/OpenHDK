@@ -1,5 +1,5 @@
 {
-  "schema": 1,
+  "schema": 2,
   "scope": "synthetic-only",
   "ncn_acceptance": "Pending",
   "midis": {
@@ -846,6 +846,344 @@
           1360000000,
           1365312500
         ]
+      }
+    },
+    {
+      "id": "sub-empty",
+      "midi": "M480",
+      "lyr_hex": "540a410a430a0a1a",
+      "cur_hex": "",
+      "expected": {
+        "status": "NoLyrics",
+        "scalars": [],
+        "member_offsets": [],
+        "positions": [],
+        "ticks": [],
+        "media_us": []
+      }
+    },
+    {
+      "id": "sub-empty-crlf",
+      "midi": "M480",
+      "lyr_hex": "540a410a430a0a1a0d0a",
+      "cur_hex": "",
+      "expected": {
+        "status": "NoLyrics",
+        "scalars": [],
+        "member_offsets": [],
+        "positions": [],
+        "ticks": [],
+        "media_us": []
+      }
+    },
+    {
+      "id": "sub-text",
+      "midi": "M480",
+      "lyr_hex": "540a410a430a0a581a",
+      "cur_hex": "1800",
+      "expected": {
+        "status": "Candidate",
+        "scalars": [
+          88
+        ],
+        "member_offsets": [
+          7
+        ],
+        "positions": [
+          24
+        ],
+        "ticks": [
+          480
+        ],
+        "media_us": [
+          500000
+        ]
+      }
+    },
+    {
+      "id": "sub-text-crlf",
+      "midi": "M480",
+      "lyr_hex": "540a410a430a0a581a0d0a",
+      "cur_hex": "1800",
+      "expected": {
+        "status": "Candidate",
+        "scalars": [
+          88
+        ],
+        "member_offsets": [
+          7
+        ],
+        "positions": [
+          24
+        ],
+        "ticks": [
+          480
+        ],
+        "media_us": [
+          500000
+        ]
+      }
+    },
+    {
+      "id": "sub-body-crlf",
+      "midi": "M480",
+      "lyr_hex": "540a410a430a0a580d0a1a",
+      "cur_hex": "18003000",
+      "expected": {
+        "status": "Candidate",
+        "scalars": [
+          88,
+          10
+        ],
+        "member_offsets": [
+          7,
+          8
+        ],
+        "positions": [
+          24,
+          48
+        ],
+        "ticks": [
+          480,
+          960
+        ],
+        "media_us": [
+          500000,
+          1000000
+        ]
+      }
+    },
+    {
+      "id": "sub-body-lf",
+      "midi": "M480",
+      "lyr_hex": "540a410a430a0a580a1a0d0a",
+      "cur_hex": "18003000",
+      "expected": {
+        "status": "Candidate",
+        "scalars": [
+          88,
+          10
+        ],
+        "member_offsets": [
+          7,
+          8
+        ],
+        "positions": [
+          24,
+          48
+        ],
+        "ticks": [
+          480,
+          960
+        ],
+        "media_us": [
+          500000,
+          1000000
+        ]
+      }
+    },
+    {
+      "id": "sub-following-text",
+      "midi": "M480",
+      "lyr_hex": "540a410a430a0a581a59",
+      "cur_hex": "1800",
+      "expected": {
+        "status": "Candidate",
+        "scalars": [
+          88
+        ],
+        "member_offsets": [
+          7
+        ],
+        "positions": [
+          24
+        ],
+        "ticks": [
+          480
+        ],
+        "media_us": [
+          500000
+        ]
+      }
+    },
+    {
+      "id": "sub-repeated",
+      "midi": "M480",
+      "lyr_hex": "540a410a430a0a581a1a",
+      "cur_hex": "1800",
+      "expected": {
+        "status": "Candidate",
+        "scalars": [
+          88
+        ],
+        "member_offsets": [
+          7
+        ],
+        "positions": [
+          24
+        ],
+        "ticks": [
+          480
+        ],
+        "media_us": [
+          500000
+        ]
+      }
+    },
+    {
+      "id": "sub-following-lf",
+      "midi": "M480",
+      "lyr_hex": "540a410a430a0a581a0a",
+      "cur_hex": "1800",
+      "expected": {
+        "status": "Candidate",
+        "scalars": [
+          88
+        ],
+        "member_offsets": [
+          7
+        ],
+        "positions": [
+          24
+        ],
+        "ticks": [
+          480
+        ],
+        "media_us": [
+          500000
+        ]
+      }
+    },
+    {
+      "id": "sub-following-cr",
+      "midi": "M480",
+      "lyr_hex": "540a410a430a0a581a0d",
+      "cur_hex": "1800",
+      "expected": {
+        "status": "Candidate",
+        "scalars": [
+          88
+        ],
+        "member_offsets": [
+          7
+        ],
+        "positions": [
+          24
+        ],
+        "ticks": [
+          480
+        ],
+        "media_us": [
+          500000
+        ]
+      }
+    },
+    {
+      "id": "sub-following-invalid",
+      "midi": "M480",
+      "lyr_hex": "540a410a430a0a581a00ff",
+      "cur_hex": "1800",
+      "expected": {
+        "status": "Candidate",
+        "scalars": [
+          88
+        ],
+        "member_offsets": [
+          7
+        ],
+        "positions": [
+          24
+        ],
+        "ticks": [
+          480
+        ],
+        "media_us": [
+          500000
+        ]
+      }
+    },
+    {
+      "id": "sub-prefix-nul",
+      "midi": "M480",
+      "lyr_hex": "540a410a430a0a58001a",
+      "cur_hex": "",
+      "expected": {
+        "status": "Rejected",
+        "code": "InvalidText",
+        "member": "LYR",
+        "byte_offset": 8
+      }
+    },
+    {
+      "id": "sub-prefix-undefined",
+      "midi": "M480",
+      "lyr_hex": "540a410a430a0a58ff1a",
+      "cur_hex": "",
+      "expected": {
+        "status": "Rejected",
+        "code": "InvalidText",
+        "member": "LYR",
+        "byte_offset": 8
+      }
+    },
+    {
+      "id": "sub-header-1",
+      "midi": "M480",
+      "lyr_hex": "541a0a410a430a0a",
+      "cur_hex": "",
+      "expected": {
+        "status": "Rejected",
+        "code": "HeaderTermination",
+        "member": "LYR",
+        "byte_offset": 1
+      }
+    },
+    {
+      "id": "sub-header-2",
+      "midi": "M480",
+      "lyr_hex": "540a411a0a430a0a",
+      "cur_hex": "",
+      "expected": {
+        "status": "Rejected",
+        "code": "HeaderTermination",
+        "member": "LYR",
+        "byte_offset": 3
+      }
+    },
+    {
+      "id": "sub-header-3",
+      "midi": "M480",
+      "lyr_hex": "540a410a431a0a0a",
+      "cur_hex": "",
+      "expected": {
+        "status": "Rejected",
+        "code": "HeaderTermination",
+        "member": "LYR",
+        "byte_offset": 5
+      }
+    },
+    {
+      "id": "sub-header-4",
+      "midi": "M480",
+      "lyr_hex": "540a410a430a521a0a",
+      "cur_hex": "",
+      "expected": {
+        "status": "Rejected",
+        "code": "HeaderTermination",
+        "member": "LYR",
+        "byte_offset": 7
+      }
+    },
+    {
+      "id": "sub-missing-header",
+      "midi": "M480",
+      "lyr_hex": "540a410a430a1a0a",
+      "cur_hex": "",
+      "expected": {
+        "status": "Rejected",
+        "code": "HeaderTermination",
+        "member": "LYR",
+        "byte_offset": 6
       }
     }
   ],

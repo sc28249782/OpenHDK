@@ -16,7 +16,7 @@ Run from the repository root:
 python3 tests/check-ncn24-fixtures.py
 ```
 
-Expected result: `fixture-verified`, 33 cases, four primary vectors and both
+Expected result: `fixture-verified`, 51 cases, four primary vectors and both
 `representative_observations` and `ncn_acceptance` equal to `Pending`.
 Receipts contain case IDs and member hashes, not lyrics or input/output paths.
 An expected rejection is a successful fixture comparison, not an accepted song.
@@ -40,9 +40,9 @@ Choose a new output directory whose parent already exists:
 python3 tests/check-ncn24-fixtures.py --export /tmp/openhdk-ncn24-fixtures
 ```
 
-The checker validates all expectations before writing. Export creates 33 separate
+The checker validates all expectations before writing. Export creates 51 separate
 case roots, each with `Song/example.mid`, `Lyrics/example.lyr` and
-`Cursor/example.cur`. The 99 files include intentional rejection cases. Existing
+`Cursor/example.cur`. The 153 files include intentional rejection cases. Existing
 targets, including symlinks, are never overwritten. A filesystem failure can
 leave a partial new export directory; inspect it and select a new directory.
 The tool does not remove or modify an existing directory. No absolute path is
@@ -121,3 +121,22 @@ For lawful real members, use the separate [representative observation runbook](.
 Its inventory is read-only and counts hypotheses; its verifier checks supplied
 record structure/binding. Neither runs playback, validates the full tempo map
 or accepts NCN. Do not submit synthetic/mock data as representative evidence.
+
+## Schema 2 EOF migration
+
+The manifest now has 51 cases and schema 2. Its literal expectations apply the
+accepted first-SUB logical EOF framing before header/body decoding. Existing
+33 vectors remain, with 18 new EOF/header cases. Complete raw hashes and source
+limits are unchanged. Checker receipts add logical EOF kind, original marker
+offset, logical text byte length and ignored-byte count. Schema-1 manifests
+are rejected by the current checker rather than silently reinterpreted.
+
+Inventory schema 2 uses the same framing and emits `lyr.logical_eof` on both
+CountsObserved and header/text failures. `logical_body_bytes` describes the
+logical body only. The observation verifier still accepts schema-1 inventories
+as `StrictC0` and schema-2 inventories as `FirstSubEof`; record schema stays 1.
+Those labels are interpretation, not compatibility or authentication claims.
+Never edit old supplied receipts. Rerun the collector for new logical counts.
+
+Run `python3 tests/ncn_legacy_edge_tests.py` for 18 migrated edge/boundary tests.
+No runtime normalizer, legacy execution or NCN acceptance is implied.

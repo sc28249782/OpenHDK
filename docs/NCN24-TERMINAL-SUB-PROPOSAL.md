@@ -1,11 +1,12 @@
 # NCN24 SUB logical EOF amendment proposal
 
 **ID:** OHK-NCN-SUB-030
-**Status:** Proposed; requires review and acceptance.
+**Status:** Accepted by maintainer merge confirmation for PR #94 on 2026-10-11.
 **Target:** OHK-LYR-030 section 4, NCN24 LYR framing only.
-**Implementation:** None. The existing strict checker still rejects SUB.
+**Implementation:** Planning contract and offline checker/inventory migration;
+no application NCN normalizer.
 
-## 1. Decision proposed for review
+## 1. Accepted framing decision
 
 Treat the first `0x1A` byte in an explicitly selected NCN24 LYR member as logical
 EOF. Ignore every byte after it for text/header decoding, scalar counts and
@@ -15,7 +16,7 @@ values. Do not restrict the marker to a physical-file suffix.
 This adopts the maintainer's requested DOS/Windows text-stream interpretation.
 It is an explicit profile choice, not an encoding fallback or a claim that the
 pinned Qt reader has been executed with this behavior. The filename preserves
-the initial proposal topic; this revision proposes first-SUB EOF rather than
+the initial proposal topic; the accepted rule is first-SUB EOF rather than
 terminal-suffix recognition.
 
 [Microsoft file translation constants](https://learn.microsoft.com/en-us/cpp/c-runtime-library/file-translation-constants?view=msvc-170)
@@ -86,7 +87,7 @@ post-EOF text from display; preserve its existence and size in provenance.
 ## 4. Independently authored review vectors
 
 Let H be the seven-byte header `54 0A 41 0A 43 0A 0A`.
-`58` and `59` are original ASCII X and Y fixtures. These are proposed results,
+`58` and `59` are original ASCII X and Y fixtures. These are accepted fixture expectations,
 not production normalizer or legacy playback receipts.
 
 | Body bytes after H | Proposed result | Logical normalized body | EOF offset; ignored bytes |
@@ -117,19 +118,17 @@ ignored text is not used to satisfy the count.
 
 ## 5. Contract amendment and test migration
 
-On explicit acceptance, amend OHK-LYR-030 section 4 with first-SUB logical EOF.
-Cross-reference the NCN24 framing exception from section 3. Keep shared C0
-validation unchanged. Record proposal acceptance separately from implementation
-and closure of the NCN evidence gate.
+PR #94 accepted first-SUB logical EOF. OHK-LYR-030 section 4 now includes it,
+with a cross-reference from section 3. Shared C0 validation remains unchanged.
+This tooling migration is separate from closure of the NCN evidence gate.
 
-Update offline checker, inventory and fixture expectations in a separate PR.
-Label changed receipt schema/interpretation. Preserve old submitted inventories;
-rerun samples for logical-body counts. Do not backfill old receipts.
-The existing 33-case manifest and PR #93's strict SUB rejections remain unchanged
-in this docs-only proposal. After acceptance, migrate those old expectations
-and add prefix-error/header-termination cases. Keep CUR odd/decreasing rejection
-vectors. Do not document EOF admission as implemented while tests still assert
-the previous strict target.
+The checker, inventory and literal fixtures now use reviewed EOF expectations.
+Changed inventory/fixture schemas are labeled explicitly. Preserve old submitted
+inventories and rerun samples for logical-body counts. Do not backfill receipts.
+The previous 33-case manifest has 18 additions. PR #93's terminal SUB rejection
+is migrated to Candidate; combined anomalies now reject odd CUR length after
+EOF selection. Prefix-error/header-termination tests replace obsolete interior
+SUB rejection. CUR-only odd/decreasing rejections remain unchanged.
 
 Future tests must cover unchanged raw evidence, original offsets, EOF provenance,
 ignored-byte counts, logical scalar/CUR counts, newline preservation, source and
@@ -152,3 +151,19 @@ Windows checkpoint acknowledgment remains BLOCKED. CLI pinned execution,
 playback-controller work and manual validation remain separate. No runtime,
 CTest-count, checkbox, dependency, historical evidence bundle or scoped storage
 acceptance changes are made.
+
+## 7. Tooling migration record
+
+The current tooling implements the accepted first-SUB rule. The fixture manifest
+and checker receipts use schema 2 with 51 cases (the previous 33 plus 18 authored
+EOF/header vectors). Inventory schema 2 records EOF provenance on success and
+text/header failure. `logical_body_bytes` replaces the previous `raw_body_bytes`
+field because counts describe only the logical prefix. Member length/hash still
+cover complete raw bytes. The observation-record schema remains 1; its verifier
+accepts inventory schemas 1 and 2 with explicit interpretation labels.
+
+Sections 4 and 5 describe the design and migration sequence. Their references to
+previous strict fixtures are historical pre-migration requirements, not current
+SUB rejection behavior. Submitted old receipts and evidence bundles are unchanged.
+No acceptance of timing, CUR sentinel/order/alignment or representative mapping
+is implied. NCN normalizer admission and evidence gate closure remain Pending.
