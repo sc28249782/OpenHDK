@@ -5,7 +5,7 @@
 and fake-provider lifecycle/commit tests implemented. Experimental native
 admission/fence implemented with scoped acceptance for tested revision `4f69246`;
 experimental root registration/reattachment and scan/song lifecycle implemented;
-fresh affected native mutation execution is recorded below; scoped acceptance remains pending.
+fresh affected native mutation execution and scoped acceptance are recorded below for `54f404a` on WSL2 `/dev/sdd` ext4.
 **Target:** 0.3.0 storage slice 5, after immutable live capture.
 
 ## 1. Purpose and scope
@@ -455,3 +455,25 @@ Pending. Earlier preparation statements describe the pre-run sequence. This
 documentation does not advance `6a6337d` or `4f69246` acceptance. Namespace aliases
 remain Skipped; Windows checkpoint acknowledgment remains BLOCKED. App/CLI,
 NCN and manual validation remain open, with no storage release checkbox change.
+
+## Scoped native mutation acceptance
+
+The maintainer confirmed the reviewed native mutation evidence on
+2026-10-11 at 11:25:58 +07:00. The [decision record](NATIVE-ADMISSION-EVIDENCE.md#explicit-scoped-native-mutation-acceptance)
+accepts exact tested revision `54f404ae8422499de950f5c96527c9023274a9b6`
+on WSL2 `/dev/sdd` ext4 with `data=ordered`, within the supplied selected
+transaction observations. This closes the OHK-DURABLE-ROOT-030 slice 3
+native mutation evidence-and-acceptance gate only for that revision/environment.
+Documentation merge `001732d` is not a tested runtime revision; later docs
+commits do not advance the accepted tested revision. Historical provider
+`6a6337d` and factory/fence `4f69246` decisions remain separate and unchanged.
+
+Earlier Pending text records the pre-decision sequence; supplied bundles,
+READMEs, logs, hashes and verification/redaction records stay unchanged.
+Mutation bytes omitted from receipts are not independently hashed; 38 oversize
+artifact observations remain EFBIG/unavailable. Scan allocation coverage starts
+at store staging. Namespace aliases remain Skipped. This does not approve
+bare-metal Linux, Windows/NTFS, DrvFS/cross-OS, hostile-writer isolation, atomic
+pathname CAS or power-loss recovery. Windows checkpoint acknowledgment remains
+BLOCKED. App/CLI wiring, NCN evidence and manual validation remain open; the
+storage release checkbox stays unchecked. Next work is slice 4 app/CLI wiring.

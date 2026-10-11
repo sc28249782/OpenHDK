@@ -181,3 +181,48 @@ Pending. Earlier preparation statements describe the pre-run sequence. This
 documentation does not advance `6a6337d` or `4f69246` acceptance. Namespace aliases
 remain Skipped; Windows checkpoint acknowledgment remains BLOCKED. App/CLI,
 NCN and manual validation remain open, with no storage release checkbox change.
+
+## Explicit scoped native mutation acceptance
+
+The maintainer reviewed PR #83 and confirmed the requested merge and scoped
+native mutation acceptance on 2026-10-11 at 11:25:58 +07:00. This records a
+maintainer decision, not independent source/run authentication or an inference
+from passing CI.
+
+| Decision field | Accepted scope |
+| --- | --- |
+| Exact tested revision | `54f404ae8422499de950f5c96527c9023274a9b6` |
+| Evidence basis | [2026-10-11 supplied mutation bundle](evidence/native-mutations/2026-10-11-wsl2-ext4/README.md), reviewed in PR #83 |
+| Environment | WSL2 kernel 6.18.40.1-microsoft-standard-WSL2; GCC 13.3.0; `/dev/sdd` ext4 `data=ordered` |
+| Execution | Clean revision capture; SANITIZERS=0 direct g++; 28 compile, 28 run, three verifier and overall exits zero; filesystem bypass zero |
+| Accepted observations | Register, reattach, scan, relocate and remove: 34 selected cases, 69 primary observations, Saved/rollback/fence-drift/Uncertain/recovery/late-cancel semantics; original guard sharing and targeted repair |
+| Bounds and cleanup | 32 admission and 25 IO traces, overflow zero; five recorded allocation sweeps and FD rollback/success scope; 45 artifact observations |
+| Artifact limit | Seven bounded captures available, 38 oversize EFBIG/unavailable; raw hint-bearing mutation bytes omitted |
+| Verification and privacy | Supplied/published verifier outputs agree; ten tampered variants rejected; documented username redaction with original/published hashes |
+
+This closes the OHK-DURABLE-ROOT-030 slice 3 native mutation evidence-and-acceptance
+gate only for the exact revision and recorded WSL2 virtual-disk ext4 environment.
+Documentation merge `001732d` (PR #83) is not relabeled as a tested runtime
+revision. Later documentation commits do not advance the accepted tested revision.
+Historical provider `6a6337d` and factory/fence `4f69246` acceptances remain
+separate decisions; their evidence and tested revisions are unchanged.
+
+Acceptance covers selected supplied transaction/process-interruption observations,
+trusted-directory admission and the recorded test/injection scope. It does not
+independently authenticate source/run provenance, hash omitted mutation bytes,
+provide a full syscall trace or make unavailable oversize captures complete.
+Scan allocation injection starts at store BeforeStaging after discovery/capture;
+it does not cover standard-library traversal allocations. Successful registration
+adds one owned guard FD; failed allocation paths retain observed rollback counts.
+Injected faults prove routing, not that an OS generates those failures.
+
+Mount-namespace alias evidence remains Skipped, not Passed. No bare-metal Linux,
+Windows/NTFS, DrvFS/cross-OS, hostile-writer isolation, atomic pathname CAS or
+power-loss recovery approval is granted. Windows checkpoint acknowledgment
+remains BLOCKED. Application/CLI wiring, NCN evidence and manual device/lyric
+validation remain open; no storage release checkbox changes.
+
+Earlier Pending statements describe the sequence before this decision. Keep all
+supplied logs, manifests, hashes, verification/redaction records and bundle
+READMEs unchanged. This final decision is the authoritative current mutation
+acceptance record. Next work is OHK-DURABLE-030 slice 4 application/CLI wiring.
