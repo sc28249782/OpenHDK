@@ -750,3 +750,13 @@ of SUB text, incomplete CUR words and decreasing cursor positions.
 Four original synthetic vectors and six offline tests preserve strict rejection.
 No measured mapping, authenticated playback or normalizer acceptance is claimed.
 NCN evidence remains OPEN; no contract, CTest-count or checkbox change.
+
+## Proposed NCN24 SUB logical EOF
+
+The [terminal SUB amendment proposal](../docs/NCN24-TERMINAL-SUB-PROPOSAL.md) defines first-SUB
+logical EOF for LYR, excluding the marker and all following bytes from text
+decoding and Cursor counts while retaining the bounded raw member. It requires
+review and acceptance. Current strict fixtures still reject SUB; no parser,
+contract rule, CUR policy or acceptance gate changes in this proposal.
+NCN evidence remains OPEN; runtime, counts, checkboxes and historical evidence
+remain unchanged.
