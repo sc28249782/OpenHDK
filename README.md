@@ -474,3 +474,17 @@ EOF; it does not reinterpret or backfill old receipts.
 No application NCN parser/normalizer exists. NCN evidence remains OPEN, with
 runtime counts, release checkboxes, historical bundles and storage acceptance
 revisions unchanged.
+
+## Proposed NCN24 optional CUR terminator
+
+The [OHK-NCN-CUR-030 proposal](docs/NCN24-CUR-FRAMING-PROPOSAL.md) compares pinned converter,
+legacy reader and community examples. It requests review of even-length CUR
+words with physical EOF and an optional singleton terminal `FF` on odd-length
+members. Complete FF-containing words remain data; no padding, trailer,
+ordering or mapping repair is proposed. Current contract/tooling still reject
+odd CUR lengths. The 51-case schema-2 fixtures, submitted inventories and
+historical evidence remain unchanged. Acceptance and a separate schema/tool
+migration must precede any changed interpretation. NCN normalizer admission
+remains OPEN; Windows checkpoint acknowledgment remains BLOCKED. No private
+corpus statistics or member data are published. Runtime counts and release
+checkboxes do not change.

@@ -171,3 +171,17 @@ verifier labels both versions and binds observations to exact saved inventory
 bytes. Do not edit an old receipt or reuse its hash for a rerun. Save a new
 receipt separately; use its own hash and CUR selections for new observations.
 EOF acceptance does not accept odd/decreasing CUR or prove mapping/timing.
+
+## Proposed NCN24 optional CUR terminator
+
+The [OHK-NCN-CUR-030 proposal](NCN24-CUR-FRAMING-PROPOSAL.md) compares pinned converter,
+legacy reader and community examples. It requests review of even-length CUR
+words with physical EOF and an optional singleton terminal `FF` on odd-length
+members. Complete FF-containing words remain data; no padding, trailer,
+ordering or mapping repair is proposed. Current contract/tooling still reject
+odd CUR lengths. The 51-case schema-2 fixtures, submitted inventories and
+historical evidence remain unchanged. Acceptance and a separate schema/tool
+migration must precede any changed interpretation. NCN normalizer admission
+remains OPEN; Windows checkpoint acknowledgment remains BLOCKED. No private
+corpus statistics or member data are published. Runtime counts and release
+checkboxes do not change.
