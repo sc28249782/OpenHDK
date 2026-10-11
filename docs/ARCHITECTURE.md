@@ -414,3 +414,31 @@ earlier slice counts describe their historical development stages. Windows
 checkpoint acknowledgment remains BLOCKED; native evidence labels and release
 checkboxes do not advance. Application execution, NCN and manual validation
 remain open.
+
+## Library management session (OHK-CLI-030 step 2)
+
+`OpenHDKLibrary` now builds independently of the audio proof of concept. The
+serialized owning session dispatches register, reattach, scan, relocate, remove
+and whole-record overrides through `DurableLibraryService`. Decimal selectors
+resolve only against the acquired snapshot; diagnostic ID accessors cannot
+construct identity authority. Read-only `rootAttached` and `queryBudget` expose
+neither native paths nor mutable owner/store state. Open restores unattached
+roots; no saved hint attachment or automatic scan occurs.
+
+Complete JSON Lines batches precede delivery. Confirmed Saved/NoChange is
+recorded before allocating response storage; output failure stops dispatch with
+exit 74 and never retries a mutation. RecoveryRequired ends the session with
+exit 76. Listing has bounded pages, owning display resolution and byte-safe
+locator output; root hints, tickets, pointers and raw checkpoint bytes are not
+printed. Error records preserve nested families; signed native errors are decimal
+strings. A conservative application peak reserve shares the service payload
+ledger. These logical bounds do not claim a total process-memory limit.
+
+The fake-provider session suite adds 52 numbered checks; the executable help
+smoke test also runs with audio OFF. Current CTest counts are 31 core / 34
+audio-enabled (30 hardware-free C++ suites plus the library help smoke test).
+Preparation queries and playback are later slices. Native CLI execution remains
+experimental pending fresh pinned session evidence and explicit scoped review;
+prior acceptances at `6a6337d`, `4f69246` and `54f404a` do not advance. Windows
+checkpoint acknowledgment remains BLOCKED; NCN, manual validation and release
+checkboxes remain open.
