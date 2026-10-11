@@ -742,3 +742,11 @@ lyrics/paths and do not run playback or validate the full tempo map. Tests use
 synthetic members/mock records only. Actual representative execution, mapping/
 sentinel review and NCN acceptance remain Pending; no runtime, CTest-count,
 checkbox, historical evidence bundle or native acceptance change is introduced.
+
+## Legacy edge hypotheses
+
+The [legacy edge analysis](../docs/NCN-LEGACY-EDGE-ANALYSIS.md) examines pinned reader handling
+of SUB text, incomplete CUR words and decreasing cursor positions.
+Four original synthetic vectors and six offline tests preserve strict rejection.
+No measured mapping, authenticated playback or normalizer acceptance is claimed.
+NCN evidence remains OPEN; no contract, CTest-count or checkbox change.

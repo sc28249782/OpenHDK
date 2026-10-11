@@ -45,4 +45,6 @@ jobs:
           g++ -std=c++20 -Wall -Wextra -Werror -pedantic -fsanitize=address,undefined -fno-omit-frame-pointer -I. tests/ncn24_fixture_smf_probe.cpp -o build-linux-core/ncn24-fixture-probe
           build-linux-core/ncn24-fixture-probe build-linux-core/ncn24-fixtures
       - name: Check NCN inventory/observation tools (synthetic only)
-        run: python3 tests/ncn_member_inventory_tests.py
+        run: |
+          python3 tests/ncn_member_inventory_tests.py
+          python3 tests/ncn_legacy_edge_tests.py

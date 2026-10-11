@@ -152,3 +152,11 @@ permission allows; keep them out of Git. Review source/count/timing conflicts
 and amend OHK-LYR-030 before implementing a normalizer if evidence disagrees.
 No gate closes merely because the collector or verifier returns exit 0.
 CLI playback and Windows checkpoint/manual gates remain separate.
+
+## Legacy edge hypotheses
+
+The [legacy edge analysis](NCN-LEGACY-EDGE-ANALYSIS.md) examines pinned reader handling
+of SUB text, incomplete CUR words and decreasing cursor positions.
+Four original synthetic vectors and six offline tests preserve strict rejection.
+No measured mapping, authenticated playback or normalizer acceptance is claimed.
+NCN evidence remains OPEN; no contract, CTest-count or checkbox change.
