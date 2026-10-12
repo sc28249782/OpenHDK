@@ -47,8 +47,9 @@ The output contains member lengths/hashes, SMF container/header observations,
 explicit TIS-620/newline count hypotheses, unsigned little-endian CUR statistics
 and selected index/value/byte-offset rows. It contains no lyric/header text,
 raw wires, absolute paths, username or inode/authority tokens. Unknown or invalid
-LYR structure is reported as unavailable counts, without charset retry. Odd CUR
-bytes and decreasing positions are reported without silently removing them.
+LYR structure is reported as unavailable counts, without charset retry. Raw odd
+CUR lengths and decreasing positions remain in the observations. Schema 3 adds
+explicit framing provenance; it never removes complete words or edits members.
 
 `ContainerObserved` checks framing only. It is **not** `SmfParser`/timeline
 validation: tempo map, track events and last tick remain Pending. Count equality
@@ -157,31 +158,35 @@ CLI playback and Windows checkpoint/manual gates remain separate.
 
 The [legacy edge analysis](NCN-LEGACY-EDGE-ANALYSIS.md) examines pinned reader handling
 of SUB text, incomplete CUR words and decreasing cursor positions.
-Four original edge vectors and 18 tests apply first-SUB EOF while retaining
-strict CUR odd/decreasing rejection.
+Four original edge vectors and 32 tests apply first-SUB EOF and optional
+terminal FF framing while retaining non-FF odd-tail/decreasing rejection.
 No measured mapping, authenticated playback or normalizer acceptance is claimed.
 NCN evidence remains OPEN; no contract, CTest-count or checkbox change.
 
 ## Inventory interpretation after EOF amendment
 
-Current collector output is inventory schema 2, with first-SUB EOF provenance
+The earlier collector output was inventory schema 2, with first-SUB EOF provenance
 and logical body counts. Member lengths/hashes still cover raw bytes after EOF.
 Schema-1 submitted records retain the previous strict-C0 interpretation. The
 verifier labels both versions and binds observations to exact saved inventory
 bytes. Do not edit an old receipt or reuse its hash for a rerun. Save a new
 receipt separately; use its own hash and CUR selections for new observations.
-EOF acceptance does not accept odd/decreasing CUR or prove mapping/timing.
+LYR EOF acceptance alone does not accept CUR anomalies or prove mapping/timing.
+The separate CUR amendment below admits only terminal singleton FF framing.
 
-## Proposed NCN24 optional CUR terminator
+## Accepted NCN24 optional CUR terminator tooling
 
-The [OHK-NCN-CUR-030 proposal](NCN24-CUR-FRAMING-PROPOSAL.md) compares pinned converter,
-legacy reader and community examples. It requests review of even-length CUR
-words with physical EOF and an optional singleton terminal `FF` on odd-length
-members. Complete FF-containing words remain data; no padding, trailer,
-ordering or mapping repair is proposed. Current contract/tooling still reject
-odd CUR lengths. The 51-case schema-2 fixtures, submitted inventories and
-historical evidence remain unchanged. Acceptance and a separate schema/tool
-migration must precede any changed interpretation. NCN normalizer admission
-remains OPEN; Windows checkpoint acknowledgment remains BLOCKED. No private
-corpus statistics or member data are published. Runtime counts and release
-checkboxes do not change.
+The [OHK-NCN-CUR-030 amendment](NCN24-CUR-FRAMING-PROPOSAL.md) was accepted with PR #96.
+The contract and schema-3 offline tools now select complete little-endian words
+at physical EOF, or exclude exactly one terminal FF byte from odd-length CUR.
+Non-FF odd tails still reject. Complete FF words, padding/trailer hypotheses,
+ordering, mapping and timing rules remain unchanged. Raw member hashes, caps
+and shared accounting include the marker. The manifest has 69 cases (51 prior
+plus 18 CUR framing vectors); current checker input rejects schemas 1 and 2.
+Inventory keeps raw trailing-byte statistics beside framing provenance.
+The observation record remains schema 1; its verifier labels inventory schemas
+1/2 as Unframed CUR and schema 3 as OptionalTerminalFF, with arithmetic checks.
+Preserve submitted receipts and rerun samples into new files. No application
+NCN normalizer exists; the evidence gate remains OPEN. Runtime/suite counts,
+checkboxes, historical bundles and storage acceptances do not change. Windows
+checkpoint acknowledgment remains BLOCKED.

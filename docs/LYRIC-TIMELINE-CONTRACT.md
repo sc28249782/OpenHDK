@@ -173,13 +173,22 @@ The marker and ignored bytes produce no text cues, LineBreak operations or curso
 positions. This framing applies only to NCN24 LYR, outside shared C0 validation.
 Offline tools implement it; no application NCN normalizer exists yet.
 
-The proposed CUR profile is a headerless stream of unsigned 16-bit
-little-endian positions. Odd byte length fails InvalidCursor; no padded last
-value is allowed. Values must be nondecreasing; equal values are valid.
-The [OHK-NCN-CUR-030 proposal](NCN24-CUR-FRAMING-PROPOSAL.md) requests
-review of optional singleton terminal FF framing. It is not accepted by this
-contract; the odd-length rejection above remains current until explicit
-acceptance and a separate contract/tooling migration.
+The CUR profile uses optional terminal singleton FF framing under the accepted
+[OHK-NCN-CUR-030 amendment](NCN24-CUR-FRAMING-PROPOSAL.md) (PR #96).
+Bound and retain the complete raw member first. An even-length member contains
+unsigned 16-bit little-endian words ending at physical EOF. An odd-length
+member requires a final FF byte; exclude exactly that byte from the word span.
+An odd tail other than FF fails InvalidCursor at its original byte offset.
+Never scan for the first FF, pad a word or discard complete FF-containing words.
+Complete words must be nondecreasing; equal values are valid.
+
+Retain framing kind (Physical or TerminalFF), marker offset when present,
+logical cursor byte length and framing byte count (zero or one). Raw length
+is logical cursor length plus framing byte count. Complete raw bytes, including
+the marker, remain in source revision/digest and the shared raw-source ledger.
+An oversized member cannot fit a raw limit by excluding its marker.
+A marker-only FF has zero positions. Framing does not repair count mismatches,
+decreasing positions, invalid lyrics or positions beyond the primary timeline.
 
 For a cursor value `u` and primary MIDI PPQN `q`, normalize to the integer tick
 `floor(u*q/24)` using checked multiplication/division. Interpret the 24 divisor
@@ -197,8 +206,8 @@ in the body, including spaces and each LF. LF produces LineBreak; other
 scalars produce text cues. Thai combining scalars consume separate positions;
 no grapheme inference is performed. Cursor/body count mismatch fails the
 bundle, with no inferred timing, truncation, duplicated cursor, or partial
-lyric result. Empty body plus empty CUR is NoLyrics; a nonempty body with empty
-CUR is invalid. This rule is deliberately stricter than a tolerant legacy UI.
+lyric result. Empty body plus zero framed cursor words is NoLyrics. A nonempty
+body with zero cursor words is invalid. This rule is deliberately stricter than a tolerant legacy UI.
 
 The [NCN24 format evidence supplement](NCN24-FORMAT-EVIDENCE-SUPPLEMENT.md)
 records competing timing, line-mapping and high-byte hypotheses. Its byte
@@ -390,10 +399,30 @@ and stop/reprepare; they do not establish device/GUI lyric synchronization.
 The [first-SUB EOF amendment](NCN24-TERMINAL-SUB-PROPOSAL.md) was accepted with PR #94.
 The planning contract and offline fixture/checker/inventory tools now select
 logical text before the first `1A`. They retain complete raw members for hashes,
-source caps and accounting. Shared decoders and CUR rules remain unchanged.
-Fixture manifest/receipts and inventory use schema 2. The observation verifier
+source caps and accounting. Shared text decoders remain unchanged. The separate
+CUR framing amendment is described below.
+The earlier SUB-only migration used schema 2. Current fixture/receipts and
+inventory use schema 3, including the separate accepted CUR amendment.
+The observation verifier
 labels schema 1 as historical strict-C0 interpretation and schema 2 as first-SUB
 EOF; it does not reinterpret or backfill old receipts.
 No application NCN parser/normalizer exists. NCN evidence remains OPEN, with
 runtime counts, release checkboxes, historical bundles and storage acceptance
 revisions unchanged.
+
+## Accepted NCN24 optional CUR terminator tooling
+
+The [OHK-NCN-CUR-030 amendment](NCN24-CUR-FRAMING-PROPOSAL.md) was accepted with PR #96.
+The contract and schema-3 offline tools now select complete little-endian words
+at physical EOF, or exclude exactly one terminal FF byte from odd-length CUR.
+Non-FF odd tails still reject. Complete FF words, padding/trailer hypotheses,
+ordering, mapping and timing rules remain unchanged. Raw member hashes, caps
+and shared accounting include the marker. The manifest has 69 cases (51 prior
+plus 18 CUR framing vectors); current checker input rejects schemas 1 and 2.
+Inventory keeps raw trailing-byte statistics beside framing provenance.
+The observation record remains schema 1; its verifier labels inventory schemas
+1/2 as Unframed CUR and schema 3 as OptionalTerminalFF, with arithmetic checks.
+Preserve submitted receipts and rerun samples into new files. No application
+NCN normalizer exists; the evidence gate remains OPEN. Runtime/suite counts,
+checkboxes, historical bundles and storage acceptances do not change. Windows
+checkpoint acknowledgment remains BLOCKED.

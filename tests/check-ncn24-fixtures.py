@@ -31,7 +31,12 @@ CASE_IDS = frozenset('empty quarter lf crlf cr terminal-lf blank-line space tab 
     'sub-empty sub-empty-crlf sub-text sub-text-crlf sub-body-crlf sub-body-lf '
     'sub-following-text sub-repeated sub-following-lf sub-following-cr '
     'sub-following-invalid sub-prefix-nul sub-prefix-undefined '
-    'sub-header-1 sub-header-2 sub-header-3 sub-header-4 sub-missing-header'.split())
+    'sub-header-1 sub-header-2 sub-header-3 sub-header-4 sub-missing-header '
+    'cur-empty cur-marker-only cur-marker-only-text cur-plain-quarter cur-marked-quarter '
+    'cur-low-ff-data cur-high-ff-data cur-full-ffff-data cur-full-word-plus-marker '
+    'cur-ordinary-singleton cur-non-ff-tail cur-interior-ff cur-decreasing-marked '
+    'cur-equal-marked cur-extra-complete-word cur-even-ff-run cur-odd-ff-run '
+    'cur-beyond-marked'.split())
 MIDI_IDS = frozenset(('M480', 'M3', 'Mhigh', 'Mtempo'))
 
 
@@ -87,7 +92,7 @@ def validate_json(value, depth=0):
         require(0 <= value < 2**64, 'integer range')
     elif type(value) is str:
         require(len(value) <= 2 * MEMBER_CAP, 'string limit')
-    else:
+    elif value is not None:
         raise ValueError('unsupported JSON value')
 
 
@@ -96,7 +101,7 @@ def parse_manifest(data):
     manifest = json.loads(data.decode('utf-8'), object_pairs_hook=unique_object)
     validate_json(manifest)
     keys(manifest, ('schema', 'scope', 'ncn_acceptance', 'midis', 'cases', 'timing'))
-    require(manifest['schema'] == 2 and manifest['scope'] == 'synthetic-only'
+    require(manifest['schema'] == 3 and manifest['scope'] == 'synthetic-only'
             and manifest['ncn_acceptance'] == 'Pending', 'scope/acceptance')
     return manifest
 
@@ -198,14 +203,28 @@ def body_observation(lyr):
     return scalars, offsets
 
 
+def cursor_framing(cur):
+    # Select only an exact terminal singleton; complete FF words stay data.
+    size = len(cur)
+    if size % 2 and cur[-1] != 255:
+        return dict(status='Rejected', code='OddLength', byte_offset=size - 1)
+    marked = size % 2 == 1
+    return dict(status='Selected', kind='TerminalFF' if marked else 'Physical',
+                marker_byte_offset=size - 1 if marked else None,
+                logical_cursor_bytes=size - int(marked), framing_bytes=int(marked))
+
+
 def candidate_observation(midi, lyr, cur):
     # Diagnostic validation order is fixed here, not a production error contract.
+    require(len(lyr) <= MEMBER_CAP and len(cur) <= MEMBER_CAP, 'raw member limit')
     try:
         scalars, offsets = body_observation(lyr)
-        if len(cur) % 2:
-            raise FixtureError('OddLength', 'CUR', len(cur) - 1)
-        require(len(cur) // 2 <= POSITION_CAP, 'position limit')
-        positions = list(struct.unpack('<' + 'H' * (len(cur) // 2), cur))
+        framing = cursor_framing(cur)
+        if framing['status'] == 'Rejected':
+            raise FixtureError('OddLength', 'CUR', framing['byte_offset'])
+        span = memoryview(cur)[:framing['logical_cursor_bytes']]
+        require(len(span) // 2 <= POSITION_CAP, 'position limit')
+        positions = [value for (value,) in struct.iter_unpack('<H', span)]
         ticks = []
         for index, value in enumerate(positions):
             if index and value < positions[index - 1]:
@@ -215,7 +234,7 @@ def candidate_observation(midi, lyr, cur):
                 raise FixtureError('BeyondPrimary', 'CUR', index * 2)
             ticks.append(tick)
         if len(scalars) != len(positions):
-            raise FixtureError('CountMismatch', 'CUR', len(cur))
+            raise FixtureError('CountMismatch', 'CUR', len(span))
         return dict(status='Candidate' if scalars else 'NoLyrics', scalars=scalars,
                     member_offsets=offsets, positions=positions, ticks=ticks,
                     media_us=[media_time(midi, tick) for tick in ticks])
@@ -236,7 +255,7 @@ def logical_owned(value):
 def check(manifest, manifest_bytes=MANIFEST_CAP):
     validate_json(manifest)
     keys(manifest, ('schema', 'scope', 'ncn_acceptance', 'midis', 'cases', 'timing'))
-    require(manifest['schema'] == 2 and manifest['scope'] == 'synthetic-only'
+    require(manifest['schema'] == 3 and manifest['scope'] == 'synthetic-only'
             and manifest['ncn_acceptance'] == 'Pending', 'scope/acceptance')
     # One conservative coexistence allowance: raw manifest + parsed payload +
     # decoded members + retained/serialized receipts + conversion/work buffers.
@@ -258,7 +277,7 @@ def check(manifest, manifest_bytes=MANIFEST_CAP):
                 (row['ppqn'], row['last_tick'], row['last_us']), 'SMF expectation: ' + name)
         midis[name], members[name] = observation, data
     for row in manifest['cases']:
-        keys(row, ('id', 'midi', 'lyr_hex', 'cur_hex', 'expected'))
+        keys(row, ('id', 'midi', 'lyr_hex', 'cur_hex', 'expected', 'cur_framing'))
         name = row['id']
         require(name in CASE_IDS and name not in used and row['midi'] in MIDI_IDS,
                 'case identity/completeness')
@@ -266,10 +285,12 @@ def check(manifest, manifest_bytes=MANIFEST_CAP):
         lyr, cur = unhex(row['lyr_hex']), unhex(row['cur_hex'])
         total += len(lyr) + len(cur)
         require(total <= DECODED_CAP, 'aggregate decoded bytes')
+        framing = cursor_framing(cur)
+        require(framing == row['cur_framing'], 'framing expectation: ' + name)
         actual = candidate_observation(midis[row['midi']], lyr, cur)
         require(actual == row['expected'], 'candidate expectation: ' + name)
         results.append(dict(case=name, expected_status=actual['status'],
-            logical_eof=logical_eof(lyr),
+            logical_eof=logical_eof(lyr), cur_framing=framing,
             mid_sha256=hashlib.sha256(members[row['midi']]).hexdigest(),
             lyr_sha256=hashlib.sha256(lyr).hexdigest(), cur_sha256=hashlib.sha256(cur).hexdigest()))
     require(used == CASE_IDS, 'case completeness')
@@ -282,7 +303,7 @@ def check(manifest, manifest_bytes=MANIFEST_CAP):
         candidate = Fraction(24 * 60, bpm)
         require(row['wiki_units'] == [candidate.numerator, candidate.denominator]
                 and row['musical_units'] == 24, 'timing expectation')
-    return dict(schema=2, status='fixture-verified', scope='synthetic-only', cases=len(results),
+    return dict(schema=3, status='fixture-verified', scope='synthetic-only', cases=len(results),
                 primary_vectors=len(midis), decoded_bytes=total, receipts=results,
                 representative_observations='Pending', ncn_acceptance='Pending',
                 limits=dict(manifest_bytes=MANIFEST_CAP, member_bytes=MEMBER_CAP,

@@ -76,13 +76,13 @@ def verify(inventory_bytes, record_bytes):
     # Validate the inventory fields consumed here. This does not re-read members
     # or assert that an arbitrary supplied inventory is authentic/complete.
     need(type(inv) is dict and inv.get('scope') == 'member-inventory-only'
-         and inv.get('schema') in (1, 2) and type(inv.get('schema')) is int
+         and inv.get('schema') in (1, 2, 3) and type(inv.get('schema')) is int
          and inv.get('ncn_acceptance') == 'Pending' and inv.get('legacy_observations') == 'Pending'
          and inv.get('count_equality_is_compatibility') is False)
     shape(inv['members'], ('MID', 'LYR', 'CUR'))
     for member in inv['members'].values():
         shape(member, ('bytes', 'sha256')); number(member['bytes']); hash_value(member['sha256'])
-    if inv['schema'] == 2:
+    if inv['schema'] in (2, 3):
         # Schema 1 remains legacy strict-C0 inventory; never reinterpret it.
         eof = inv['lyr']['logical_eof']
         shape(eof, ('kind', 'marker_byte_offset', 'logical_text_bytes', 'ignored_bytes'))
@@ -96,6 +96,29 @@ def verify(inventory_bytes, record_bytes):
             number(eof['marker_byte_offset'])
             need(eof['marker_byte_offset'] == eof['logical_text_bytes'] < size
                  and eof['ignored_bytes'] == size - eof['logical_text_bytes'] - 1)
+    if inv['schema'] == 3:
+        framing = inv['cur']['framing']
+        need(type(framing) is dict)
+        raw = inv['members']['CUR']['bytes']
+        number(inv['cur']['trailing_bytes'])
+        need(inv['cur']['trailing_bytes'] == raw % 2)
+        if framing.get('status') == 'Selected':
+            shape(framing, ('status', 'kind', 'marker_byte_offset', 'logical_cursor_bytes', 'framing_bytes'))
+            number(framing['logical_cursor_bytes']); number(framing['framing_bytes'])
+            need(framing['logical_cursor_bytes'] % 2 == 0
+                 and framing['logical_cursor_bytes'] + framing['framing_bytes'] == raw)
+            if framing['kind'] == 'Physical':
+                need(raw % 2 == 0 and framing['marker_byte_offset'] is None
+                     and framing['framing_bytes'] == 0)
+            else:
+                need(framing['kind'] == 'TerminalFF' and raw % 2 == 1)
+                number(framing['marker_byte_offset'])
+                need(framing['marker_byte_offset'] == raw - 1 and framing['framing_bytes'] == 1)
+        else:
+            shape(framing, ('status', 'code', 'byte_offset'))
+            number(framing['byte_offset'])
+            need(framing['status'] == 'Rejected' and framing['code'] == 'OddLength'
+                 and raw % 2 == 1 and framing['byte_offset'] == raw - 1)
     number(inv['cur']['words'])
     need(inv['cur']['words'] == inv['members']['CUR']['bytes'] // 2)
     need(type(inv['cur']['selected']) is list and len(inv['cur']['selected']) <= 64)
@@ -151,6 +174,7 @@ def verify(inventory_bytes, record_bytes):
         need(record['run']['status'] == 'Pending' and record['inventory_sha256'] in ('Pending', hashlib.sha256(inventory_bytes).hexdigest()))
     return dict(status='observation-record-checked', inventory_schema=inv['schema'],
                 inventory_text_interpretation='StrictC0' if inv['schema'] == 1 else 'FirstSubEof',
+                inventory_cursor_interpretation='OptionalTerminalFF' if inv['schema'] == 3 else 'Unframed',
                 observations=len(observations),
                 observed_topics=len(observed_topics), pending_topics=pending, skipped_topics=skipped,
                 playback_authentication='NotIndependent', tempo_map_validation='Pending',

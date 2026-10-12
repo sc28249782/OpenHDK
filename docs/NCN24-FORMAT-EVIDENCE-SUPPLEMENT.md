@@ -21,15 +21,17 @@ compatibility. The inspected OpenHDK baseline is
 | [Sukoom2001 article](https://sukoom2001.wordpress.com/2005/02/15/รูปแบบไฟล์-cur-ของ-nick-karaoke/) | Post dated 2005-02-15 republishes a Nick Karaoke explanation; original authorship is not independently authenticated. Timing examples appear in comments dated 2010-10-02 and 2010-10-15. |
 | [Qt 5.15 QString documentation](https://doc.qt.io/archives/qt-5.15/qstring.html) | UTF-16 representation explains why legacy string length is not a general Unicode-scalar or grapheme guarantee. API semantics, not an NCN corpus result. |
 
-An unspecified BASSMIDI forum discussion is not counted as corroboration. Add
-an exact permalink, author/date and relevant observation before using it.
+The original supplement did not count an unspecified BASSMIDI forum discussion
+as corroboration. The later [CUR framing amendment](NCN24-CUR-FRAMING-PROPOSAL.md)
+records the exact NCN thread and reply scope as community source examples,
+not an official BASS format specification.
 No upstream source, BASS dependency or Qt dependency is imported.
 
 | Question | Current evidence | NCN24 target / unresolved point |
 | --- | --- | --- |
 | Bundle members | Sources describe MID, LYR and CUR. | Explicit root layout and containment remain governed by OHK-LYR-030. |
 | LYR header | Legacy reader consumes four lines with TIS-620. | Strict termination, retained bytes and normalization need independent vectors and bundle checks. |
-| CUR representation | Pinned reader combines low/high bytes as unsigned little-endian. | Strict odd-length/order validation remains the narrow target. |
+| CUR representation | Pinned reader combines low/high bytes as unsigned little-endian. | Non-FF odd-tail/order validation remains strict; the separate accepted CUR amendment admits optional terminal singleton FF framing. |
 | Timing | Pinned reader uses `floor(u*q/24)`. Wiki differs. | Retain the musical-unit target pending discriminating observations. |
 | Character mapping | Legacy widget has line state and blank-line repair. | One scalar, including LF, per position is a target, not a proven universal rule. |
 | High byte FF | Historical snippet filters it; pinned reader does not. | No silent filtering in the current target. Resolve corpus behavior before implementation. |
@@ -191,7 +193,7 @@ Independent tools must report actual observations separately from injected cases
 ## 6. Offline fixture tooling
 
 [Original fixture tools](../tests/fixtures/ncn24/README.md) now materialize the
-four MIDI vectors and 51 explicit LYR/CUR cases. The bounded Python checker
+four MIDI vectors and 69 explicit LYR/CUR cases. The bounded Python checker
 compares independently authored expected scalars, source offsets, positions,
 ticks and rational media times. It includes both M3 `7,8,8` -> `0,1,1` and
 `1,2,3` -> `0,0,0`. A separate C++ probe cross-checks exported primary/Thai
@@ -235,8 +237,9 @@ change roadmap checkboxes or replace manual device/lyric validation.
 
 The [legacy edge analysis](NCN-LEGACY-EDGE-ANALYSIS.md) examines pinned reader handling
 of SUB text, incomplete CUR words and decreasing cursor positions.
-Four original edge vectors and 18 offline tests now admit first-SUB EOF while
-preserving CUR odd/decreasing rejection and checking EOF/limit/schema boundaries.
+Four original edge vectors and 32 offline tests apply first-SUB EOF and optional
+terminal FF framing while preserving non-FF odd-tail/decreasing rejection and
+checking EOF/framing/limit/schema boundaries.
 No measured mapping, authenticated playback or normalizer acceptance is claimed.
 NCN evidence remains OPEN; no contract, CTest-count or checkbox change.
 
@@ -245,24 +248,30 @@ NCN evidence remains OPEN; no contract, CTest-count or checkbox change.
 The [first-SUB EOF amendment](NCN24-TERMINAL-SUB-PROPOSAL.md) was accepted with PR #94.
 The planning contract and offline fixture/checker/inventory tools now select
 logical text before the first `1A`. They retain complete raw members for hashes,
-source caps and accounting. Shared decoders and CUR rules remain unchanged.
-Fixture manifest/receipts and inventory use schema 2. The observation verifier
+source caps and accounting. Shared text decoders remain unchanged. The separate
+CUR framing amendment is described below.
+The earlier SUB-only migration used schema 2. Current fixture/receipts and
+inventory use schema 3, including the separate accepted CUR amendment.
+The observation verifier
 labels schema 1 as historical strict-C0 interpretation and schema 2 as first-SUB
 EOF; it does not reinterpret or backfill old receipts.
 No application NCN parser/normalizer exists. NCN evidence remains OPEN, with
 runtime counts, release checkboxes, historical bundles and storage acceptance
 revisions unchanged.
 
-## Proposed NCN24 optional CUR terminator
+## Accepted NCN24 optional CUR terminator tooling
 
-The [OHK-NCN-CUR-030 proposal](NCN24-CUR-FRAMING-PROPOSAL.md) compares pinned converter,
-legacy reader and community examples. It requests review of even-length CUR
-words with physical EOF and an optional singleton terminal `FF` on odd-length
-members. Complete FF-containing words remain data; no padding, trailer,
-ordering or mapping repair is proposed. Current contract/tooling still reject
-odd CUR lengths. The 51-case schema-2 fixtures, submitted inventories and
-historical evidence remain unchanged. Acceptance and a separate schema/tool
-migration must precede any changed interpretation. NCN normalizer admission
-remains OPEN; Windows checkpoint acknowledgment remains BLOCKED. No private
-corpus statistics or member data are published. Runtime counts and release
-checkboxes do not change.
+The [OHK-NCN-CUR-030 amendment](NCN24-CUR-FRAMING-PROPOSAL.md) was accepted with PR #96.
+The contract and schema-3 offline tools now select complete little-endian words
+at physical EOF, or exclude exactly one terminal FF byte from odd-length CUR.
+Non-FF odd tails still reject. Complete FF words, padding/trailer hypotheses,
+ordering, mapping and timing rules remain unchanged. Raw member hashes, caps
+and shared accounting include the marker. The manifest has 69 cases (51 prior
+plus 18 CUR framing vectors); current checker input rejects schemas 1 and 2.
+Inventory keeps raw trailing-byte statistics beside framing provenance.
+The observation record remains schema 1; its verifier labels inventory schemas
+1/2 as Unframed CUR and schema 3 as OptionalTerminalFF, with arithmetic checks.
+Preserve submitted receipts and rerun samples into new files. No application
+NCN normalizer exists; the evidence gate remains OPEN. Runtime/suite counts,
+checkboxes, historical bundles and storage acceptances do not change. Windows
+checkpoint acknowledgment remains BLOCKED.

@@ -1,5 +1,5 @@
 {
-  "schema": 2,
+  "schema": 3,
   "scope": "original-synthetic-only",
   "ncn_acceptance": "Pending",
   "ppqn": 192,
@@ -26,6 +26,13 @@
         "media_us": [
           500000
         ]
+      },
+      "cur_framing": {
+        "status": "Selected",
+        "kind": "Physical",
+        "marker_byte_offset": null,
+        "logical_cursor_bytes": 2,
+        "framing_bytes": 0
       }
     },
     {
@@ -33,10 +40,29 @@
       "lyr_hex": "540a410a430a0a58",
       "cur_hex": "1800ff",
       "expected": {
-        "status": "Rejected",
-        "code": "OddLength",
-        "member": "CUR",
-        "byte_offset": 2
+        "status": "Candidate",
+        "scalars": [
+          88
+        ],
+        "member_offsets": [
+          7
+        ],
+        "positions": [
+          24
+        ],
+        "ticks": [
+          192
+        ],
+        "media_us": [
+          500000
+        ]
+      },
+      "cur_framing": {
+        "status": "Selected",
+        "kind": "TerminalFF",
+        "marker_byte_offset": 2,
+        "logical_cursor_bytes": 2,
+        "framing_bytes": 1
       }
     },
     {
@@ -48,6 +74,13 @@
         "code": "Decreasing",
         "member": "CUR",
         "byte_offset": 2
+      },
+      "cur_framing": {
+        "status": "Selected",
+        "kind": "Physical",
+        "marker_byte_offset": null,
+        "logical_cursor_bytes": 6,
+        "framing_bytes": 0
       }
     },
     {
@@ -56,9 +89,16 @@
       "cur_hex": "30002f003100ff",
       "expected": {
         "status": "Rejected",
-        "code": "OddLength",
+        "code": "Decreasing",
         "member": "CUR",
-        "byte_offset": 6
+        "byte_offset": 2
+      },
+      "cur_framing": {
+        "status": "Selected",
+        "kind": "TerminalFF",
+        "marker_byte_offset": 6,
+        "logical_cursor_bytes": 6,
+        "framing_bytes": 1
       }
     }
   ]

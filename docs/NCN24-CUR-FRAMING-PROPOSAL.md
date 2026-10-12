@@ -1,11 +1,12 @@
 # NCN24 optional terminal FF cursor framing proposal
 
 **ID:** OHK-NCN-CUR-030
-**Status:** Proposed; requires review and acceptance before contract/tool changes.
+**Status:** Accepted by maintainer merge confirmation for PR #96 on 2026-10-11.
+**Implementation:** Planning contract and schema-3 offline tools; no application normalizer.
 **Target:** OHK-LYR-030 section 4, NCN24 CUR member framing only.
 **NCN evidence gate:** OPEN. No application parser or normalizer is added.
 
-## 1. Decision requested
+## 1. Accepted framing decision
 
 Accept two explicit CUR framing forms in the NCN24 profile:
 
@@ -20,9 +21,10 @@ not scan for the first `FF`, remove complete words, or infer padding. A
 one-byte `FF` member has zero cursor words under this proposal. Empty logical
 lyrics plus zero words is NoLyrics; nonempty lyrics plus zero words still fails.
 
-This is a proposed profile choice. Framing success does not establish valid
+This is an accepted profile choice. Framing success does not establish valid
 timing, cursor/lyric correspondence or compatibility with a collection.
-The current contract and schema-2 tools still reject every odd CUR length.
+The current contract and schema-3 tools apply this framing. Historical schema-2
+receipts retain their unframed CUR interpretation.
 The accepted first-SUB LYR rule remains separate and unchanged.
 
 ## 2. Source evidence and its limits
@@ -50,7 +52,7 @@ Private inventories, member bytes, hashes, filenames and corpus statistics are
 not published in this proposal. A future public evidence record needs separate
 disclosure authorization. Source inspection alone does not close the NCN gate.
 
-## 3. Proposed processing order
+## 3. Accepted processing order
 
 1. Acquire the complete raw CUR member under the existing containment, identity,
    size and shared operation-budget checks. Retain every raw byte.
@@ -136,11 +138,12 @@ hashes, original error offsets and allocation failure without partial results.
 
 ## 6. Migration after explicit acceptance
 
-Keep this PR docs-only. Review this decision before amending OHK-LYR-030 or
-changing existing fixture expectations. Current odd-FF rejection fixtures and
-the 51-case schema-2 manifest remain unchanged until that migration.
+PR #96 was docs-only and accepted this decision. The separate migration now
+updates OHK-LYR-030 and offline tools. The former 51-case schema-2 manifest is
+historical; schema 3 contains those cases plus 18 original CUR framing vectors.
+Previously submitted inventories remain byte-unchanged.
 
-After acceptance, a separate tooling PR must:
+The migration requirements are:
 
 1. Amend section 4 to describe optional terminal singleton framing. Preserve
    the unchanged rules from section 7 below.
@@ -170,6 +173,25 @@ PPQN/24 conversion and compiled full-tempo-map integration remain unchanged.
 
 NCN evidence and normalizer admission remain OPEN. CLI pinned evidence,
 playback-controller work and manual validation are separate. Windows checkpoint
-acknowledgment remains BLOCKED. This PR changes no runtime, tests, schema,
-dependency, suite count, checkbox, historical evidence bundle or revision-bound
-storage acceptance.
+acknowledgment remains BLOCKED. The original proposal changed no runtime or tooling. The separate schema-3
+migration changes offline tests, fixtures and interpretation labels only. It
+changes no application runtime, dependency, suite count, checkbox, historical
+evidence bundle or revision-bound storage acceptance.
+
+
+## 8. Schema 3 tooling migration record
+
+The manifest has 69 cases: 51 prior cases plus the 17 section-5 framing vectors
+and a marked beyond-primary variant. Its four MIDI vectors remain unchanged.
+Literal framing expectations are checked separately from candidate expectations.
+Checker receipts and inventory add selected framing provenance or an explicit
+OddLength framing rejection. Raw words, trailing-byte and high-FF statistics
+remain visible even when framing is rejected; inventory is not bundle admission.
+
+Fixture/checker and inventory output use schema 3. Old fixture schemas 1 and 2
+are rejected by the current checker. The observation record remains schema 1.
+Its verifier accepts inventory schemas 1, 2 and 3 with separate text/cursor
+interpretation labels and framing arithmetic checks. It verifies supplied
+structure/hash binding, not whether a marker actually exists in raw bytes.
+CountMismatch harness offsets now name the end of the logical word span.
+No submitted receipt is relabeled. Rerun private samples into new files.
