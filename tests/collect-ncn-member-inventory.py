@@ -3,7 +3,7 @@
 """Read-only, privacy-limited inventory for caller-selected lawful NCN members.
 
 Container/header and count observations only. No playback, tempo-map decoding,
-NCN cue normalization, sentinel selection or compatibility acceptance.
+NCN cue normalization, complete-word sentinel selection or compatibility acceptance.
 """
 import argparse
 import hashlib
@@ -123,6 +123,17 @@ def lyr_counts(data):
                 thai_mark_scalars=marks, grapheme_count='NotComputed')
 
 
+def cursor_framing(data):
+    # Select only an exact terminal singleton; complete FF words stay data.
+    size = len(data)
+    if size % 2 and data[-1] != 255:
+        return dict(status='Rejected', code='OddLength', byte_offset=size - 1)
+    marked = size % 2 == 1
+    return dict(status='Selected', kind='TerminalFF' if marked else 'Physical',
+                marker_byte_offset=size - 1 if marked else None,
+                logical_cursor_bytes=size - int(marked), framing_bytes=int(marked))
+
+
 def cur_counts(data, indices):
     count = len(data) // 2
     require(all(i < count for i in indices))
@@ -141,6 +152,7 @@ def cur_counts(data, indices):
             selected.append(dict(index=index, byte_offset=index * 2, unsigned_value=value))
         previous = value
     return dict(status='WordsObserved', endian_hypothesis='little', words=count,
+                framing=cursor_framing(data),
                 trailing_bytes=len(data) % 2, equal_pairs=equal, decreasing_pairs=decreasing,
                 decreasing_indices=anomalies, decreasing_indices_truncated=decreasing > len(anomalies),
                 high_ff_words=high_ff, high_ff_indices=high_samples,
@@ -161,7 +173,7 @@ def inspect(sample_id, members, indices):
     require(reserved <= STAGED_CAP)
     lyric, cursor = lyr_counts(members['LYR']), cur_counts(members['CUR'], indices)
     same_count = (lyric['normalized_scalars'] == cursor['words']) if lyric['status'] == 'CountsObserved' else 'Unavailable'
-    return dict(schema=2, sample_id=sample_id, scope='member-inventory-only',
+    return dict(schema=3, sample_id=sample_id, scope='member-inventory-only',
                 members={k: dict(bytes=len(v), sha256=hashlib.sha256(v).hexdigest()) for k, v in members.items()},
                 primary=smf_container(members['MID']), lyr=lyric, cur=cursor,
                 scalar_count_equals_cursor_words=same_count,

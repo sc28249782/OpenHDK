@@ -1,5 +1,5 @@
 {
-  "schema": 2,
+  "schema": 3,
   "scope": "synthetic-only",
   "ncn_acceptance": "Pending",
   "midis": {
@@ -41,6 +41,13 @@
         "positions": [],
         "ticks": [],
         "media_us": []
+      },
+      "cur_framing": {
+        "status": "Selected",
+        "kind": "Physical",
+        "marker_byte_offset": null,
+        "logical_cursor_bytes": 0,
+        "framing_bytes": 0
       }
     },
     {
@@ -65,6 +72,13 @@
         "media_us": [
           500000
         ]
+      },
+      "cur_framing": {
+        "status": "Selected",
+        "kind": "Physical",
+        "marker_byte_offset": null,
+        "logical_cursor_bytes": 2,
+        "framing_bytes": 0
       }
     },
     {
@@ -99,6 +113,13 @@
           1000000,
           1500000
         ]
+      },
+      "cur_framing": {
+        "status": "Selected",
+        "kind": "Physical",
+        "marker_byte_offset": null,
+        "logical_cursor_bytes": 6,
+        "framing_bytes": 0
       }
     },
     {
@@ -133,6 +154,13 @@
           1000000,
           1500000
         ]
+      },
+      "cur_framing": {
+        "status": "Selected",
+        "kind": "Physical",
+        "marker_byte_offset": null,
+        "logical_cursor_bytes": 6,
+        "framing_bytes": 0
       }
     },
     {
@@ -167,6 +195,13 @@
           1000000,
           1500000
         ]
+      },
+      "cur_framing": {
+        "status": "Selected",
+        "kind": "Physical",
+        "marker_byte_offset": null,
+        "logical_cursor_bytes": 6,
+        "framing_bytes": 0
       }
     },
     {
@@ -196,6 +231,13 @@
           500000,
           1000000
         ]
+      },
+      "cur_framing": {
+        "status": "Selected",
+        "kind": "Physical",
+        "marker_byte_offset": null,
+        "logical_cursor_bytes": 4,
+        "framing_bytes": 0
       }
     },
     {
@@ -235,6 +277,13 @@
           1000000,
           1500000
         ]
+      },
+      "cur_framing": {
+        "status": "Selected",
+        "kind": "Physical",
+        "marker_byte_offset": null,
+        "logical_cursor_bytes": 8,
+        "framing_bytes": 0
       }
     },
     {
@@ -269,6 +318,13 @@
           1000000,
           1500000
         ]
+      },
+      "cur_framing": {
+        "status": "Selected",
+        "kind": "Physical",
+        "marker_byte_offset": null,
+        "logical_cursor_bytes": 6,
+        "framing_bytes": 0
       }
     },
     {
@@ -303,6 +359,13 @@
           1000000,
           1500000
         ]
+      },
+      "cur_framing": {
+        "status": "Selected",
+        "kind": "Physical",
+        "marker_byte_offset": null,
+        "logical_cursor_bytes": 6,
+        "framing_bytes": 0
       }
     },
     {
@@ -315,6 +378,13 @@
         "code": "CountMismatch",
         "member": "CUR",
         "byte_offset": 4
+      },
+      "cur_framing": {
+        "status": "Selected",
+        "kind": "Physical",
+        "marker_byte_offset": null,
+        "logical_cursor_bytes": 4,
+        "framing_bytes": 0
       }
     },
     {
@@ -349,6 +419,13 @@
           1000000,
           1500000
         ]
+      },
+      "cur_framing": {
+        "status": "Selected",
+        "kind": "Physical",
+        "marker_byte_offset": null,
+        "logical_cursor_bytes": 6,
+        "framing_bytes": 0
       }
     },
     {
@@ -378,6 +455,13 @@
           500000,
           1000000
         ]
+      },
+      "cur_framing": {
+        "status": "Selected",
+        "kind": "Physical",
+        "marker_byte_offset": null,
+        "logical_cursor_bytes": 4,
+        "framing_bytes": 0
       }
     },
     {
@@ -412,6 +496,13 @@
           1000000,
           1500000
         ]
+      },
+      "cur_framing": {
+        "status": "Selected",
+        "kind": "Physical",
+        "marker_byte_offset": null,
+        "logical_cursor_bytes": 6,
+        "framing_bytes": 0
       }
     },
     {
@@ -441,6 +532,13 @@
           500000,
           500000
         ]
+      },
+      "cur_framing": {
+        "status": "Selected",
+        "kind": "Physical",
+        "marker_byte_offset": null,
+        "logical_cursor_bytes": 4,
+        "framing_bytes": 0
       }
     },
     {
@@ -475,6 +573,13 @@
           166666,
           166666
         ]
+      },
+      "cur_framing": {
+        "status": "Selected",
+        "kind": "Physical",
+        "marker_byte_offset": null,
+        "logical_cursor_bytes": 6,
+        "framing_bytes": 0
       }
     },
     {
@@ -509,6 +614,13 @@
           0,
           0
         ]
+      },
+      "cur_framing": {
+        "status": "Selected",
+        "kind": "Physical",
+        "marker_byte_offset": null,
+        "logical_cursor_bytes": 6,
+        "framing_bytes": 0
       }
     },
     {
@@ -543,6 +655,13 @@
           1500000,
           2500000
         ]
+      },
+      "cur_framing": {
+        "status": "Selected",
+        "kind": "Physical",
+        "marker_byte_offset": null,
+        "logical_cursor_bytes": 6,
+        "framing_bytes": 0
       }
     },
     {
@@ -555,6 +674,13 @@
         "code": "Decreasing",
         "member": "CUR",
         "byte_offset": 2
+      },
+      "cur_framing": {
+        "status": "Selected",
+        "kind": "Physical",
+        "marker_byte_offset": null,
+        "logical_cursor_bytes": 4,
+        "framing_bytes": 0
       }
     },
     {
@@ -566,6 +692,11 @@
         "status": "Rejected",
         "code": "OddLength",
         "member": "CUR",
+        "byte_offset": 0
+      },
+      "cur_framing": {
+        "status": "Rejected",
+        "code": "OddLength",
         "byte_offset": 0
       }
     },
@@ -579,6 +710,13 @@
         "code": "InvalidText",
         "member": "LYR",
         "byte_offset": 7
+      },
+      "cur_framing": {
+        "status": "Selected",
+        "kind": "Physical",
+        "marker_byte_offset": null,
+        "logical_cursor_bytes": 2,
+        "framing_bytes": 0
       }
     },
     {
@@ -591,6 +729,13 @@
         "code": "InvalidText",
         "member": "LYR",
         "byte_offset": 7
+      },
+      "cur_framing": {
+        "status": "Selected",
+        "kind": "Physical",
+        "marker_byte_offset": null,
+        "logical_cursor_bytes": 2,
+        "framing_bytes": 0
       }
     },
     {
@@ -603,6 +748,13 @@
         "code": "BeyondPrimary",
         "member": "CUR",
         "byte_offset": 0
+      },
+      "cur_framing": {
+        "status": "Selected",
+        "kind": "Physical",
+        "marker_byte_offset": null,
+        "logical_cursor_bytes": 2,
+        "framing_bytes": 0
       }
     },
     {
@@ -627,6 +779,13 @@
         "media_us": [
           5312500
         ]
+      },
+      "cur_framing": {
+        "status": "Selected",
+        "kind": "Physical",
+        "marker_byte_offset": null,
+        "logical_cursor_bytes": 2,
+        "framing_bytes": 0
       }
     },
     {
@@ -651,6 +810,13 @@
         "media_us": [
           1359979166
         ]
+      },
+      "cur_framing": {
+        "status": "Selected",
+        "kind": "Physical",
+        "marker_byte_offset": null,
+        "logical_cursor_bytes": 2,
+        "framing_bytes": 0
       }
     },
     {
@@ -675,6 +841,13 @@
         "media_us": [
           1360000000
         ]
+      },
+      "cur_framing": {
+        "status": "Selected",
+        "kind": "Physical",
+        "marker_byte_offset": null,
+        "logical_cursor_bytes": 2,
+        "framing_bytes": 0
       }
     },
     {
@@ -699,6 +872,13 @@
         "media_us": [
           1365312500
         ]
+      },
+      "cur_framing": {
+        "status": "Selected",
+        "kind": "Physical",
+        "marker_byte_offset": null,
+        "logical_cursor_bytes": 2,
+        "framing_bytes": 0
       }
     },
     {
@@ -711,6 +891,13 @@
         "code": "HeaderTermination",
         "member": "LYR",
         "byte_offset": 6
+      },
+      "cur_framing": {
+        "status": "Selected",
+        "kind": "Physical",
+        "marker_byte_offset": null,
+        "logical_cursor_bytes": 0,
+        "framing_bytes": 0
       }
     },
     {
@@ -723,6 +910,13 @@
         "code": "CountMismatch",
         "member": "CUR",
         "byte_offset": 0
+      },
+      "cur_framing": {
+        "status": "Selected",
+        "kind": "Physical",
+        "marker_byte_offset": null,
+        "logical_cursor_bytes": 0,
+        "framing_bytes": 0
       }
     },
     {
@@ -735,6 +929,13 @@
         "code": "CountMismatch",
         "member": "CUR",
         "byte_offset": 2
+      },
+      "cur_framing": {
+        "status": "Selected",
+        "kind": "Physical",
+        "marker_byte_offset": null,
+        "logical_cursor_bytes": 2,
+        "framing_bytes": 0
       }
     },
     {
@@ -759,6 +960,13 @@
         "media_us": [
           500000
         ]
+      },
+      "cur_framing": {
+        "status": "Selected",
+        "kind": "Physical",
+        "marker_byte_offset": null,
+        "logical_cursor_bytes": 2,
+        "framing_bytes": 0
       }
     },
     {
@@ -783,6 +991,13 @@
         "media_us": [
           500000
         ]
+      },
+      "cur_framing": {
+        "status": "Selected",
+        "kind": "Physical",
+        "marker_byte_offset": null,
+        "logical_cursor_bytes": 2,
+        "framing_bytes": 0
       }
     },
     {
@@ -812,6 +1027,13 @@
           0,
           500000
         ]
+      },
+      "cur_framing": {
+        "status": "Selected",
+        "kind": "Physical",
+        "marker_byte_offset": null,
+        "logical_cursor_bytes": 4,
+        "framing_bytes": 0
       }
     },
     {
@@ -846,6 +1068,13 @@
           1360000000,
           1365312500
         ]
+      },
+      "cur_framing": {
+        "status": "Selected",
+        "kind": "Physical",
+        "marker_byte_offset": null,
+        "logical_cursor_bytes": 6,
+        "framing_bytes": 0
       }
     },
     {
@@ -860,6 +1089,13 @@
         "positions": [],
         "ticks": [],
         "media_us": []
+      },
+      "cur_framing": {
+        "status": "Selected",
+        "kind": "Physical",
+        "marker_byte_offset": null,
+        "logical_cursor_bytes": 0,
+        "framing_bytes": 0
       }
     },
     {
@@ -874,6 +1110,13 @@
         "positions": [],
         "ticks": [],
         "media_us": []
+      },
+      "cur_framing": {
+        "status": "Selected",
+        "kind": "Physical",
+        "marker_byte_offset": null,
+        "logical_cursor_bytes": 0,
+        "framing_bytes": 0
       }
     },
     {
@@ -898,6 +1141,13 @@
         "media_us": [
           500000
         ]
+      },
+      "cur_framing": {
+        "status": "Selected",
+        "kind": "Physical",
+        "marker_byte_offset": null,
+        "logical_cursor_bytes": 2,
+        "framing_bytes": 0
       }
     },
     {
@@ -922,6 +1172,13 @@
         "media_us": [
           500000
         ]
+      },
+      "cur_framing": {
+        "status": "Selected",
+        "kind": "Physical",
+        "marker_byte_offset": null,
+        "logical_cursor_bytes": 2,
+        "framing_bytes": 0
       }
     },
     {
@@ -951,6 +1208,13 @@
           500000,
           1000000
         ]
+      },
+      "cur_framing": {
+        "status": "Selected",
+        "kind": "Physical",
+        "marker_byte_offset": null,
+        "logical_cursor_bytes": 4,
+        "framing_bytes": 0
       }
     },
     {
@@ -980,6 +1244,13 @@
           500000,
           1000000
         ]
+      },
+      "cur_framing": {
+        "status": "Selected",
+        "kind": "Physical",
+        "marker_byte_offset": null,
+        "logical_cursor_bytes": 4,
+        "framing_bytes": 0
       }
     },
     {
@@ -1004,6 +1275,13 @@
         "media_us": [
           500000
         ]
+      },
+      "cur_framing": {
+        "status": "Selected",
+        "kind": "Physical",
+        "marker_byte_offset": null,
+        "logical_cursor_bytes": 2,
+        "framing_bytes": 0
       }
     },
     {
@@ -1028,6 +1306,13 @@
         "media_us": [
           500000
         ]
+      },
+      "cur_framing": {
+        "status": "Selected",
+        "kind": "Physical",
+        "marker_byte_offset": null,
+        "logical_cursor_bytes": 2,
+        "framing_bytes": 0
       }
     },
     {
@@ -1052,6 +1337,13 @@
         "media_us": [
           500000
         ]
+      },
+      "cur_framing": {
+        "status": "Selected",
+        "kind": "Physical",
+        "marker_byte_offset": null,
+        "logical_cursor_bytes": 2,
+        "framing_bytes": 0
       }
     },
     {
@@ -1076,6 +1368,13 @@
         "media_us": [
           500000
         ]
+      },
+      "cur_framing": {
+        "status": "Selected",
+        "kind": "Physical",
+        "marker_byte_offset": null,
+        "logical_cursor_bytes": 2,
+        "framing_bytes": 0
       }
     },
     {
@@ -1100,6 +1399,13 @@
         "media_us": [
           500000
         ]
+      },
+      "cur_framing": {
+        "status": "Selected",
+        "kind": "Physical",
+        "marker_byte_offset": null,
+        "logical_cursor_bytes": 2,
+        "framing_bytes": 0
       }
     },
     {
@@ -1112,6 +1418,13 @@
         "code": "InvalidText",
         "member": "LYR",
         "byte_offset": 8
+      },
+      "cur_framing": {
+        "status": "Selected",
+        "kind": "Physical",
+        "marker_byte_offset": null,
+        "logical_cursor_bytes": 0,
+        "framing_bytes": 0
       }
     },
     {
@@ -1124,6 +1437,13 @@
         "code": "InvalidText",
         "member": "LYR",
         "byte_offset": 8
+      },
+      "cur_framing": {
+        "status": "Selected",
+        "kind": "Physical",
+        "marker_byte_offset": null,
+        "logical_cursor_bytes": 0,
+        "framing_bytes": 0
       }
     },
     {
@@ -1136,6 +1456,13 @@
         "code": "HeaderTermination",
         "member": "LYR",
         "byte_offset": 1
+      },
+      "cur_framing": {
+        "status": "Selected",
+        "kind": "Physical",
+        "marker_byte_offset": null,
+        "logical_cursor_bytes": 0,
+        "framing_bytes": 0
       }
     },
     {
@@ -1148,6 +1475,13 @@
         "code": "HeaderTermination",
         "member": "LYR",
         "byte_offset": 3
+      },
+      "cur_framing": {
+        "status": "Selected",
+        "kind": "Physical",
+        "marker_byte_offset": null,
+        "logical_cursor_bytes": 0,
+        "framing_bytes": 0
       }
     },
     {
@@ -1160,6 +1494,13 @@
         "code": "HeaderTermination",
         "member": "LYR",
         "byte_offset": 5
+      },
+      "cur_framing": {
+        "status": "Selected",
+        "kind": "Physical",
+        "marker_byte_offset": null,
+        "logical_cursor_bytes": 0,
+        "framing_bytes": 0
       }
     },
     {
@@ -1172,6 +1513,13 @@
         "code": "HeaderTermination",
         "member": "LYR",
         "byte_offset": 7
+      },
+      "cur_framing": {
+        "status": "Selected",
+        "kind": "Physical",
+        "marker_byte_offset": null,
+        "logical_cursor_bytes": 0,
+        "framing_bytes": 0
       }
     },
     {
@@ -1184,6 +1532,444 @@
         "code": "HeaderTermination",
         "member": "LYR",
         "byte_offset": 6
+      },
+      "cur_framing": {
+        "status": "Selected",
+        "kind": "Physical",
+        "marker_byte_offset": null,
+        "logical_cursor_bytes": 0,
+        "framing_bytes": 0
+      }
+    },
+    {
+      "id": "cur-empty",
+      "midi": "M480",
+      "lyr_hex": "540a410a430a0a",
+      "cur_hex": "",
+      "expected": {
+        "status": "NoLyrics",
+        "scalars": [],
+        "member_offsets": [],
+        "positions": [],
+        "ticks": [],
+        "media_us": []
+      },
+      "cur_framing": {
+        "status": "Selected",
+        "kind": "Physical",
+        "marker_byte_offset": null,
+        "logical_cursor_bytes": 0,
+        "framing_bytes": 0
+      }
+    },
+    {
+      "id": "cur-marker-only",
+      "midi": "M480",
+      "lyr_hex": "540a410a430a0a",
+      "cur_hex": "ff",
+      "expected": {
+        "status": "NoLyrics",
+        "scalars": [],
+        "member_offsets": [],
+        "positions": [],
+        "ticks": [],
+        "media_us": []
+      },
+      "cur_framing": {
+        "status": "Selected",
+        "kind": "TerminalFF",
+        "marker_byte_offset": 0,
+        "logical_cursor_bytes": 0,
+        "framing_bytes": 1
+      }
+    },
+    {
+      "id": "cur-marker-only-text",
+      "midi": "M480",
+      "lyr_hex": "540a410a430a0a58",
+      "cur_hex": "ff",
+      "expected": {
+        "status": "Rejected",
+        "code": "CountMismatch",
+        "member": "CUR",
+        "byte_offset": 0
+      },
+      "cur_framing": {
+        "status": "Selected",
+        "kind": "TerminalFF",
+        "marker_byte_offset": 0,
+        "logical_cursor_bytes": 0,
+        "framing_bytes": 1
+      }
+    },
+    {
+      "id": "cur-plain-quarter",
+      "midi": "M480",
+      "lyr_hex": "540a410a430a0a58",
+      "cur_hex": "1800",
+      "expected": {
+        "status": "Candidate",
+        "scalars": [
+          88
+        ],
+        "member_offsets": [
+          7
+        ],
+        "positions": [
+          24
+        ],
+        "ticks": [
+          480
+        ],
+        "media_us": [
+          500000
+        ]
+      },
+      "cur_framing": {
+        "status": "Selected",
+        "kind": "Physical",
+        "marker_byte_offset": null,
+        "logical_cursor_bytes": 2,
+        "framing_bytes": 0
+      }
+    },
+    {
+      "id": "cur-marked-quarter",
+      "midi": "M480",
+      "lyr_hex": "540a410a430a0a58",
+      "cur_hex": "1800ff",
+      "expected": {
+        "status": "Candidate",
+        "scalars": [
+          88
+        ],
+        "member_offsets": [
+          7
+        ],
+        "positions": [
+          24
+        ],
+        "ticks": [
+          480
+        ],
+        "media_us": [
+          500000
+        ]
+      },
+      "cur_framing": {
+        "status": "Selected",
+        "kind": "TerminalFF",
+        "marker_byte_offset": 2,
+        "logical_cursor_bytes": 2,
+        "framing_bytes": 1
+      }
+    },
+    {
+      "id": "cur-low-ff-data",
+      "midi": "Mhigh",
+      "lyr_hex": "540a410a430a0a58",
+      "cur_hex": "ff00",
+      "expected": {
+        "status": "Candidate",
+        "scalars": [
+          88
+        ],
+        "member_offsets": [
+          7
+        ],
+        "positions": [
+          255
+        ],
+        "ticks": [
+          5100
+        ],
+        "media_us": [
+          5312500
+        ]
+      },
+      "cur_framing": {
+        "status": "Selected",
+        "kind": "Physical",
+        "marker_byte_offset": null,
+        "logical_cursor_bytes": 2,
+        "framing_bytes": 0
+      }
+    },
+    {
+      "id": "cur-high-ff-data",
+      "midi": "Mhigh",
+      "lyr_hex": "540a410a430a0a58",
+      "cur_hex": "00ff",
+      "expected": {
+        "status": "Candidate",
+        "scalars": [
+          88
+        ],
+        "member_offsets": [
+          7
+        ],
+        "positions": [
+          65280
+        ],
+        "ticks": [
+          1305600
+        ],
+        "media_us": [
+          1360000000
+        ]
+      },
+      "cur_framing": {
+        "status": "Selected",
+        "kind": "Physical",
+        "marker_byte_offset": null,
+        "logical_cursor_bytes": 2,
+        "framing_bytes": 0
+      }
+    },
+    {
+      "id": "cur-full-ffff-data",
+      "midi": "Mhigh",
+      "lyr_hex": "540a410a430a0a58",
+      "cur_hex": "ffff",
+      "expected": {
+        "status": "Candidate",
+        "scalars": [
+          88
+        ],
+        "member_offsets": [
+          7
+        ],
+        "positions": [
+          65535
+        ],
+        "ticks": [
+          1310700
+        ],
+        "media_us": [
+          1365312500
+        ]
+      },
+      "cur_framing": {
+        "status": "Selected",
+        "kind": "Physical",
+        "marker_byte_offset": null,
+        "logical_cursor_bytes": 2,
+        "framing_bytes": 0
+      }
+    },
+    {
+      "id": "cur-full-word-plus-marker",
+      "midi": "Mhigh",
+      "lyr_hex": "540a410a430a0a58",
+      "cur_hex": "ffffff",
+      "expected": {
+        "status": "Candidate",
+        "scalars": [
+          88
+        ],
+        "member_offsets": [
+          7
+        ],
+        "positions": [
+          65535
+        ],
+        "ticks": [
+          1310700
+        ],
+        "media_us": [
+          1365312500
+        ]
+      },
+      "cur_framing": {
+        "status": "Selected",
+        "kind": "TerminalFF",
+        "marker_byte_offset": 2,
+        "logical_cursor_bytes": 2,
+        "framing_bytes": 1
+      }
+    },
+    {
+      "id": "cur-ordinary-singleton",
+      "midi": "M480",
+      "lyr_hex": "540a410a430a0a58",
+      "cur_hex": "18",
+      "expected": {
+        "status": "Rejected",
+        "code": "OddLength",
+        "member": "CUR",
+        "byte_offset": 0
+      },
+      "cur_framing": {
+        "status": "Rejected",
+        "code": "OddLength",
+        "byte_offset": 0
+      }
+    },
+    {
+      "id": "cur-non-ff-tail",
+      "midi": "M480",
+      "lyr_hex": "540a410a430a0a58",
+      "cur_hex": "180000",
+      "expected": {
+        "status": "Rejected",
+        "code": "OddLength",
+        "member": "CUR",
+        "byte_offset": 2
+      },
+      "cur_framing": {
+        "status": "Rejected",
+        "code": "OddLength",
+        "byte_offset": 2
+      }
+    },
+    {
+      "id": "cur-interior-ff",
+      "midi": "Mhigh",
+      "lyr_hex": "540a410a430a0a5859",
+      "cur_hex": "ff001800",
+      "expected": {
+        "status": "Rejected",
+        "code": "Decreasing",
+        "member": "CUR",
+        "byte_offset": 2
+      },
+      "cur_framing": {
+        "status": "Selected",
+        "kind": "Physical",
+        "marker_byte_offset": null,
+        "logical_cursor_bytes": 4,
+        "framing_bytes": 0
+      }
+    },
+    {
+      "id": "cur-decreasing-marked",
+      "midi": "M480",
+      "lyr_hex": "540a410a430a0a5859",
+      "cur_hex": "30001800ff",
+      "expected": {
+        "status": "Rejected",
+        "code": "Decreasing",
+        "member": "CUR",
+        "byte_offset": 2
+      },
+      "cur_framing": {
+        "status": "Selected",
+        "kind": "TerminalFF",
+        "marker_byte_offset": 4,
+        "logical_cursor_bytes": 4,
+        "framing_bytes": 1
+      }
+    },
+    {
+      "id": "cur-equal-marked",
+      "midi": "M480",
+      "lyr_hex": "540a410a430a0a5859",
+      "cur_hex": "18001800ff",
+      "expected": {
+        "status": "Candidate",
+        "scalars": [
+          88,
+          89
+        ],
+        "member_offsets": [
+          7,
+          8
+        ],
+        "positions": [
+          24,
+          24
+        ],
+        "ticks": [
+          480,
+          480
+        ],
+        "media_us": [
+          500000,
+          500000
+        ]
+      },
+      "cur_framing": {
+        "status": "Selected",
+        "kind": "TerminalFF",
+        "marker_byte_offset": 4,
+        "logical_cursor_bytes": 4,
+        "framing_bytes": 1
+      }
+    },
+    {
+      "id": "cur-extra-complete-word",
+      "midi": "M480",
+      "lyr_hex": "540a410a430a0a58",
+      "cur_hex": "18003000ff",
+      "expected": {
+        "status": "Rejected",
+        "code": "CountMismatch",
+        "member": "CUR",
+        "byte_offset": 4
+      },
+      "cur_framing": {
+        "status": "Selected",
+        "kind": "TerminalFF",
+        "marker_byte_offset": 4,
+        "logical_cursor_bytes": 4,
+        "framing_bytes": 1
+      }
+    },
+    {
+      "id": "cur-even-ff-run",
+      "midi": "Mhigh",
+      "lyr_hex": "540a410a430a0a58",
+      "cur_hex": "1800ffffffff",
+      "expected": {
+        "status": "Rejected",
+        "code": "CountMismatch",
+        "member": "CUR",
+        "byte_offset": 6
+      },
+      "cur_framing": {
+        "status": "Selected",
+        "kind": "Physical",
+        "marker_byte_offset": null,
+        "logical_cursor_bytes": 6,
+        "framing_bytes": 0
+      }
+    },
+    {
+      "id": "cur-odd-ff-run",
+      "midi": "Mhigh",
+      "lyr_hex": "540a410a430a0a58",
+      "cur_hex": "1800ffffff",
+      "expected": {
+        "status": "Rejected",
+        "code": "CountMismatch",
+        "member": "CUR",
+        "byte_offset": 4
+      },
+      "cur_framing": {
+        "status": "Selected",
+        "kind": "TerminalFF",
+        "marker_byte_offset": 4,
+        "logical_cursor_bytes": 4,
+        "framing_bytes": 1
+      }
+    },
+    {
+      "id": "cur-beyond-marked",
+      "midi": "M3",
+      "lyr_hex": "540a410a430a0a58",
+      "cur_hex": "3000ff",
+      "expected": {
+        "status": "Rejected",
+        "code": "BeyondPrimary",
+        "member": "CUR",
+        "byte_offset": 0
+      },
+      "cur_framing": {
+        "status": "Selected",
+        "kind": "TerminalFF",
+        "marker_byte_offset": 2,
+        "logical_cursor_bytes": 2,
+        "framing_bytes": 1
       }
     }
   ],

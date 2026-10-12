@@ -680,7 +680,7 @@ NCN24 target includes accepted first-SUB EOF; representative observations and ex
 review remain Pending. No NCN parser/normalizer, suite-count, release-checkbox
 or historical native acceptance change is introduced.
 
-Offline [NCN24 fixture tools](../tests/fixtures/ncn24/README.md) now check 51 original synthetic cases,
+Offline [NCN24 fixture tools](../tests/fixtures/ncn24/README.md) now check 69 original synthetic cases,
 with an independent four-SMF/three-TIS-620 API probe and negative/boundary tests.
 This is fixture tooling, not an application NCN parser/normalizer. All receipts
 keep representative observations and NCN acceptance Pending. Existing CTest
@@ -698,24 +698,30 @@ checkbox, historical evidence bundle or native acceptance change is introduced.
 The [first-SUB EOF amendment](NCN24-TERMINAL-SUB-PROPOSAL.md) was accepted with PR #94.
 The planning contract and offline fixture/checker/inventory tools now select
 logical text before the first `1A`. They retain complete raw members for hashes,
-source caps and accounting. Shared decoders and CUR rules remain unchanged.
-Fixture manifest/receipts and inventory use schema 2. The observation verifier
+source caps and accounting. Shared text decoders remain unchanged. The separate
+CUR framing amendment is described below.
+The earlier SUB-only migration used schema 2. Current fixture/receipts and
+inventory use schema 3, including the separate accepted CUR amendment.
+The observation verifier
 labels schema 1 as historical strict-C0 interpretation and schema 2 as first-SUB
 EOF; it does not reinterpret or backfill old receipts.
 No application NCN parser/normalizer exists. NCN evidence remains OPEN, with
 runtime counts, release checkboxes, historical bundles and storage acceptance
 revisions unchanged.
 
-## Proposed NCN24 optional CUR terminator
+## Accepted NCN24 optional CUR terminator tooling
 
-The [OHK-NCN-CUR-030 proposal](NCN24-CUR-FRAMING-PROPOSAL.md) compares pinned converter,
-legacy reader and community examples. It requests review of even-length CUR
-words with physical EOF and an optional singleton terminal `FF` on odd-length
-members. Complete FF-containing words remain data; no padding, trailer,
-ordering or mapping repair is proposed. Current contract/tooling still reject
-odd CUR lengths. The 51-case schema-2 fixtures, submitted inventories and
-historical evidence remain unchanged. Acceptance and a separate schema/tool
-migration must precede any changed interpretation. NCN normalizer admission
-remains OPEN; Windows checkpoint acknowledgment remains BLOCKED. No private
-corpus statistics or member data are published. Runtime counts and release
-checkboxes do not change.
+The [OHK-NCN-CUR-030 amendment](NCN24-CUR-FRAMING-PROPOSAL.md) was accepted with PR #96.
+The contract and schema-3 offline tools now select complete little-endian words
+at physical EOF, or exclude exactly one terminal FF byte from odd-length CUR.
+Non-FF odd tails still reject. Complete FF words, padding/trailer hypotheses,
+ordering, mapping and timing rules remain unchanged. Raw member hashes, caps
+and shared accounting include the marker. The manifest has 69 cases (51 prior
+plus 18 CUR framing vectors); current checker input rejects schemas 1 and 2.
+Inventory keeps raw trailing-byte statistics beside framing provenance.
+The observation record remains schema 1; its verifier labels inventory schemas
+1/2 as Unframed CUR and schema 3 as OptionalTerminalFF, with arithmetic checks.
+Preserve submitted receipts and rerun samples into new files. No application
+NCN normalizer exists; the evidence gate remains OPEN. Runtime/suite counts,
+checkboxes, historical bundles and storage acceptances do not change. Windows
+checkpoint acknowledgment remains BLOCKED.

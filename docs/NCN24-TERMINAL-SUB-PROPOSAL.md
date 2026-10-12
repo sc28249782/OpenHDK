@@ -128,16 +128,19 @@ inventories and rerun samples for logical-body counts. Do not backfill receipts.
 The previous 33-case manifest has 18 additions. PR #93's terminal SUB rejection
 is migrated to Candidate; combined anomalies now reject odd CUR length after
 EOF selection. Prefix-error/header-termination tests replace obsolete interior
-SUB rejection. CUR-only odd/decreasing rejections remain unchanged.
+SUB rejection. At that SUB-only stage, CUR odd/decreasing rejections stayed
+unchanged. The later CUR amendment is recorded below.
 
 Future tests must cover unchanged raw evidence, original offsets, EOF provenance,
 ignored-byte counts, logical scalar/CUR counts, newline preservation, source and
 staging caps, allocation failure and no partial publication. Test reader output,
 player rendering and tempo behavior separately.
 
-## 6. Unchanged CUR and open gates
+## 6. Separate CUR decision and open gates
 
-This proposal does not accept odd CUR tails, including a single `FF` byte.
+First-SUB EOF alone does not accept CUR tails. The separate accepted
+[OHK-NCN-CUR-030 amendment](NCN24-CUR-FRAMING-PROPOSAL.md) now permits
+exact terminal singleton FF framing; other odd tails remain rejected.
 It does not pad words, sort decreasing positions, clamp ticks, filter FF00..FFFF,
 duplicate cursors or truncate decoded lyrics to fit CUR. Checked PPQN/24 conversion,
 full tempo-map integration and timeline containment keep their current rules.
@@ -154,9 +157,10 @@ acceptance changes are made.
 
 ## 7. Tooling migration record
 
-The current tooling implements the accepted first-SUB rule. The fixture manifest
-and checker receipts use schema 2 with 51 cases (the previous 33 plus 18 authored
-EOF/header vectors). Inventory schema 2 records EOF provenance on success and
+The earlier SUB-only tooling migration implemented this rule. Its fixture
+manifest and checker receipts used schema 2 with 51 cases (the previous 33 plus
+18 authored
+EOF/header vectors). Inventory schema 2 recorded EOF provenance on success and
 text/header failure. `logical_body_bytes` replaces the previous `raw_body_bytes`
 field because counts describe only the logical prefix. Member length/hash still
 cover complete raw bytes. The observation-record schema remains 1; its verifier
@@ -167,3 +171,8 @@ previous strict fixtures are historical pre-migration requirements, not current
 SUB rejection behavior. Submitted old receipts and evidence bundles are unchanged.
 No acceptance of timing, CUR sentinel/order/alignment or representative mapping
 is implied. NCN normalizer admission and evidence gate closure remain Pending.
+
+
+The later CUR migration uses schema 3 with 69 cases and both accepted framing
+rules. Text decoding is unchanged from schema 2. Old supplied inventory schemas
+are retained with their original interpretation; no receipt is backfilled.

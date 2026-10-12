@@ -16,7 +16,7 @@ Run from the repository root:
 python3 tests/check-ncn24-fixtures.py
 ```
 
-Expected result: `fixture-verified`, 51 cases, four primary vectors and both
+Expected result: `fixture-verified`, 69 cases, four primary vectors and both
 `representative_observations` and `ncn_acceptance` equal to `Pending`.
 Receipts contain case IDs and member hashes, not lyrics or input/output paths.
 An expected rejection is a successful fixture comparison, not an accepted song.
@@ -28,7 +28,7 @@ Run the negative and boundary tests:
 python3 tests/ncn24_fixture_tools_tests.py
 ```
 
-Expected result: 20 tests pass. They include changed timing, endian, high-byte,
+Expected result: 21 tests pass. They include changed timing, endian, high-byte,
 scalar and byte-offset expectations; incomplete cases; malformed JSON/hex/SMF;
 limits; export refusal and no partial/private output on checker failure.
 
@@ -40,9 +40,9 @@ Choose a new output directory whose parent already exists:
 python3 tests/check-ncn24-fixtures.py --export /tmp/openhdk-ncn24-fixtures
 ```
 
-The checker validates all expectations before writing. Export creates 51 separate
+The checker validates all expectations before writing. Export creates 69 separate
 case roots, each with `Song/example.mid`, `Lyrics/example.lyr` and
-`Cursor/example.cur`. The 153 files include intentional rejection cases. Existing
+`Cursor/example.cur`. The 207 files include intentional rejection cases. Existing
 targets, including symlinks, are never overwritten. A filesystem failure can
 leave a partial new export directory; inspect it and select a new directory.
 The tool does not remove or modify an existing directory. No absolute path is
@@ -93,8 +93,9 @@ The candidate scalar model uses strict Python TIS-620 with the contract's C0
 policy, then normalizes CRLF/CR/LF. It computes checked bounded unsigned positions
 and exact rational tempo-map times. It never edits the fixture or inserts cursors.
 
-Diagnostic precedence here is LYR decoding/header, CUR length, order/primary
-bounds, then scalar correspondence. `CountMismatch` points to the end of CUR.
+Diagnostic precedence here is LYR decoding/header, CUR framing, order/primary
+bounds, then scalar correspondence. `CountMismatch` points to the end of the
+logical word span in original member coordinates (the marker offset if present).
 Offsets are zero-based member byte offsets; normalized LF from CRLF points to CR.
 These names/offset choices are harness diagnostics, not a new production parser
 error contract. No partial candidate is returned on rejection. A future
@@ -122,21 +123,51 @@ Its inventory is read-only and counts hypotheses; its verifier checks supplied
 record structure/binding. Neither runs playback, validates the full tempo map
 or accepts NCN. Do not submit synthetic/mock data as representative evidence.
 
-## Schema 2 EOF migration
+## Historical schema 2 EOF migration
 
-The manifest now has 51 cases and schema 2. Its literal expectations apply the
+The earlier SUB-only manifest had 51 cases and schema 2. Its literal expectations apply the
 accepted first-SUB logical EOF framing before header/body decoding. Existing
 33 vectors remain, with 18 new EOF/header cases. Complete raw hashes and source
 limits are unchanged. Checker receipts add logical EOF kind, original marker
 offset, logical text byte length and ignored-byte count. Schema-1 manifests
 are rejected by the current checker rather than silently reinterpreted.
 
-Inventory schema 2 uses the same framing and emits `lyr.logical_eof` on both
+Inventory schema 2 used the same framing and emitted `lyr.logical_eof` on both
 CountsObserved and header/text failures. `logical_body_bytes` describes the
 logical body only. The observation verifier still accepts schema-1 inventories
 as `StrictC0` and schema-2 inventories as `FirstSubEof`; record schema stays 1.
 Those labels are interpretation, not compatibility or authentication claims.
 Never edit old supplied receipts. Rerun the collector for new logical counts.
 
-Run `python3 tests/ncn_legacy_edge_tests.py` for 18 migrated edge/boundary tests.
+Run `python3 tests/ncn_legacy_edge_tests.py` for 32 migrated edge/boundary tests.
 No runtime normalizer, legacy execution or NCN acceptance is implied.
+
+
+## Schema 3 optional CUR terminator migration
+
+The accepted [CUR amendment](../../../docs/NCN24-CUR-FRAMING-PROPOSAL.md)
+adds 18 CUR framing vectors to the preceding 51 cases. Schema 3 has 69 cases,
+four unchanged MIDI primaries and 932 decoded bytes. Literal `cur_framing`
+expectations are validated independently of candidate expectations. Receipts
+include LYR EOF and CUR framing provenance even when candidate checks reject.
+Old manifest schemas 1 and 2 fail explicitly in the current checker.
+
+Inventory schema 3 adds `cur.framing`. Selected framing has `status=Selected`,
+`kind=Physical|TerminalFF`, a nullable `marker_byte_offset`,
+`logical_cursor_bytes` and `framing_bytes`. Non-FF odd tails report only
+`status=Rejected`, `code=OddLength` and the original dangling `byte_offset`.
+The collector still reports raw complete-word and trailing-byte statistics.
+A successful inventory exit does not imply valid framing or a compatible bundle.
+Member length/hash and raw-source limits include all bytes.
+
+The observation record remains schema 1. Its verifier accepts inventory schemas
+1, 2 and 3 without relabeling supplied bytes. Text interpretation is StrictC0
+for schema 1 and FirstSubEof for schemas 2/3. Cursor interpretation is Unframed
+for schemas 1/2 and OptionalTerminalFF for schema 3. Arithmetic and supplied
+hash binding do not authenticate raw marker bytes or playback.
+
+The 84 offline Python tests include non-FF odd tails, complete FF words,
+marker-only, raw caps before framing, hash/ledger differences, logical count
+errors, ordering/last-tick/floor behavior and provenance tampering. Source bytes
+are never rewritten. Keep old inventories byte-unchanged and rerun into new
+files. Representative mapping/sentinel/tempo review and NCN admission stay OPEN.

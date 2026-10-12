@@ -1,8 +1,8 @@
 # NCN legacy edge analysis
 
 Status: source inspection and original synthetic regression tests,
-with accepted first-SUB EOF tooling migration;
-NCN evidence gate OPEN. No contract amendment or normalizer admission.
+with accepted first-SUB EOF and optional terminal FF tooling migrations;
+NCN evidence gate OPEN. No application normalizer admission.
 
 ## Basis
 
@@ -43,8 +43,9 @@ No media duration is inferred without the full tempo map.
 [legacy-edge-vectors.json](../tests/fixtures/ncn24/legacy-edge-vectors.json)
 contains four small authored cases: SUB with a trailing newline, odd FF tail,
 decreasing complete words and combined anomalies. The SUB case now admits
-logical EOF. The combined case rejects odd CUR length after EOF selection.
-CUR-only rejection expectations remain unchanged. Expectations are literal data. They are not copied song members or outputs from
+logical EOF. The odd-FF case now admits terminal singleton framing. The combined case
+rejects the decreasing complete word after both framing selections. Non-FF odd
+tails and decreasing words remain rejected. Expectations are literal data. They are not copied song members or outputs from
 a legacy player. The test checks diagnostic precedence without treating it as
 a new production error API.
 
@@ -54,16 +55,18 @@ Run:
 python3 tests/ncn_legacy_edge_tests.py
 ```
 
-Eighteen tests verify accepted SUB EOF, unchanged strict CUR rejection,
-distinction between an incomplete FF tail and a complete FF word, unchanged
+Thirty-two tests verify accepted SUB/terminal-FF framing, retained strict rejection,
+distinction between a singleton FF marker and a complete FF word, unchanged
 input ordering, tick conversion and coexistence of inventory anomalies.
-The main fixture manifest now has 51 cases, including 18 EOF/header additions.
+The main fixture manifest now has 69 cases, including 18 EOF/header and
+18 CUR framing additions.
 These tests do not emulate Qt or establish legacy acceptance.
 
 ## Decision still required
 
-PR #94 accepted first-SUB EOF; the current contract and tooling reflect that
-amendment. Other format decisions still require explicit review.
+PR #94 accepted first-SUB EOF and PR #96 accepted optional terminal singleton
+FF framing. The current contract and schema-3 tools reflect both amendments.
+Mapping, complete-word sentinels and other format decisions still need review.
 Collect reader output, selected cursor observations, a full primary timeline
 and line/scalar mapping first. Record terminal control-byte and odd-byte
 handling as explicit profile decisions if supported by evidence.
@@ -81,10 +84,21 @@ acceptances, evidence bundles and release checkboxes do not advance.
 The [first-SUB EOF amendment](NCN24-TERMINAL-SUB-PROPOSAL.md) was accepted with PR #94.
 The planning contract and offline fixture/checker/inventory tools now select
 logical text before the first `1A`. They retain complete raw members for hashes,
-source caps and accounting. Shared decoders and CUR rules remain unchanged.
-Fixture manifest/receipts and inventory use schema 2. The observation verifier
+source caps and accounting. Shared text decoders remain unchanged. The separate
+CUR framing amendment is described below.
+The SUB-only migration used schema 2. Current fixtures/receipts and inventory
+use schema 3 with the separate CUR amendment. The observation verifier
 labels schema 1 as historical strict-C0 interpretation and schema 2 as first-SUB
 EOF; it does not reinterpret or backfill old receipts.
 No application NCN parser/normalizer exists. NCN evidence remains OPEN, with
 runtime counts, release checkboxes, historical bundles and storage acceptance
 revisions unchanged.
+
+## Accepted CUR framing migration
+
+[OHK-NCN-CUR-030](NCN24-CUR-FRAMING-PROPOSAL.md) admits physical EOF for
+complete words or one terminal FF byte after an even word span. Current offline
+tools record framing separately from raw trailing-byte statistics. Complete FF
+words stay data; no padding, text trailer, clamping or count repair is accepted.
+The observation verifier keeps inventory schemas 1/2 as Unframed CUR and schema
+3 as OptionalTerminalFF. Preserve old receipts and collect new observations.

@@ -38,7 +38,7 @@ continue to apply independently of feature plans.
 | [NCN24-FORMAT-EVIDENCE-SUPPLEMENT](NCN24-FORMAT-EVIDENCE-SUPPLEMENT.md) | Reviewed source comparison with offline synthetic fixture/checker tools; timing/mapping/high-byte corpus review Pending, NCN gate OPEN. |
 | [NCN representative observations](NCN-REPRESENTATIVE-OBSERVATION-RUNBOOK.md) | Read-only privacy-limited inventory, manual playback record and bounded verifier; actual representative execution and NCN acceptance Pending. |
 | [NCN24 terminal SUB proposal](NCN24-TERMINAL-SUB-PROPOSAL.md) | Accepted first-SUB EOF framing; planning contract and schema-2 offline tools updated, NCN gate OPEN. |
-| [NCN24 CUR framing proposal](NCN24-CUR-FRAMING-PROPOSAL.md) | Proposed optional terminal singleton FF framing; pinned source comparison and original review vectors, current tools unchanged, NCN gate OPEN. |
+| [NCN24 CUR framing proposal](NCN24-CUR-FRAMING-PROPOSAL.md) | Accepted optional terminal singleton FF framing; schema-3 offline migration and 69 original fixtures, NCN gate OPEN. |
 | [NCN legacy edge analysis](NCN-LEGACY-EDGE-ANALYSIS.md) | Pinned reader edge inspection and four original edge vectors with EOF migration and strict CUR rejection; NCN acceptance Pending. |
 | [NCN24 fixture tools](../tests/fixtures/ncn24/README.md) | Bounded 51-case original fixture checker/export and SMF/text cross-probe; synthetic verification only, no NCN acceptance. |
 | [MEDIA-CLOCK-HANDOFF-CONTRACT](MEDIA-CLOCK-HANDOFF-CONTRACT.md) | Accepted backend-clock handoff; FluidSynth publication implemented, generation-bound observer implemented; application integration pending. |
@@ -260,3 +260,20 @@ This adds no production behavior, native acceptance, playback or release checkbo
 Fresh pinned WSL2 ext4 execution and explicit scoped review are Pending. Earlier
 `6a6337d` / `4f69246` / `54f404a` acceptances and bundles do not advance; Windows
 checkpoint acknowledgment remains BLOCKED, and NCN/manual gates remain open.
+
+## Accepted NCN24 optional CUR terminator tooling
+
+The [OHK-NCN-CUR-030 amendment](NCN24-CUR-FRAMING-PROPOSAL.md) was accepted with PR #96.
+The contract and schema-3 offline tools now select complete little-endian words
+at physical EOF, or exclude exactly one terminal FF byte from odd-length CUR.
+Non-FF odd tails still reject. Complete FF words, padding/trailer hypotheses,
+ordering, mapping and timing rules remain unchanged. Raw member hashes, caps
+and shared accounting include the marker. The manifest has 69 cases (51 prior
+plus 18 CUR framing vectors); current checker input rejects schemas 1 and 2.
+Inventory keeps raw trailing-byte statistics beside framing provenance.
+The observation record remains schema 1; its verifier labels inventory schemas
+1/2 as Unframed CUR and schema 3 as OptionalTerminalFF, with arithmetic checks.
+Preserve submitted receipts and rerun samples into new files. No application
+NCN normalizer exists; the evidence gate remains OPEN. Runtime/suite counts,
+checkboxes, historical bundles and storage acceptances do not change. Windows
+checkpoint acknowledgment remains BLOCKED.
