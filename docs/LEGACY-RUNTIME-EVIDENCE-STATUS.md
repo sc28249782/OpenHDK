@@ -49,8 +49,35 @@ playing=true, stopped=false, paused=false, and finished=true. These counts
 describe this bounded fixture, not a population-wide failure rate.
 
 The v3 receipt was read back from the private package. The v2 failed receipt
-and package remain unchanged. A separate proposal may test a legacy fix in a
-new copy; no legacy behavior or OpenHDK contract changed in this step.
+and package remain unchanged.
+
+A separate v4 copy changed only the legacy sequencer stop/start and final
+playing flag. Its original nine native cases passed, including 12 of 12
+effective immediate stops. This is a candidate experiment, not an adopted fix.
+A test-only v5 copy preserved those engine bytes and demonstrated that starting
+through a `QThread*` after stop-before-start can leave a sticky stop: the base
+start bypasses the non-virtual derived start method. It also observed
+finished=true together with paused=true after natural completion. Whether that
+legacy paused result is an API defect needs a separate semantic decision.
+The v5 suite's PASS means four diagnostic predictions matched; it does not
+mean every diagnostic case passed or that the engine was accepted.
+
+A delayed-event synthetic fixture in v6 observed a mid-play speed request,
+but its receipt failed because the test predicted one too few event emissions.
+The test-only v7 copy corrected that prediction and recorded a single native
+PASS for the original nine cases plus five matching diagnostics. The request
+preceded the delayed event and the post-join speed value matched the expected
+change. The consuming event index was inferred from timing, not directly
+observed. A legacy unlocked flag read remains a data-race risk. All v2-v6
+receipts remain with their private packages; no player playback or OpenHDK
+runtime acceptance follows from these results.
+
+Before considering a legacy patch, the owner must define and test
+stop-before-start and restart behavior for both concrete and base-pointer
+call paths,
+decide whether Finished and Paused are exclusive, and address concurrent
+public-state reads. OpenHDK's own generation-bound terminal phases remain
+authoritative; these copied legacy observations do not amend its contracts.
 
 ## Non-claims
 
