@@ -1,7 +1,8 @@
 # Library management and preparation CLI evidence
 
-Status: instrumentation ready; fresh pinned WSL2 ext4 execution and explicit
-scoped acceptance are Pending. This document does not accept a runtime revision.
+Status: fresh pinned WSL2 ext4 execution recorded from a private bundle;
+explicit scoped acceptance is Pending. This document does not accept a runtime
+revision.
 
 This procedure implements [OHK-CLI-030 step 4](LIBRARY-CLI-ORCHESTRATION-PLAN.md#8-implementation-order-and-review-gates).
 It uses the production `OpenHDKLibrary` executable. The executable is compiled
@@ -87,6 +88,36 @@ The environment/compile logs can still contain local account/path information.
 Before publication, redact the requested account name in those logs, preserve
 original/published hashes and replacement counts, and regenerate the published
 manifest. Do not backfill observations into old bundles or change numeric receipts.
+
+## Recorded private WSL2 ext4 run — 2026-10-16
+
+A maintainer-supplied run tested exact revision
+`80b673ee5e96a423cbd5974f3b57c34a6fbf78ce` on WSL2 `/dev/sdd`
+ext4 (`data=ordered`). The checkout was pinned and clean, the native
+eligibility bypass was off, and the sanitizer setting was 0. All 31 selected
+hardware-free suite compiles and runs, the production CLI compile and run,
+the receipt verifier, the supplied-log negative verifier and the offline
+tools exited zero. The private receipt records 37 selected cases, six owned
+child exits (1, 1, 75, 76, 74, 0), one positive plus 15 rejected tampered
+logs, and eight offline tool checks. The original private manifest verified
+before and after redaction.
+
+A separate derived copy masks account, host, local-path and media-related
+values. It omits the raw CLI run log and compiled binaries. Its regenerated
+manifest checks the derived files, and its privacy scan found no specified
+sensitive tokens. The derived summary agrees with the original on case order
+and child exits, but the stock receipt verifier cannot recheck the modified
+copy. The original log and successful verifier results remain private. This
+record is a report of supplied execution, not independent authentication of
+source, build and run. No media hash, corpus or private path is published here.
+
+Scoped native acceptance remains **Pending** until the maintainer explicitly
+decides the tested revision, environment and limits after evidence review.
+The output-loss classification is inferred from exit and subsequent state;
+there is no exactly-once delivery or power-loss claim. Prior provider,
+factory/fence and mutation acceptances are unchanged. The Windows checkpoint
+acknowledgment remains BLOCKED; playback, NCN and manual validation remain
+separate open gates.
 
 ## Verification and limits
 
