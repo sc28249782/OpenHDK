@@ -82,6 +82,10 @@ occurs when a SoundFont or audio device is unavailable.
   application/audio/CLI lyric orchestration remains unfinished below.
 - [ ] Close the NCN24 format evidence gate before implementing its bundle
   normalizer; do not claim generic NCN compatibility.
+  A [sanitized legacy runtime evidence status](LEGACY-RUNTIME-EVIDENCE-STATUS.md)
+  records private startup, handoff, ownership, and stop-acknowledgement probes.
+  These probes do not close the NCN24 or Windows checkpoint gates and do not
+  import Qt or BASS-family dependencies into OpenHDK core.
 - [ ] Select and review persistent storage/schema/recovery and backend
   media-position publication before implementing those adapters. The
   [media-clock handoff contract](MEDIA-CLOCK-HANDOFF-CONTRACT.md) is accepted;
