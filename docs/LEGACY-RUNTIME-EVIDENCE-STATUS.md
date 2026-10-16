@@ -65,7 +65,8 @@ mean every diagnostic case passed or that the engine was accepted.
 A delayed-event synthetic fixture in v6 observed a mid-play speed request,
 but its receipt failed because the test predicted one too few event emissions.
 The test-only v7 copy corrected that prediction and recorded a single native
-PASS for the original nine cases plus five matching diagnostics. The request
+PASS for the original nine cases plus five matching diagnostics. Two of
+those diagnostics still reported FAIL, as predicted. The request
 preceded the delayed event and the post-join speed value matched the expected
 change. The consuming event index was inferred from timing, not directly
 observed. A legacy unlocked flag read remains a data-race risk. All v2-v6
@@ -74,8 +75,8 @@ runtime acceptance follows from these results.
 
 Before considering a legacy patch, the owner must define and test
 stop-before-start and restart behavior for both concrete and base-pointer
-call paths,
-decide whether Finished and Paused are exclusive, and address concurrent
+call paths, decide whether Finished and Paused are exclusive, and address
+concurrent
 public-state reads. OpenHDK's own generation-bound terminal phases remain
 authoritative; these copied legacy observations do not amend its contracts.
 
