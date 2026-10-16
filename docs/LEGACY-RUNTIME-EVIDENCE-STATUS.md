@@ -75,10 +75,10 @@ runtime acceptance follows from these results.
 
 Before considering a legacy patch, the owner must define and test
 stop-before-start and restart behavior for both concrete and base-pointer
-call paths, decide whether Finished and Paused are exclusive, and address
-concurrent
-public-state reads. OpenHDK's own generation-bound terminal phases remain
-authoritative; these copied legacy observations do not amend its contracts.
+call paths. The owner must decide whether Finished and Paused are exclusive
+and address concurrent public-state reads. OpenHDK's own generation-bound
+terminal phases remain authoritative; these copied legacy observations do not
+amend its contracts.
 
 ## Non-claims
 
