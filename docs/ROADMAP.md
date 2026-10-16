@@ -439,7 +439,11 @@ a strict verifier and 15 supplied-log negative checks. The pinned collector buil
 OpenHDKLibrary without seams and runs the matrix on an eligible ext4 parent.
 Eight offline Python checks run in Linux CI; CTest counts remain 32 core / 35 audio.
 This adds no production behavior, native acceptance, playback or release checkbox.
-Fresh pinned WSL2 ext4 execution and explicit scoped review are Pending. Earlier
+A [private pinned WSL2 ext4 run](LIBRARY-CLI-EVIDENCE.md#recorded-private-wsl2-ext4-run--2026-10-16)
+at `80b673ee5e96a423cbd5974f3b57c34a6fbf78ce` recorded passing
+management/preparation CLI observations. The redacted derived summary omits the
+raw run log and cannot be rerun through the stock receipt verifier. Explicit
+scoped native acceptance remains Pending; no release checkbox changes. Earlier
 `6a6337d` / `4f69246` / `54f404a` acceptances and bundles do not advance; Windows
 checkpoint acknowledgment remains BLOCKED, and NCN/manual gates remain open.
 
