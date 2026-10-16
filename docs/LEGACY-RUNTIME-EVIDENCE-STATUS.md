@@ -40,10 +40,17 @@ These observations support OpenHDK's explicit generation, terminal-state, and
 stop-acknowledgement contracts. They do not prove that the OpenHDK
 implementation has the same defects.
 
-The next evidence step is a reporting-only harness revision. It must keep the
-same assertions and record the number of lost stop requests and the observed
-public flags before any assertion. A separate change can then test a proposed
-legacy fix. The failed receipt and its package must remain unchanged.
+A reporting-only v3 copy kept the nine cases, assertions, and time budgets
+unchanged. Its native result was seven PASS and two FAIL (process exit 1), with
+no timeout, forced termination, or stderr. Under its immediate-stop synthetic
+schedule, all 12 of 12 stop requests were lost; none took effect. After
+natural completion, the thread was not running, but the public flags were
+playing=true, stopped=false, paused=false, and finished=true. These counts
+describe this bounded fixture, not a population-wide failure rate.
+
+The v3 receipt was read back from the private package. The v2 failed receipt
+and package remain unchanged. A separate proposal may test a legacy fix in a
+new copy; no legacy behavior or OpenHDK contract changed in this step.
 
 ## Non-claims
 
