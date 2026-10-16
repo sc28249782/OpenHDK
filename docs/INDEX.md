@@ -40,6 +40,7 @@ continue to apply independently of feature plans.
 | [NCN24 terminal SUB proposal](NCN24-TERMINAL-SUB-PROPOSAL.md) | Accepted first-SUB EOF framing; planning contract and schema-2 offline tools updated, NCN gate OPEN. |
 | [NCN24 CUR framing proposal](NCN24-CUR-FRAMING-PROPOSAL.md) | Accepted optional terminal singleton FF framing; schema-3 offline migration and 69 original fixtures, NCN gate OPEN. |
 | [NCN legacy edge analysis](NCN-LEGACY-EDGE-ANALYSIS.md) | Pinned reader edge inspection and four original edge vectors with EOF migration and strict CUR rejection; NCN acceptance Pending. |
+| [Legacy runtime evidence status](LEGACY-RUNTIME-EVIDENCE-STATUS.md) | Sanitized status of private legacy startup, handoff, ownership, and stop-acknowledgement probes; records limits and two engine-state observations without closing an OpenHDK gate. |
 | [NCN24 fixture tools](../tests/fixtures/ncn24/README.md) | Bounded 51-case original fixture checker/export and SMF/text cross-probe; synthetic verification only, no NCN acceptance. |
 | [MEDIA-CLOCK-HANDOFF-CONTRACT](MEDIA-CLOCK-HANDOFF-CONTRACT.md) | Accepted backend-clock handoff; FluidSynth publication implemented, generation-bound observer implemented; application integration pending. |
 | [POC-RUNBOOK](POC-RUNBOOK.md) | Windows build, diagnostics, playback, and console operations. |
