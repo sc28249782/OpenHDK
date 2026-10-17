@@ -69,8 +69,11 @@ class FakeBackend final : public AudioBackend {
 public:
   MediaClockPublicationCell cell;
   bool failNextStart{false};
+  bool throwNextStart{false};
   bool forceUnstable{false};
   bool forceExhausted{false};
+  bool failNextStop{false};
+  bool throwNextStop{false};
   std::uint64_t nextGeneration{1U};
   std::size_t startCount{0U};
   std::size_t stopCount{0U};
@@ -92,6 +95,10 @@ public:
                             AudioBackendStatus& status) override {
     ++startCount;
     if (startHook) startHook();
+    if (throwNextStart) {
+      throwNextStart = false;
+      throw std::runtime_error("start explosion");
+    }
     if (failNextStart) {
       failNextStart = false;
       status.error = AudioBackendError::MidiPlaybackFailed;
@@ -105,6 +112,15 @@ public:
   bool stopPlayback(AudioBackendStatus& status) override {
     ++stopCount;
     if (stopHook) stopHook();
+    if (throwNextStop) {
+      throwNextStop = false;
+      throw std::runtime_error("stop explosion");
+    }
+    if (failNextStop) {
+      failNextStop = false;
+      status.error = AudioBackendError::MidiPlaybackFailed;
+      status.message = "rejected stop"; return false;
+    }
     playing = false;
     MediaClockPayload stopped;
     stopped.generation = lastStarted;
@@ -316,7 +332,8 @@ int main() {
     PlaybackController scopedController(*scopedBackend);
     OPENHDK_FAIL_IF(37, scopedController.start(lyrics).acknowledgedGeneration != 1U);
   }
-  OPENHDK_FAIL_IF(38, scopedBackend->stopCount != 1U);
+  OPENHDK_FAIL_IF(38, scopedBackend->stopCount != 1U
+      || scopedBackend->shutdownCount != 0U);
   // 16. The retained prepared handle outlives the controller's start scope.
   std::optional<std::uint64_t> retainedRevision;
   {
@@ -326,5 +343,86 @@ int main() {
     retainedRevision = controller8.preparedCatalogRevision();
   }
   OPENHDK_FAIL_IF(40, retainedRevision != revision || !lyrics || !noLyrics);
+  // 17. A throwing backend start fails with no leaked active state: the
+  // observer is already cleared before the attempt and the cleanup stop
+  // confirms, leaving the controller idle.
+  FakeBackend backend9;
+  backend9.throwNextStart = true;
+  PlaybackController controller9(backend9);
+  bool startClearedObserver = false;
+  backend9.startHook = [&] {
+    startClearedObserver = controller9.expectedGeneration() == std::nullopt;
+  };
+  const auto thrown = controller9.start(lyrics);
+  OPENHDK_FAIL_IF(41, thrown.error != PlaybackController::StartError::Failed
+      || thrown.acknowledgedGeneration != 0U || !startClearedObserver
+      || controller9.playbackActive() || !controller9.libraryMutationAllowed()
+      || controller9.expectedGeneration()
+      || controller9.preparedCatalogRevision().has_value());
+  OPENHDK_FAIL_IF(42, backend9.startCount != 1U || backend9.stopCount != 1U
+      || backend9.playing);
+  // 18. A throwing start whose cleanup stop also fails enters the blocked
+  // unconfirmed state; library mutations stay excluded until a stop() retry
+  // confirms.
+  FakeBackend backend10;
+  backend10.throwNextStart = true;
+  backend10.failNextStop = true;
+  PlaybackController controller10(backend10);
+  OPENHDK_FAIL_IF(43, controller10.start(lyrics).error
+      != PlaybackController::StartError::StopFailed);
+  OPENHDK_FAIL_IF(44, !controller10.playbackActive()
+      || controller10.libraryMutationAllowed() || controller10.expectedGeneration()
+      || controller10.preparedCatalogRevision() != revision);
+  OPENHDK_FAIL_IF(45, controller10.stop().error != PlaybackController::StopError::None
+      || controller10.playbackActive() || !controller10.libraryMutationAllowed()
+      || controller10.preparedCatalogRevision().has_value()
+      || backend10.stopCount != 2U);
+  // 19. A bind failure whose cleanup stop fails behaves the same way.
+  FakeBackend backend11;
+  backend11.nextGeneration = 0U; // Zero generation fails the bind.
+  backend11.failNextStop = true;
+  PlaybackController controller11(backend11);
+  const auto blockedBind = controller11.start(lyrics);
+  OPENHDK_FAIL_IF(46, blockedBind.error != PlaybackController::StartError::StopFailed
+      || blockedBind.acknowledgedGeneration != 0U || !controller11.playbackActive()
+      || controller11.libraryMutationAllowed() || controller11.expectedGeneration());
+  OPENHDK_FAIL_IF(47, controller11.stop().error != PlaybackController::StopError::None
+      || !controller11.libraryMutationAllowed() || backend11.stopCount != 2U);
+  // 20. A stop that returns false keeps the prepared handle, blocks mutations,
+  // clears the observer, surfaces the backend message and allows retry.
+  FakeBackend backend12;
+  PlaybackController controller12(backend12);
+  OPENHDK_FAIL_IF(48, controller12.start(lyrics).acknowledgedGeneration != 1U);
+  OPENHDK_FAIL_IF(49, !backend12.publish(1U, 166666U));
+  const auto preStopCue = controller12.pollDisplay();
+  OPENHDK_FAIL_IF(50, !preStopCue.batch || controller12.observed().cues().size() != 3);
+  backend12.failNextStop = true;
+  const auto falseStop = controller12.stop();
+  OPENHDK_FAIL_IF(51, falseStop.error != PlaybackController::StopError::StopUnconfirmed
+      || falseStop.message.empty() || !controller12.playbackActive()
+      || controller12.libraryMutationAllowed() || controller12.expectedGeneration()
+      || controller12.observed().cues().size() != 0);
+  OPENHDK_FAIL_IF(52, controller12.stop().error != PlaybackController::StopError::None
+      || controller12.playbackActive() || backend12.stopCount != 2U);
+  // 21. A throwing stop behaves like a failed stop and the retry confirms.
+  FakeBackend backend13;
+  PlaybackController controller13(backend13);
+  OPENHDK_FAIL_IF(53, controller13.start(lyrics).acknowledgedGeneration != 1U);
+  backend13.throwNextStop = true;
+  const auto throwStop = controller13.stop();
+  OPENHDK_FAIL_IF(54, throwStop.error != PlaybackController::StopError::StopUnconfirmed
+      || throwStop.message.empty() || !controller13.playbackActive()
+      || controller13.libraryMutationAllowed());
+  OPENHDK_FAIL_IF(55, controller13.stop().error != PlaybackController::StopError::None
+      || controller13.playbackActive() || backend13.stopCount != 2U);
+  // 22. A controller destroyed with an unconfirmed stop attempts the ordered
+  // stop once more and falls back to the backend's noexcept shutdown().
+  auto backend14 = std::make_unique<FakeBackend>();
+  backend14->failNextStop = true;
+  {
+    PlaybackController controller14(*backend14);
+    OPENHDK_FAIL_IF(56, controller14.start(lyrics).acknowledgedGeneration != 1U);
+  }
+  OPENHDK_FAIL_IF(57, backend14->stopCount != 1U || backend14->shutdownCount != 1U);
   return 0;
 }
