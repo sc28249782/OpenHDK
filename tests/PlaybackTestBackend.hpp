@@ -20,7 +20,7 @@
 
 namespace OpenHDK::Test {
 
-class PlaybackTestBackend final : public AudioBackend {
+class PlaybackTestBackend : public AudioBackend {
 public:
   MediaClockPublicationCell cell;
   bool failNextStart{false};

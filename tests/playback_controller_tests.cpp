@@ -66,6 +66,36 @@ std::vector<std::size_t> indices(const LyricCueBatch& batch) {
 }
 static_assert(!std::is_copy_constructible_v<PlaybackController>);
 static_assert(noexcept(std::declval<PlaybackController>().pollDisplay()));
+static_assert(noexcept(std::declval<PlaybackController>().pollDisplayWithClock()));
+
+// Backend whose mediaClock returns a scripted read sequence; used to prove
+// pollDisplayWithClock consumes exactly one read per call and returns that
+// very read (subsequent scripted reads must not leak into earlier results).
+class ScriptedClockBackend final : public OpenHDK::Test::PlaybackTestBackend {
+public:
+  mutable std::uint64_t reads{0U};
+  std::vector<MediaClockReadResult> script;
+  [[nodiscard]] MediaClockReadResult mediaClock() const noexcept override {
+    if (script.empty()) return {MediaClockReadStatus::Unstable, std::nullopt};
+    const auto index = reads < script.size() ? reads : script.size() - 1U;
+    ++reads;
+    return script[static_cast<std::size_t>(index)];
+  }
+};
+
+[[nodiscard]] MediaClockReadResult clockRead(std::uint64_t generation,
+    std::uint64_t microseconds, MediaClockPhase phase, std::uint64_t revision) {
+  MediaClockPayload payload;
+  payload.generation = generation;
+  payload.mediaMicroseconds = microseconds;
+  payload.source = MediaClockSource::CompiledTimeline;
+  payload.phase = phase;
+  payload.failure = MediaClockFailure::None;
+  MediaClockSnapshot result;
+  static_cast<MediaClockPayload&>(result) = payload;
+  result.revision = revision;
+  return MediaClockReadResult{MediaClockReadStatus::Snapshot, result};
+}
 } // namespace
 int main() {
   TemporaryRoot temp;
@@ -329,5 +359,74 @@ int main() {
     OPENHDK_FAIL_IF(56, controller14.start(lyrics).acknowledgedGeneration != 1U);
   }
   OPENHDK_FAIL_IF(57, backend14->stopCount != 1U || backend14->shutdownCount != 1U);
+  // 23. Additive combined observation: exactly one committed mediaClock read
+  // per pollDisplayWithClock call; the returned clock is that same read and
+  // the observed cue prefix comes from it (fixture cues at 0/166666/166666/
+  // 333333 microseconds, indices 0..3).
+  ScriptedClockBackend backend15;
+  backend15.script.push_back(clockRead(1U, 0U, MediaClockPhase::Playing, 6U));
+  backend15.script.push_back(
+      clockRead(1U, 166666U, MediaClockPhase::Paused, 8U));
+  PlaybackController controller15(backend15);
+  OPENHDK_FAIL_IF(58, controller15.start(lyrics).acknowledgedGeneration != 1U);
+  const auto combined1 = controller15.pollDisplayWithClock();
+  OPENHDK_FAIL_IF(59, combined1.clock.status != MediaClockReadStatus::Snapshot
+      || !combined1.clock.snapshot
+      || combined1.clock.snapshot->phase != MediaClockPhase::Playing
+      || combined1.clock.snapshot->mediaMicroseconds != 0U
+      || combined1.clock.snapshot->revision != 6U
+      || combined1.observer.status != LyricClockPollStatus::Advanced
+      || !combined1.observer.batch
+      || indices(*combined1.observer.batch) != std::vector<std::size_t>{0U}
+      || controller15.observed().cues().size() != 1U
+      || backend15.reads != 1U);
+  const auto combined2 = controller15.pollDisplayWithClock();
+  OPENHDK_FAIL_IF(60, !combined2.clock.snapshot
+      || combined2.clock.snapshot->phase != MediaClockPhase::Paused
+      || combined2.clock.snapshot->mediaMicroseconds != 166666U
+      || combined2.clock.snapshot->revision != 8U
+      || backend15.reads != 2U
+      || combined2.observer.status != LyricClockPollStatus::Advanced
+      || !combined2.observer.batch
+      || indices(*combined2.observer.batch) != std::vector<std::size_t>{1U, 2U}
+      || controller15.observed().cues().size() != 3U);
+  // 24. Finished reaches the caller raw even though the observer stays
+  // Advanced and the controller remains active until an explicit stop.
+  backend15.script.push_back(
+      clockRead(1U, 333333U, MediaClockPhase::Finished, 10U));
+  const auto combined3 = controller15.pollDisplayWithClock();
+  OPENHDK_FAIL_IF(61, !combined3.clock.snapshot
+      || combined3.clock.snapshot->phase != MediaClockPhase::Finished
+      || combined3.clock.snapshot->mediaMicroseconds != 333333U
+      || combined3.observer.status != LyricClockPollStatus::Advanced
+      || !combined3.observer.batch
+      || indices(*combined3.observer.batch) != std::vector<std::size_t>{3U}
+      || controller15.observed().cues().size() != 4U
+      || !controller15.playbackActive());
+  // 25. Legacy pollDisplay keeps its exact semantics: observer result of one
+  // committed read (the fourth read; script clamps to the finished position),
+  // still bound, still Advanced here.
+  OPENHDK_FAIL_IF(62, controller15.pollDisplay().status
+      != LyricClockPollStatus::Advanced
+      || backend15.reads != 4U
+      || controller15.observed().cues().size() != 4U);
+  // 26. Non-Snapshot statuses pass through raw (payload included); payload
+  // gating belongs to the status layer, not the controller.
+  MediaClockPayload unstablePayload;
+  unstablePayload.generation = 1U;
+  unstablePayload.mediaMicroseconds = 4000U;
+  unstablePayload.source = MediaClockSource::CompiledTimeline;
+  unstablePayload.phase = MediaClockPhase::Playing;
+  unstablePayload.failure = MediaClockFailure::None;
+  MediaClockSnapshot supplied;
+  static_cast<MediaClockPayload&>(supplied) = unstablePayload;
+  supplied.revision = 7U;
+  backend15.script.push_back(
+      MediaClockReadResult{MediaClockReadStatus::Unstable, supplied});
+  const auto combined4 = controller15.pollDisplayWithClock();
+  OPENHDK_FAIL_IF(63, combined4.clock.status != MediaClockReadStatus::Unstable
+      || !combined4.clock.snapshot
+      || combined4.observer.status != LyricClockPollStatus::Held
+      || backend15.reads != 5U);
   return 0;
 }

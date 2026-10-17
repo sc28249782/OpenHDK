@@ -174,6 +174,15 @@ Windows legacy `--midi` playback/manual validation stays separate from blocked
 Windows durable checkpoint acknowledgment. Do not open a Linux store through
 DrvFS or claim a Windows playback test validates Linux persistence.
 
+Status additionally reports flat clock diagnostics taken from the SAME single
+committed backend clock read that drove lyric observation on that status
+request (PlaybackController::pollDisplayWithClock; the read status gates the
+payload fields). This makes the raw Finished phase directly observable in
+status; natural completion alone does not clear the controller's active state,
+which is retained until a confirmed explicit stop. No interpolation,
+session-state access, second backend read or observer/publication contract
+change is involved.
+
 ## 6. Resource and receipt boundaries
 
 Input/output buffers, acquired snapshots, prepared values and controller strings
