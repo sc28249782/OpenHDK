@@ -533,3 +533,24 @@ the new target raises current counts to 33 core / 36 audio-enabled. No native or
 manual playback evidence is claimed by this slice; affected evidence, NCN and
 manual validation remain open, and the Windows checkpoint acknowledgment stays
 BLOCKED.
+
+## Audio-enabled library session slice (OHK-CLI-030 step 5 slice 2)
+
+The step 5 integration slice wires the first production entrypoint: an
+audio-gated `OpenHDKLibraryAudio` executable that owns the durable service, the
+guarded management session, the concrete FluidSynth backend and the playback
+controller in a lifetime order where the backend outlives the controller. The
+management session gained an optional mutation-admission guard evaluated at its
+dispatch boundary: mutating verbs are rejected with a structured PlaybackActive
+error while playback is active or a backend stop is unconfirmed, query verbs
+remain available, and the absent guard keeps the parser-only OpenHDKLibrary
+behavior unchanged. The audio entry supports play SONG-ID, stop and status
+through the controller's acknowledged-generation path, reports backend
+refusals, throwing starts and unconfirmed stops as errors instead of success,
+fails clearly when backend initialization fails, and closes the service exactly
+once. Tests are hardware-free with a shared fake backend, a real test-provider
+service and synthetic in-memory SMF/KAR fixtures; counts rise to 34 core /
+38 audio-enabled. Real FluidSynth playback against a prepared library and the
+affected native/manual evidence for this entry remain missing, so step 5 is not
+complete. Windows checkpoint acknowledgment remains BLOCKED and NCN evidence
+remains OPEN.
