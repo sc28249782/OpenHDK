@@ -344,6 +344,13 @@ a strict verifier and 15 supplied-log negative checks. The pinned collector buil
 OpenHDKLibrary without seams and runs the matrix on an eligible ext4 parent.
 Eight offline Python checks run in Linux CI; CTest counts remain 32 core / 35 audio.
 This adds no production behavior, native acceptance, playback or release checkbox.
-Fresh pinned WSL2 ext4 execution and explicit scoped review are Pending. Earlier
-`6a6337d` / `4f69246` / `54f404a` acceptances and bundles do not advance; Windows
-checkpoint acknowledgment remains BLOCKED, and NCN/manual gates remain open.
+The [explicit scoped CLI acceptance](LIBRARY-CLI-EVIDENCE.md#explicit-scoped-cli-acceptance--2026-10-17)
+on 2026-10-17 closes step 4 only for tested revision
+`80b673ee5e96a423cbd5974f3b57c34a6fbf78ce` on the recorded WSL2 ext4 environment,
+with sanitizer setting 0 and eligibility bypass off. The private evidence and
+redacted-copy limits remain part of that decision. Next: the separate step 5
+playback controller, its generation/lifetime tests and affected native/manual
+evidence. Earlier Pending descriptions above record the implementation stages;
+this scoped decision does not accept playback. Earlier `6a6337d` / `4f69246` /
+`54f404a` acceptances and bundles do not advance; Windows checkpoint acknowledgment
+remains BLOCKED, and NCN/manual/release gates remain open.
