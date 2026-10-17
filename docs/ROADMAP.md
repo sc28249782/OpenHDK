@@ -529,7 +529,7 @@ the existing observer phase contract. `libraryMutationAllowed()` is the mutation
 exclusion boundary for later CLI wiring; `LibraryCliSession` and application
 entry points are unchanged in this slice. Tests are hardware-free with a fake
 backend, the real publication cell and synthetic in-memory SMF/KAR fixtures;
-the new target raises current counts to 33 core / 3 audio-enabled. No native or
+the new target raises current counts to 33 core / 36 audio-enabled. No native or
 manual playback evidence is claimed by this slice; affected evidence, NCN and
 manual validation remain open, and the Windows checkpoint acknowledgment stays
 BLOCKED.
