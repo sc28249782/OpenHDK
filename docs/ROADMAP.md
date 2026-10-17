@@ -555,7 +555,36 @@ test-provider service and synthetic in-memory SMF/KAR fixtures, including final
 line, oversized line, terminal quit and output loss checks; CTest target counts
 rise to 34 core / 38 audio-enabled on Linux. Windows builds the audio
 session test target but does not execute its Linux native-store fixture; its
-audio-enabled count remains 37 pending the Windows checkpoint. Real FluidSynth
-playback against a prepared library and the affected native/manual evidence
-for this entry remain missing, so step 5 is not complete. Windows checkpoint acknowledgment remains BLOCKED and NCN evidence
+audio-enabled count remains 37 pending the Windows checkpoint. The bounded native pilot below reports the first production-executable
+observations. Affected evidence review and native/manual acceptance for this
+entry remain pending, so step 5 is not complete. Windows checkpoint acknowledgment remains BLOCKED and NCN evidence
 remains OPEN.
+
+
+## Bounded step 5 native pilot report (2026-10-17)
+
+The local bridge reports an audio-enabled baseline at revision
+`b4a5454d28e83edda736f7c8178c88ab2a33b7fa` on WSL2 ext4 with strict compiler
+warnings: configure/build exited zero and CTest passed 38/38. A fresh store,
+a generated 0.5-second SMF with no lyrics, and the pinned public SoundFont test
+fixture were used with the production `OpenHDKLibraryAudio` executable, without
+test seams or an eligibility bypass.
+
+The corrected pilot reports preparation, acknowledged playback generation 1,
+active/Advanced status, stop, inactive/Unbound status, and quit in one process.
+The expected exit was fixed at zero before launch; actual exit was zero, quit
+was acknowledged, both streams reached EOF, and no timeout or kill was reported.
+An earlier pilot reported PlaybackActive rejection and an unchanged checkpoint
+during playback, but its runner terminated the process after stop. Preserve that
+incomplete result separately; the corrected clean run omitted the deliberate
+rejection. It does not establish a combined mutation-rejection/clean-quit result.
+
+These are bridge-reported observations, not independently audited receipts or
+runtime acceptance. Local runner repairs and private evidence are not part of
+this repository change. Two synthetic child checks cover normal completion and
+a terminated child; timeout and partial-drain failure paths remain unvalidated.
+No human-heard audio or lyric-cue result is claimed. Next: review the bounded
+runner and sanitized evidence, complete the missing failure-path checks, and
+define the remaining affected native/manual coverage before scoped acceptance.
+Step 5 remains open; Windows checkpoint acknowledgment is BLOCKED, NCN evidence
+is OPEN, and no release checkbox advances.
