@@ -13,6 +13,17 @@ conflict, correct the affected documents together. The roadmap and mixer
 feature reference describe future work only. Licensing and dependency rules
 continue to apply independently of feature plans.
 
+## Current OHK-CLI-030 integration status
+
+PR #104 merged the experimental `OpenHDKLibraryAudio` entry. It connects
+service-owned preparation, the playback controller and FluidSynth, with a
+mutation guard at management dispatch. Linux core CI and Windows build/test CI
+passed for that PR. The Linux native-store integration test uses synthetic
+fixtures; Windows builds the target but does not execute that fixture. Real
+prepared-library playback and affected native/manual evidence are still needed
+before step 5 acceptance. The Windows checkpoint remains BLOCKED and NCN OPEN.
+See the [roadmap status](ROADMAP.md#audio-enabled-library-session-slice-ohk-cli-030-step-5-slice-2).
+
 ## Document map
 
 | Document | Role |
@@ -29,7 +40,7 @@ continue to apply independently of feature plans.
 | [NATIVE-ADMISSION-EVIDENCE](NATIVE-ADMISSION-EVIDENCE.md) | Bounded admission receipts/verifier implemented; pinned WSL2 ext4 run and scoped factory acceptance recorded for `4f69246`. |
 | [NATIVE-SERVICE-BINDING-PLAN](NATIVE-SERVICE-BINDING-PLAN.md) | Accepted lease-epoch/ancestry plan; private binding/guards and experimental Linux factory/fence implemented; scoped acceptance recorded for `4f69246`. |
 | [DURABLE-LIBRARY-SERVICE-CONTRACT](DURABLE-LIBRARY-SERVICE-CONTRACT.md) | Accepted exclusive service/baseline contract; override primitive, fake tests and experimental Linux factory/fence implemented and scoped acceptance recorded; all five mutations implemented with scoped acceptance for `54f404a`; application wiring pending. |
-| [LIBRARY-CLI-ORCHESTRATION-PLAN](LIBRARY-CLI-ORCHESTRATION-PLAN.md) | Accepted bounded management/preparation/playback plan; pure command/output models implemented, runtime session pending. |
+| [LIBRARY-CLI-ORCHESTRATION-PLAN](LIBRARY-CLI-ORCHESTRATION-PLAN.md) | Accepted plan; management CLI, service preparation, playback controller and first audio-enabled integration implemented. Native/manual playback evidence pending. |
 | [DURABLE-ROOT-LIFECYCLE-PLAN](DURABLE-ROOT-LIFECYCLE-PLAN.md) | Accepted complete-owner staging/repair plan; shared guards and experimental operation-aware register/reattach integration implemented; experimental durable scan/logical relocate/remove implemented; 34-case bounded mutation receipts/verifier implemented; pinned native execution/scoped acceptance recorded for `54f404a`; app/CLI pending. |
 | [NATIVE-LINUX-CHECKPOINT-EVIDENCE](NATIVE-LINUX-CHECKPOINT-EVIDENCE.md) | Scoped acceptance recorded for 6a6337d on WSL2 /dev/sdd ext4; evidence bundles retained. |
 | [NATIVE-CHECKPOINT-PROVIDER-PLAN](NATIVE-CHECKPOINT-PROVIDER-PLAN.md) | Accepted API/evidence plan; Linux lease and experimental provider implemented; scoped Linux acceptance recorded; Windows synchronization BLOCKED. |
@@ -162,12 +173,14 @@ pathname CAS or power-loss recovery. Windows checkpoint acknowledgment remains
 BLOCKED. App/CLI wiring, NCN evidence and manual validation remain open; the
 storage release checkbox stays unchecked. Next work is slice 4 app/CLI wiring.
 
-## Library CLI orchestration proposal
+## Library CLI orchestration proposal (historical stage)
 
-[OHK-CLI-030](LIBRARY-CLI-ORCHESTRATION-PLAN.md) proposes a bounded hardware-free
-management session, service-owned preparation query and later acknowledged-generation
-playback controller. Status is Proposed; review and acceptance precede implementation.
-It adds no runtime CLI, tests, dependencies or completed checkbox. Restored roots
+[OHK-CLI-030](LIBRARY-CLI-ORCHESTRATION-PLAN.md) originally proposed a bounded
+hardware-free management session, service-owned preparation query and later
+acknowledged-generation playback controller. This paragraph records the
+proposal stage; the management CLI, preparation query, controller and first
+audio-enabled integration slice have since been implemented. Native/manual
+playback evidence remains pending. Restored roots
 remain unattached until explicit user action; Windows checkpoint acknowledgment
 remains BLOCKED. Fresh affected application evidence, NCN and manual validation
 remain open; historical scoped runtime acceptances do not advance.
