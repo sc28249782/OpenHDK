@@ -690,3 +690,17 @@ tests add one-read counting, Paused/Finished distinction, supplied-payload
 nulling and legacy-behavior checks. Step 5 remains OPEN, NCN is OPEN and the
 Windows checkpoint is BLOCKED; no fresh native or lyric playback evidence is
 claimed from this change.
+
+## Synthetic lyric and natural-finish evidence (2026-10-17)
+
+A [bounded real-executable probe](LIBRARY-PLAYBACK-LYRIC-EVIDENCE.md) now records
+two distinct Playing cue-prefix counts in stop mode, and progression followed
+by an actual Finished clock snapshot in finish mode at the pinned PR #110
+head. Both cases report explicit stop/quit, exit zero, actual stream EOF and
+owned-process cleanup. The record retains verifier defects and the pre-spawn
+wrapper abort; it does not inherit the earlier runner4e valid-finish claim.
+
+Next: mutation rejection combined with clean quit, human listening and manual
+playback/lyric validation, then scoped review. Step 5 remains OPEN, NCN OPEN
+and Windows checkpoint BLOCKED. No runtime acceptance or release advancement
+is claimed; source-to-binary correspondence is not independently proven.

@@ -367,8 +367,12 @@ redacted-copy limits remain part of that decision. PR #103 subsequently added
 the generation-bound controller, and PR #104 connected it to an experimental
 audio-enabled library entry with synthetic integration tests. A
 [bounded NoLyrics production probe](ROADMAP.md#corrected-nolyrics-production-probe-2026-10-17)
-is now recorded. Lyric, natural-finish, process-identity and manual coverage
-remain before step 5 acceptance. Earlier Pending
+is now recorded. A later [synthetic lyric and natural-finish probe](LIBRARY-PLAYBACK-LYRIC-EVIDENCE.md)
+records Playing cue-count progression, an actual Finished clock snapshot,
+explicit stop/quit, stream EOF and owned-process cleanup on the pinned PR #110
+head. Its retained verifier defects and pre-spawn wrapper abort are documented.
+Mutation rejection combined with clean quit, human listening and manual
+playback/lyric validation remain before step 5 acceptance. Earlier Pending
 descriptions above record the implementation stages; this scoped decision does
 not accept playback. Earlier `6a6337d` / `4f69246` /
 `54f404a` acceptances and bundles do not advance; Windows checkpoint acknowledgment
