@@ -37,9 +37,9 @@ public:
     return session_.dispatch(line);
   }
 
-  // Same delivery semantics as the management session loop. The service is
-  // closed exactly once when the loop finishes for any reason, including a
-  // failed output stream or a terminal response.
+  // Same delivery semantics as the management session loop. On exit, stop
+  // playback before the caller closes the service. A failed stop retains the
+  // prepared handle until the controller's ordered destruction/fallback.
   int run(std::istream& input, std::ostream& output) {
     int ordinary = 0;
     LibraryCliLineReader reader;
@@ -60,7 +60,7 @@ public:
         const auto status = reader.push(byte);
         if (status == LibraryCliLineReader::Status::More) continue;
         auto response = status == LibraryCliLineReader::Status::Rejected
-            ? grammarReject() : dispatch(reader.line());
+            ? session_.grammarError(*reader.error()) : dispatch(reader.line());
         const auto code = deliver(std::move(response));
         reader.reset();
         if (code >= 0) return finish(code);
@@ -69,7 +69,7 @@ public:
       const auto status = reader.end();
       if (status != LibraryCliLineReader::Status::More) {
         auto response = status == LibraryCliLineReader::Status::Rejected
-            ? grammarReject() : dispatch(reader.line());
+            ? session_.grammarError(*reader.error()) : dispatch(reader.line());
         const auto code = deliver(std::move(response));
         if (code >= 0) return finish(code);
       }
@@ -189,10 +189,6 @@ private:
     return {row.finish(), LibraryCliCommitOutcome::Rejected, 1, false};
   }
 
-  [[nodiscard]] LibraryCliResponse grammarReject() {
-    return lineError("LimitExceeded"); // Over-long input line from the reader.
-  }
-
   [[nodiscard]] LibraryCliResponse complete(LibraryCliOutputBatch&& batch) {
     auto output = batch.finish();
     if (output.error) return lineError("LimitExceeded");
@@ -200,9 +196,14 @@ private:
   }
 
   int finish(int code) {
-    if (!closed_) {
-      closed_ = true;
-      service_.close();
+    if (closed_) return code;
+    closed_ = true;
+    try {
+      const auto stopped = controller_.stop();
+      if (stopped.error != PlaybackController::StopError::None && code == 0)
+        return 1; // Never report a clean exit for an unconfirmed stop.
+    } catch (const std::bad_alloc&) {
+      return 74;
     }
     return code;
   }
