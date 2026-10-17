@@ -19,9 +19,9 @@ PR #104 merged the experimental `OpenHDKLibraryAudio` entry. It connects
 service-owned preparation, the playback controller and FluidSynth, with a
 mutation guard at management dispatch. Linux core CI and Windows build/test CI
 passed for that PR. The Linux native-store integration test uses synthetic
-fixtures; Windows builds the target but does not execute that fixture. Real
-prepared-library playback and affected native/manual evidence are still needed
-before step 5 acceptance. The Windows checkpoint remains BLOCKED and NCN OPEN.
+fixtures; Windows builds the target but does not execute that fixture. A bounded
+WSL2 NoLyrics production probe is recorded in the roadmap. Broader native/manual
+coverage and review are still needed before step 5 acceptance. The Windows checkpoint remains BLOCKED and NCN OPEN.
 See the [roadmap status](ROADMAP.md#audio-enabled-library-session-slice-ohk-cli-030-step-5-slice-2).
 
 ## Document map

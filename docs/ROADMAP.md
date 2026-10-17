@@ -638,3 +638,35 @@ supply a fresh production replay. Next: obtain and review fresh pinned
 production evidence with the repaired verifier, then cover the remaining lyric
 and human-heard audio requirements before scoped acceptance. Step 5 remains
 open; NCN is OPEN and the Windows checkpoint is BLOCKED.
+
+### Corrected NoLyrics production probe (2026-10-17)
+
+The first production attempt with runner4c failed before playback: its generated
+fixture lacked a recognized MIDI extension, scan returned zero candidates, and
+the runner later terminated the app on its budget. That failed receipt remains
+unchanged. The local runner4d copy fixes the fixture filename and requires an
+exact one-candidate scan; an empty-scan child is rejected before song listing.
+A real management-CLI preflight then discovered and prepared the 42-byte
+synthetic SMF successfully, with four events, last-event time 500000 microseconds
+and zero lyric cues.
+
+One corrected production attempt used the existing clean build at revision
+`b4a5454d28e83edda736f7c8178c88ab2a33b7fa` on WSL2 ext4, the public pinned test
+SoundFont and the default WSLg device. The sanitized receipt and transcript
+agree on scan/list/prepare, acknowledged playback generation 1, active/Advanced
+status with zero observed cues, stop, inactive/Unbound status and quit once.
+The app and runner both exited zero, both streams reached EOF and the outer
+watchdog did not expire. Runner and executable pins remained stable. Review
+checked 17 receipt/transcript consistency conditions; the bridge also reports
+exact equality between the 11 raw stdout records and transcript responses.
+
+This is bounded NoLyrics control-path evidence, not step 5 runtime acceptance.
+The wrapper records runner exit and watchdog state but has no separate app-PID
+field; the app exit is observed by the runner. No independent original-run
+authentication or source-to-binary proof is claimed. Lyric cues, natural finish,
+human-heard audio and mutation rejection combined with clean quit remain
+uncovered by this run. The tools and private originals remain local.
+
+Next: strengthen process-identity capture and cover lyrics/natural finish, then
+perform the planned listening validation before scoped acceptance. Step 5
+remains open, NCN is OPEN and the Windows checkpoint is BLOCKED.
