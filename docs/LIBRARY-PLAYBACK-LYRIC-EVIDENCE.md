@@ -96,7 +96,7 @@ It is retained in the local evidence rather than removed from the result.
 
 ## Remaining work
 
-Audit the reported mutation-rejection/clean-quit probe below, then perform
+The retained mutation-rejection/clean-quit probe has been audited below. Perform
 the planned [manual listening and clock observation](LIBRARY-PLAYBACK-MANUAL-CHECK.md)
 before any scoped step 5 acceptance. Count-prefix evidence does not establish
 display text rendering, output quality or user acceptance. Windows playback
@@ -104,10 +104,12 @@ validation remains separate from the blocked Windows checkpoint protocol.
 
 ## Reported mutation rejection with clean quit (2026-10-17)
 
-Status: **reported execution; follow-up raw-evidence audit PENDING**. The
-summary below comes from the previously returned sanitized bridge report.
-It has not been rechecked against the retained originals for this update.
-Do not treat this section as scoped runtime acceptance.
+Status: **read-only raw-evidence comparison completed on 2026-10-17**.
+The bridge audit compared all 16 raw stdout records with the transcript and
+retained runner/wrapper receipts. The records match, including the table below,
+pins, expected exits, actual EOF and process identity/cleanup observations.
+This is a consistency audit of retained evidence, not independent original-run
+authentication or scoped runtime acceptance.
 
 The same pinned PR #110 executable and 65-byte synthetic fixture were used.
 The local runner4h SHA256 reported by the bridge is
@@ -143,7 +145,7 @@ also visible in [LibraryAudioSession](../app/LibraryAudioSession.hpp);
 the mutation guard is in [LibraryCliSession](../app/LibraryCliSession.hpp).
 
 The report retains the public SoundFont ROM warning and all runner versions
-and attempts. Original evidence and tools remain local. Audit must verify
-the table, page equality, mode routing, pins, exits, actual EOF and process
-identity/cleanup before this update is merged. No fresh execution or human
-listening is claimed by this documentation change.
+and attempts. Original evidence and tools remain local. The audit checked table values,
+page equality, mode routing, pins, exits, actual EOF and process
+identity/cleanup, plus the preliminary/final verifier-control reports.
+No fresh execution or human listening is claimed by this documentation change.
