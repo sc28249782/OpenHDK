@@ -442,8 +442,12 @@ This adds no production behavior, native acceptance, playback or release checkbo
 A [private pinned WSL2 ext4 run](LIBRARY-CLI-EVIDENCE.md#recorded-private-wsl2-ext4-run--2026-10-16)
 at `80b673ee5e96a423cbd5974f3b57c34a6fbf78ce` recorded passing
 management/preparation CLI observations. The redacted derived summary omits the
-raw run log and cannot be rerun through the stock receipt verifier. Explicit
-scoped native acceptance remains Pending; no release checkbox changes. Earlier
+raw run log and cannot be rerun through the stock receipt verifier. The maintainer
+[explicitly accepted step 4](LIBRARY-CLI-EVIDENCE.md#explicit-scoped-cli-acceptance--2026-10-17)
+on 2026-10-17 only for that tested revision and recorded WSL2 ext4 scope, with
+sanitizer setting 0 and eligibility bypass off. Next: the separate playback
+controller in step 5, followed by affected native/manual evidence. No playback
+acceptance or release checkbox changes follow from this decision. Earlier
 `6a6337d` / `4f69246` / `54f404a` acceptances and bundles do not advance; Windows
 checkpoint acknowledgment remains BLOCKED, and NCN/manual gates remain open.
 
