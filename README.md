@@ -304,8 +304,9 @@ artifact observations remain EFBIG/unavailable. Scan allocation coverage starts
 at store staging. Namespace aliases remain Skipped. This does not approve
 bare-metal Linux, Windows/NTFS, DrvFS/cross-OS, hostile-writer isolation, atomic
 pathname CAS or power-loss recovery. Windows checkpoint acknowledgment remains
-BLOCKED. App/CLI wiring, NCN evidence and manual validation remain open; the
-storage release checkbox stays unchecked. Next work is slice 4 app/CLI wiring.
+BLOCKED. At that stage, app/CLI wiring, NCN evidence and manual validation
+remained open; the storage release checkbox stayed unchecked. Later CLI slices
+are recorded below.
 
 ## Library CLI orchestration proposal (historical stage)
 
