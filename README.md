@@ -12,7 +12,11 @@ Optional, pinned FluidSynth and
 miniaudio dependencies support the audio POC. Deterministic SMF parsing, event
 decoding, timeline compilation, PlaybackSession timing, event dispatch, MIDI
 diagnostics, and runtime channel mixing are in place. The application does not
-yet provide complete user-facing playback.
+yet provide complete user-facing playback. The experimental
+`OpenHDKLibraryAudio` entry now connects prepared library songs to the
+FluidSynth backend and blocks library mutations during playback; real
+prepared-library playback and affected native/manual evidence remain pending.
+See the [step 5 roadmap status](docs/ROADMAP.md#audio-enabled-library-session-slice-ohk-cli-030-step-5-slice-2).
 
 The [v0.2.0 source release](https://github.com/sc28249782/OpenHDK/releases/tag/v0.2.0)
 contains source archives only. No prebuilt binary, MIDI, or SoundFont is bundled.
@@ -303,12 +307,14 @@ pathname CAS or power-loss recovery. Windows checkpoint acknowledgment remains
 BLOCKED. App/CLI wiring, NCN evidence and manual validation remain open; the
 storage release checkbox stays unchecked. Next work is slice 4 app/CLI wiring.
 
-## Library CLI orchestration proposal
+## Library CLI orchestration proposal (historical stage)
 
-[OHK-CLI-030](docs/LIBRARY-CLI-ORCHESTRATION-PLAN.md) proposes a bounded hardware-free
-management session, service-owned preparation query and later acknowledged-generation
-playback controller. Status is Proposed; review and acceptance precede implementation.
-It adds no runtime CLI, tests, dependencies or completed checkbox. Restored roots
+[OHK-CLI-030](docs/LIBRARY-CLI-ORCHESTRATION-PLAN.md) originally proposed a bounded
+hardware-free management session, service-owned preparation query and later
+acknowledged-generation playback controller. This paragraph records the
+proposal stage; the management CLI, preparation query, controller and first
+audio-enabled integration slice have since been implemented. Their test results
+do not constitute native/manual playback acceptance. Restored roots
 remain unattached until explicit user action; Windows checkpoint acknowledgment
 remains BLOCKED. Fresh affected application evidence, NCN and manual validation
 remain open; historical scoped runtime acceptances do not advance.
