@@ -2,6 +2,7 @@
 #pragma once
 #include "app/LibraryCliOutput.hpp"
 #include "library/DurableLibraryService.hpp"
+#include <functional>
 #include <istream>
 #include <ostream>
 
@@ -14,16 +15,24 @@ struct LibraryCliResponse {
 };
 // Owns one admitted service for a serialized management session. No provider,
 // expectation, projection, mutable owner or arbitrary typed ID enters dispatch.
+// An optional mutation-admission guard is evaluated at the dispatch boundary:
+// when it returns false, mutating verbs (register, reattach, scan, relocate,
+// remove, overrides) are rejected with a structured PlaybackActive error while
+// query verbs (roots, songs, prepare, help, quit) remain available. The absent
+// guard always admits, keeping the parser-only entry unchanged.
 class LibraryCliSession {
 public:
-  explicit LibraryCliSession(std::unique_ptr<DurableLibraryService> service)
-      : service_(std::move(service)) {}
+  explicit LibraryCliSession(std::unique_ptr<DurableLibraryService> service,
+      std::function<bool()> mutationAllowed = {})
+      : service_(std::move(service)), mutationAllowed_(std::move(mutationAllowed)) {}
   // Conservative peak reserve for input/token/command copies, record/batch/final
   // output coexistence and escaped display temporaries. This shares the service
   // allowance; these logical bytes are not a total process-memory bound.
   static constexpr std::size_t kCallerBytes = 3U*LibraryCliOutputBatch::kMaxBytes
       + 8U*kLibraryCliLineBytes + 4U*LibraryCliJsonRecord::kMaxBytes;
   LibraryCliCommitOutcome lastCommit() const noexcept { return lastCommit_; }
+  // Read-only service access for the audio-enabled entry's preparation path.
+  [[nodiscard]] DurableLibraryService& service() { return *service_; }
   LibraryCliResponse dispatch(std::string_view line) {
     lastCommit_=LibraryCliCommitOutcome::Unknown;
     try {
@@ -32,6 +41,8 @@ public:
       auto parsed=parseLibraryCommand(line);
       if(parsed.error) return grammarError(*parsed.error);
       const auto& c=*parsed.command;
+      if(!playbackAllowsMutation_() && isMutatingVerb(c.verb))
+        return localError("PlaybackActive");
       auto snapshot=service_->snapshot();
       const auto root=std::find_if(snapshot->roots.begin(),snapshot->roots.end(),
           [&](const auto& r){return c.root && r.id.diagnosticValue()==*c.root;});
@@ -190,6 +201,17 @@ public:
   }
 private:
   int finish(int code) noexcept {if(service_) service_->close();return code;}
+  // Mutation/play exclusion boundary (OHK-CLI-030 step 5): the guard is the
+  // controller's libraryMutationAllowed() in the audio-enabled entry; absent
+  // here it admits unconditionally.
+  [[nodiscard]] bool playbackAllowsMutation_() const noexcept {
+    return !mutationAllowed_ || mutationAllowed_();
+  }
+  [[nodiscard]] static bool isMutatingVerb(LibraryCliVerb verb) noexcept {
+    return verb==LibraryCliVerb::Register || verb==LibraryCliVerb::Reattach
+        || verb==LibraryCliVerb::Scan || verb==LibraryCliVerb::Relocate
+        || verb==LibraryCliVerb::Remove || verb==LibraryCliVerb::Overrides;
+  }
   static void discovery(LibraryCliJsonRecord& row,const DiscoveryDiagnostic& d) {
     row.number("discovery_code",static_cast<std::uint64_t>(d.code));
     row.number("discovery_operation",static_cast<std::uint64_t>(d.operation));row.nativeText("locator",d.locator);
@@ -291,6 +313,7 @@ private:
     return {std::move(output),lastCommit_,0,false};
   }
   std::unique_ptr<DurableLibraryService> service_;
+  std::function<bool()> mutationAllowed_;
   LibraryCliCommitOutcome lastCommit_=LibraryCliCommitOutcome::Unknown;
 };
 } // namespace OpenHDK
