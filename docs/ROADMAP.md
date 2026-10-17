@@ -553,8 +553,9 @@ reader's bounded-line grammar error and reports an unconfirmed final stop with
 a nonzero exit. Tests are hardware-free with a shared fake backend, a real
 test-provider service and synthetic in-memory SMF/KAR fixtures, including final
 line, oversized line, terminal quit and output loss checks; CTest target counts
-rise to 34 core / 38 audio-enabled. Real FluidSynth playback against a prepared
-library and the affected native/manual evidence for this entry remain missing,
-so step 5 is not
-complete. Windows checkpoint acknowledgment remains BLOCKED and NCN evidence
+rise to 34 core / 38 audio-enabled on Linux. Windows builds the audio
+session test target but does not execute its Linux native-store fixture; its
+audio-enabled count remains 37 pending the Windows checkpoint. Real FluidSynth
+playback against a prepared library and the affected native/manual evidence
+for this entry remain missing, so step 5 is not complete. Windows checkpoint acknowledgment remains BLOCKED and NCN evidence
 remains OPEN.
