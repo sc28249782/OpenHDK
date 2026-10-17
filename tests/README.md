@@ -1,16 +1,17 @@
 # Test coverage and failure diagnostics
 
-The hardware-free configuration registers twenty-nine CTest suites: catalog checkpoint codec/restore/store protocol,
-parser fixtures, MIDI diagnostics CLI, runtime mixer console, velocity curves, mixer presets,
-stereo peak limiter, song catalog core, filesystem discovery, lyric text
-decoding, KAR lyric extraction, media-clock consumption, media-clock
-publication, generation-bound lyric observation, single-song preparation,
-root reattachment, pure catalog metadata/policy models, and catalog metadata
-scan/preparation integration, and override/display transactions, plus durable override service protocol.
-The audio-enabled test configuration adds FluidSynth headless
-playback, CLI help, and diagnostics error cases, for thirty-two suites.
-These counts describe the development tree; v0.2.0 has six/nine respectively.
-Linux core CI runs twenty-nine hardware-free suites; Windows bootstrap runs all thirty-two.
+At current main, Linux core CI registers 34 hardware-free CTest suites.
+The audio-enabled configuration registers 38 on Linux. Windows bootstrap
+builds the audio session integration target and runs 37 suites: its native-store
+fixture is Linux-only, and the Windows checkpoint remains BLOCKED. Earlier
+counts in sections below describe the development stage at which each suite
+was added; the released v0.2.0 baseline had six/nine suites respectively.
+
+`library-audio-session` uses synthetic SMF/KAR and a fake backend with a real
+native-store service on Linux. It checks play/stop/status admission, mutation
+exclusion, backend refusal and stop retry, active quit ordering, final input
+line, oversized line, terminal quit and failed output. It does not run real
+FluidSynth playback or accept step 5 native/manual evidence.
 
 ## Planned 0.3.0 acceptance
 
@@ -602,12 +603,13 @@ pathname CAS or power-loss recovery. Windows checkpoint acknowledgment remains
 BLOCKED. App/CLI wiring, NCN evidence and manual validation remain open; the
 storage release checkbox stays unchecked. Next work is slice 4 app/CLI wiring.
 
-## Library CLI orchestration proposal
+## Library CLI orchestration proposal (historical stage)
 
-[OHK-CLI-030](../docs/LIBRARY-CLI-ORCHESTRATION-PLAN.md) proposes a bounded hardware-free
-management session, service-owned preparation query and later acknowledged-generation
-playback controller. Status is Proposed; review and acceptance precede implementation.
-It adds no runtime CLI, tests, dependencies or completed checkbox. Restored roots
+[OHK-CLI-030](../docs/LIBRARY-CLI-ORCHESTRATION-PLAN.md) originally proposed a
+hardware-free management session, service-owned preparation query and later
+acknowledged-generation playback controller. This paragraph records the proposal
+stage; those components and the first audio-enabled integration slice are now
+implemented. Synthetic checks do not accept native/manual playback. Restored roots
 remain unattached until explicit user action; Windows checkpoint acknowledgment
 remains BLOCKED. Fresh affected application evidence, NCN and manual validation
 remain open; historical scoped runtime acceptances do not advance.
