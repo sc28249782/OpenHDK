@@ -96,8 +96,56 @@ It is retained in the local evidence rather than removed from the result.
 
 ## Remaining work
 
-Review mutation rejection while playback is active together with clean quit,
-and perform the planned human listening and manual playback/lyric validation
+The retained mutation-rejection/clean-quit probe has been audited below. Perform
+the planned [manual listening and clock observation](LIBRARY-PLAYBACK-MANUAL-CHECK.md)
 before any scoped step 5 acceptance. Count-prefix evidence does not establish
 display text rendering, output quality or user acceptance. Windows playback
 validation remains separate from the blocked Windows checkpoint protocol.
+
+## Reported mutation rejection with clean quit (2026-10-17)
+
+Status: **read-only raw-evidence comparison completed on 2026-10-17**.
+The bridge audit compared all 16 raw stdout records with the transcript and
+retained runner/wrapper receipts. The records match, including the table below,
+pins, expected exits, actual EOF and process identity/cleanup observations.
+This is a consistency audit of retained evidence, not independent original-run
+authentication or scoped runtime acceptance.
+
+The same pinned PR #110 executable and 65-byte synthetic fixture were used.
+The local runner4h SHA256 reported by the bridge is
+`8edd14d41734cd685e0f6d3b43e8ade89dc8d6cd87be76d12c6d5e4f54f614fc`.
+Runner4g had allowed an inconclusive post-rejection phase with an overall
+pass. The immutable runner4h copy instead requires Advanced/Playing before
+and after the rejected command. The bridge reports seven preliminary
+offline outcomes and three final targeted outcomes matching expectations,
+including rejection of post-command Finished or Held. These counts describe
+different verifier checks, not ten live runs.
+
+The representative mutating command is `scan 1`; the other five mutating
+verbs are outside this probe. One live attempt, without retry, is reported:
+
+| Observation | Reported value |
+| --- | --- |
+| Acknowledged play generation | 1 |
+| Before scan | Playing, media 355873 us, revision 44, observed cues 2 |
+| Scan response | error PlaybackActive, commit 3 (Rejected) |
+| After scan | Playing, media 767936 us, revision 88, observed cues 3 |
+| Catalog page before/after rejection | Byte-equal, catalog revision 2 |
+| Explicit stop | stopped, then inactive/Unbound with null generation |
+| Scan after stop | Saved, catalog revision 3, one candidate, zero diagnostics |
+| Quit and exit | quit acknowledged; expected app exit 1, actual 1; runner exit 0 |
+| Streams and process cleanup | Actual stdout/stderr EOF, child reaped, not alive, no leftovers; watchdog did not expire |
+
+Playing samples reportedly match generation 1, Snapshot/CompiledTimeline and
+failure None. Their cue counts match the prefix derived from the media time
+in the same record. The application exit 1 is intentional: the session
+retains the ordinary error from PlaybackActive even after later successful
+stop, scan and quit. It must not be relabeled exit zero. This exit policy is
+also visible in [LibraryAudioSession](../app/LibraryAudioSession.hpp);
+the mutation guard is in [LibraryCliSession](../app/LibraryCliSession.hpp).
+
+The report retains the public SoundFont ROM warning and all runner versions
+and attempts. Original evidence and tools remain local. The audit checked table values,
+page equality, mode routing, pins, exits, actual EOF and process
+identity/cleanup, plus the preliminary/final verifier-control reports.
+No fresh execution or human listening is claimed by this documentation change.
