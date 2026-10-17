@@ -128,8 +128,11 @@ private:
 };
 
 inline PlaybackController::~PlaybackController() {
+  // The ordered stop's outcome is deliberately discarded here: the fallback
+  // below checks the retained prepared handle instead. stop() reports failures
+  // through its outcome; the guard only covers the message allocation.
   try {
-    stop(); // Ordered stop attempt; failures are reported, not thrown.
+    static_cast<void>(stop());
   } catch (...) {
     // Guard the outcome message allocation during destruction only.
   }

@@ -248,8 +248,9 @@ int main() {
   FakeBackend backend4;
   PlaybackController controller4(backend4);
   OPENHDK_FAIL_IF(17, controller4.start(lyrics).acknowledgedGeneration != 1U);
-  OPENHDK_FAIL_IF(18, [&] { controller4.stop(); return controller4.playbackActive(); }()
-      || backend4.stopCount != 1U);
+  const auto firstStop = controller4.stop();
+  OPENHDK_FAIL_IF(18, firstStop.error != PlaybackController::StopError::None
+      || controller4.playbackActive() || backend4.stopCount != 1U);
   backend4.nextGeneration = 1U; // Duplicate/lower than the acknowledged generation.
   const auto stale = controller4.start(lyrics);
   OPENHDK_FAIL_IF(19, stale.error != PlaybackController::StartError::BindingFailed
@@ -276,14 +277,17 @@ int main() {
       || controller5.observed().cues().size() != 3);
   backend5.stopHook = [&] { stopClearedFirst = controller5.expectedGeneration() == std::nullopt
       && controller5.observed().cues().empty(); };
-  controller5.stop();
-  OPENHDK_FAIL_IF(24, !stopClearedFirst || controller5.playbackActive()
+  const auto orderedStop = controller5.stop();
+  OPENHDK_FAIL_IF(24, !stopClearedFirst
+      || orderedStop.error != PlaybackController::StopError::None
+      || controller5.playbackActive()
       || !controller5.libraryMutationAllowed() || controller5.expectedGeneration()
       || controller5.observed().cues().size() != 0 || backend5.stopCount != 1U
       || backend5.playing);
   // Stop is a no-op while idle: the backend is not touched again.
-  controller5.stop();
-  OPENHDK_FAIL_IF(25, backend5.stopCount != 1U);
+  const auto idleStop = controller5.stop();
+  OPENHDK_FAIL_IF(25, idleStop.error != PlaybackController::StopError::None
+      || !idleStop.message.empty() || backend5.stopCount != 1U);
   backend5.nextGeneration = 2U;
   OPENHDK_FAIL_IF(26, controller5.start(lyrics).acknowledgedGeneration != 2U || !restartCleared);
   // 10. Prepared lifetime survives catalog mutation; identity stays fixed.
@@ -312,12 +316,14 @@ int main() {
       || controller7.pollDisplay().status != LyricClockPollStatus::Cleared
       || controller7.expectedGeneration() || !controller7.playbackActive());
   // A cleared display does not stop the controller; an explicit stop ends it.
-  controller7.stop();
-  OPENHDK_FAIL_IF(34, controller7.start(lyrics).acknowledgedGeneration != 2U
+  const auto failedDisplayStop = controller7.stop();
+  OPENHDK_FAIL_IF(34, failedDisplayStop.error != PlaybackController::StopError::None
+      || controller7.start(lyrics).acknowledgedGeneration != 2U
       || !backend7.publish(2U, 166666U, MediaClockPhase::Stopped)
       || controller7.pollDisplay().status != LyricClockPollStatus::Cleared);
-  controller7.stop();
-  OPENHDK_FAIL_IF(35, controller7.start(lyrics).acknowledgedGeneration != 3U
+  const auto stoppedDisplayStop = controller7.stop();
+  OPENHDK_FAIL_IF(35, stoppedDisplayStop.error != PlaybackController::StopError::None
+      || controller7.start(lyrics).acknowledgedGeneration != 3U
       || !backend7.publish(3U, 166666U, MediaClockPhase::Unavailable)
       || controller7.pollDisplay().status != LyricClockPollStatus::Cleared);
   // 14. An exhausted clock publication clears through the observer contract.
