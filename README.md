@@ -14,8 +14,9 @@ decoding, timeline compilation, PlaybackSession timing, event dispatch, MIDI
 diagnostics, and runtime channel mixing are in place. The application does not
 yet provide complete user-facing playback. The experimental
 `OpenHDKLibraryAudio` entry now connects prepared library songs to the
-FluidSynth backend and blocks library mutations during playback; real
-prepared-library playback and affected native/manual evidence remain pending.
+FluidSynth backend and blocks library mutations during playback. A bounded
+WSL2 NoLyrics production probe is recorded; broader native/manual playback
+acceptance remains pending.
 See the [step 5 roadmap status](docs/ROADMAP.md#audio-enabled-library-session-slice-ohk-cli-030-step-5-slice-2).
 
 The [v0.2.0 source release](https://github.com/sc28249782/OpenHDK/releases/tag/v0.2.0)
