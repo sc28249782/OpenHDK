@@ -356,8 +356,10 @@ on 2026-10-17 closes step 4 only for tested revision
 with sanitizer setting 0 and eligibility bypass off. The private evidence and
 redacted-copy limits remain part of that decision. PR #103 subsequently added
 the generation-bound controller, and PR #104 connected it to an experimental
-audio-enabled library entry with synthetic integration tests. Next: real
-prepared-library playback and affected native/manual evidence. Earlier Pending
+audio-enabled library entry with synthetic integration tests. A
+[bounded NoLyrics production probe](ROADMAP.md#corrected-nolyrics-production-probe-2026-10-17)
+is now recorded. Lyric, natural-finish, process-identity and manual coverage
+remain before step 5 acceptance. Earlier Pending
 descriptions above record the implementation stages; this scoped decision does
 not accept playback. Earlier `6a6337d` / `4f69246` /
 `54f404a` acceptances and bundles do not advance; Windows checkpoint acknowledgment
