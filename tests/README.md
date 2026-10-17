@@ -600,8 +600,9 @@ artifact observations remain EFBIG/unavailable. Scan allocation coverage starts
 at store staging. Namespace aliases remain Skipped. This does not approve
 bare-metal Linux, Windows/NTFS, DrvFS/cross-OS, hostile-writer isolation, atomic
 pathname CAS or power-loss recovery. Windows checkpoint acknowledgment remains
-BLOCKED. App/CLI wiring, NCN evidence and manual validation remain open; the
-storage release checkbox stays unchecked. Next work is slice 4 app/CLI wiring.
+BLOCKED. At that stage, app/CLI wiring, NCN evidence and manual validation
+remained open; the storage release checkbox stayed unchecked. Later CLI slices
+are recorded below.
 
 ## Library CLI orchestration proposal (historical stage)
 
@@ -609,8 +610,8 @@ storage release checkbox stays unchecked. Next work is slice 4 app/CLI wiring.
 hardware-free management session, service-owned preparation query and later
 acknowledged-generation playback controller. This paragraph records the proposal
 stage; those components and the first audio-enabled integration slice are now
-implemented. Synthetic checks do not accept native/manual playback. Restored roots
-remain unattached until explicit user action; Windows checkpoint acknowledgment
+implemented. Synthetic checks do not accept native/manual playback. Restored
+roots remain unattached until explicit user action; Windows checkpoint acknowledgment
 remains BLOCKED. Fresh affected application evidence, NCN and manual validation
 remain open; historical scoped runtime acceptances do not advance.
 
