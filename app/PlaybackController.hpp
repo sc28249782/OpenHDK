@@ -99,6 +99,16 @@ public:
   // One committed clock read per call, on the serialized control thread.
   [[nodiscard]] LyricClockPollResult pollDisplay() noexcept;
 
+  // Combined additive observation: exactly one backend_.mediaClock() read per
+  // call; that very read drives the observer AND is returned for status
+  // diagnostics. No clock state is cached and no observer API changes; the
+  // raw read passes through unchanged (payload gating is the caller's job).
+  struct DisplayRead {
+    MediaClockReadResult clock;
+    LyricClockPollResult observer;
+  };
+  [[nodiscard]] DisplayRead pollDisplayWithClock() noexcept;
+
   // Mutation/play exclusion query for later CLI integration.
   [[nodiscard]] bool playbackActive() const noexcept { return prepared_ != nullptr; }
   [[nodiscard]] bool libraryMutationAllowed() const noexcept { return !playbackActive(); }
@@ -220,9 +230,18 @@ inline PlaybackController::StopOutcome PlaybackController::stop() {
   return {StopError::None, {}};
 }
 
+inline PlaybackController::DisplayRead
+PlaybackController::pollDisplayWithClock() noexcept {
+  // Exactly one committed read; that same read drives lyric observation and
+  // is returned unchanged for status diagnostics.
+  auto clock = backend_.mediaClock();
+  auto observer = observer_.poll(clock);
+  return {std::move(clock), std::move(observer)};
+}
+
 inline LyricClockPollResult PlaybackController::pollDisplay() noexcept {
   // Exactly one committed read; the observer owns all phase decisions.
-  return observer_.poll(backend_.mediaClock());
+  return pollDisplayWithClock().observer;
 }
 
 } // namespace OpenHDK
