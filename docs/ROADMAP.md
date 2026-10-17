@@ -588,3 +588,28 @@ runner and sanitized evidence, complete the missing failure-path checks, and
 define the remaining affected native/manual coverage before scoped acceptance.
 Step 5 remains open; Windows checkpoint acknowledgment is BLOCKED, NCN evidence
 is OPEN, and no release checkbox advances.
+
+### Runner audit follow-up (2026-10-17)
+
+Review of the sanitized runner source and transcript found that runner2's
+aggregate PASS is not a sufficient verifier result. Its verdict checks process
+exit, quit acknowledgment and stream flags without requiring every planned
+command's semantic result. Stderr beyond the retained cap is silently discarded;
+post-quit stdout can remain unparsed, and one drain path infers EOF from process
+exit without observing an empty read. Failure-path coverage was insufficient.
+The transcript records also contain a duplicate terminal exit entry.
+
+The recorded playing/status/stopped/quit responses and exit zero remain bounded
+transcript observations; they do not establish the missing verifier guarantees.
+Preserve the original receipt and its PASS field as historical output rather
+than treating it as accepted evidence. A directory label later than the observed
+clock is an unexplained label, not a reliable execution timestamp. Redaction
+can change source bytes, so a sanitized-copy hash cannot authenticate the
+original runner; retain separate original and sanitized provenance checks.
+
+Next: repair and review the local verifier, test semantic rejection, caps,
+strict parsing, actual EOF, deadline and cleanup failures with synthetic
+children, then obtain fresh pinned production evidence. This audit identifies
+evidence-tool defects; it does not establish an OpenHDK engine defect or runtime
+acceptance. Step 5, NCN and manual gates remain open; the Windows checkpoint
+remains BLOCKED.
