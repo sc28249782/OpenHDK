@@ -547,10 +547,14 @@ remain available, and the absent guard keeps the parser-only OpenHDKLibrary
 behavior unchanged. The audio entry supports play SONG-ID, stop and status
 through the controller's acknowledged-generation path, reports backend
 refusals, throwing starts and unconfirmed stops as errors instead of success,
-fails clearly when backend initialization fails, and closes the service exactly
-once. Tests are hardware-free with a shared fake backend, a real test-provider
-service and synthetic in-memory SMF/KAR fixtures; counts rise to 34 core /
-38 audio-enabled. Real FluidSynth playback against a prepared library and the
-affected native/manual evidence for this entry remain missing, so step 5 is not
+fails clearly when backend initialization fails, and stops the controller before
+closing the service on session exit. The audio loop preserves the management
+reader's bounded-line grammar error and reports an unconfirmed final stop with
+a nonzero exit. Tests are hardware-free with a shared fake backend, a real
+test-provider service and synthetic in-memory SMF/KAR fixtures, including final
+line, oversized line, terminal quit and output loss checks; CTest target counts
+rise to 34 core / 38 audio-enabled. Real FluidSynth playback against a prepared
+library and the affected native/manual evidence for this entry remain missing,
+so step 5 is not
 complete. Windows checkpoint acknowledgment remains BLOCKED and NCN evidence
 remains OPEN.
