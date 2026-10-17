@@ -670,3 +670,23 @@ uncovered by this run. The tools and private originals remain local.
 Next: strengthen process-identity capture and cover lyrics/natural finish, then
 perform the planned listening validation before scoped acceptance. Step 5
 remains open, NCN is OPEN and the Windows checkpoint is BLOCKED.
+
+## Additive status clock diagnostics (2026-10-17)
+
+Library status now exposes flat diagnostics from the SAME committed backend
+clock read that drove lyric observation on that status request, via the new
+additive `PlaybackController::pollDisplayWithClock()` (one `mediaClock()` call
+per status request; the legacy `pollDisplay()` keeps its exact semantics).
+Status gains `clock_read` (Snapshot/Unstable/Exhausted, Unknown on invalid
+enum), `clock_source`, `clock_phase`, `clock_failure` (full current enum names,
+Unknown fallback) and `clock_generation`, `clock_revision`, `clock_media_us`.
+Any read that is not a Snapshot with a present snapshot emits every payload
+field null, even when a malformed caller supplies payload bytes. This makes
+Finished directly observable in library status (previously Playing, Paused and
+Finished were indistinguishable behind Advanced), with no interpolation, no
+session-state access, no second backend read and no LyricClockObserver or
+MediaClock publication contract change. Controller and Linux audio-session
+tests add one-read counting, Paused/Finished distinction, supplied-payload
+nulling and legacy-behavior checks. Step 5 remains OPEN, NCN is OPEN and the
+Windows checkpoint is BLOCKED; no fresh native or lyric playback evidence is
+claimed from this change.
