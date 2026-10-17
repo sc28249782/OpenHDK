@@ -14,6 +14,7 @@
 #include <filesystem>
 #include <fstream>
 #include <memory>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <string_view>
@@ -58,6 +59,38 @@ void write(const fs::path& path, const Bytes& bytes) {
     ++index;
   }
   return value;
+}
+struct StreamResult {
+  int exit{};
+  std::string output;
+};
+// A fresh synthetic store for each stdin/stdout case; no audio device or
+// external media is opened.
+StreamResult runStream(const fs::path& home, std::string_view name,
+    const std::string& input, bool failOutput = false) {
+  const auto store = home / std::string(name);
+  fs::create_directory(store);
+  auto opened = Access::createNative(std::make_unique<SongDiscovery>(),
+      store.string(), "stream.ohkcat", {}, {}, 1024U);
+  if (!opened.succeeded() || !opened.service)
+    throw std::runtime_error("stream fixture failed");
+  FakeBackend backend;
+  PlaybackController* active = nullptr;
+  LibraryCliSession session(std::move(opened.service),
+      [&active] { return active != nullptr && active->libraryMutationAllowed(); });
+  StreamResult result;
+  {
+    PlaybackController controller(backend);
+    active = &controller;
+    LibraryAudioSession audio(session, controller);
+    std::istringstream in(input);
+    std::ostringstream out;
+    if (failOutput) out.setstate(std::ios::badbit);
+    result.exit = audio.run(in, out);
+    result.output = out.str();
+  }
+  static_cast<void>(session.service().close());
+  return result;
 }
 } // namespace
 int main() {
@@ -112,14 +145,15 @@ int main() {
   const auto admitted = audio.dispatch("overrides " + std::to_string(songId) + " T -");
   OPENHDK_FAIL_IF(12, admitted.exit != 0 || !has(admitted, "\"type\":\"commit\""));
   // Stopping while idle is a no-op success and touches nothing.
+  const auto confirmedStopCount = backend.stopCount;
   const auto idleStop = audio.dispatch("stop");
   OPENHDK_FAIL_IF(13, idleStop.exit != 0 || !has(idleStop, "\"type\":\"stopped\"")
-      || backend.stopCount == 0U || backend.stopCount == 2U);
+      || backend.stopCount != confirmedStopCount);
   // Invalid play arguments and unknown songs are structured rejects.
-  OPENHDK_FAIL_IF(14, audio.dispatch("play abc").exit != 1
-      || !has(audio.dispatch("play abc"), "\"error\":\"InvalidSongId\""));
-  OPENHDK_FAIL_IF(15, audio.dispatch("play 999").exit != 1
-      || !has(audio.dispatch("play 999"), "\"error\":\"NotFound\""));
+  const auto invalid = audio.dispatch("play abc");
+  OPENHDK_FAIL_IF(14, invalid.exit != 1 || !has(invalid, "\"error\":\"InvalidSongId\""));
+  const auto missing = audio.dispatch("play 999");
+  OPENHDK_FAIL_IF(15, missing.exit != 1 || !has(missing, "\"error\":\"NotFound\""));
   // A backend start refusal never reports success and keeps mutations allowed.
   backend.failNextStart = true;
   const auto refused = audio.dispatch("play " + std::to_string(songId));
@@ -151,5 +185,35 @@ int main() {
   std::string okFailure;
   OPENHDK_FAIL_IF(26, !initializeAudioBackend("unused.soundfont", backend, okFailure)
       || !okFailure.empty());
+  // Quit while active performs the ordered stop while the service is ready.
+  const auto finalStart = audio.dispatch("play " + std::to_string(songId));
+  bool serviceReadyAtStop = false;
+  backend.stopHook = [&] {
+    serviceReadyAtStop = session.service().state() == DurableServiceState::Ready;
+  };
+  std::istringstream quitInput("quit\nstatus\n");
+  std::ostringstream quitOutput;
+  const auto quitExit = audio.run(quitInput, quitOutput);
+  OPENHDK_FAIL_IF(27, finalStart.exit != 0 || quitExit != 0
+      || !serviceReadyAtStop || controller.playbackActive()
+      || quitOutput.str().find("\"type\":\"status\"") != std::string::npos
+      || quitOutput.str().find("\"type\":\"quit\"") == std::string::npos);
+  static_cast<void>(session.service().close());
+
+  const auto finalLine = runStream(home.path, "final-line", "status");
+  OPENHDK_FAIL_IF(28, finalLine.exit != 0
+      || finalLine.output.find("\"type\":\"status\"") == std::string::npos
+      || finalLine.output.empty() || finalLine.output.back() != '\n');
+  const auto oversized = runStream(home.path, "oversized",
+      std::string(kLibraryCliLineBytes + 1U, 'x') + "\nquit\n");
+  OPENHDK_FAIL_IF(29, oversized.exit != 1
+      || oversized.output.find("\"family\":\"grammar\"") == std::string::npos
+      || oversized.output.find("\"type\":\"quit\"") == std::string::npos);
+  const auto terminal = runStream(home.path, "terminal", "quit\nstatus\n");
+  OPENHDK_FAIL_IF(30, terminal.exit != 0
+      || terminal.output.find("\"type\":\"quit\"") == std::string::npos
+      || terminal.output.find("\"type\":\"status\"") != std::string::npos);
+  const auto outputLoss = runStream(home.path, "output-loss", "status\n", true);
+  OPENHDK_FAIL_IF(31, outputLoss.exit != 74);
   return 0;
 }
