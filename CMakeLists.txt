@@ -165,7 +165,11 @@ if(OPENHDK_BUILD_TESTS)
     target_compile_features(openhdk_library_audio_session_tests PRIVATE cxx_std_20)
     target_compile_definitions(openhdk_library_audio_session_tests PRIVATE OPENHDK_ENABLE_TEST_SEAMS=1)
     target_link_libraries(openhdk_library_audio_session_tests PRIVATE Threads::Threads)
-    add_test(NAME library-audio-session COMMAND openhdk_library_audio_session_tests)
+    # The native-store integration fixture uses Linux admission; Windows builds
+    # the target but leaves native execution to the later Windows checkpoint.
+    if(NOT WIN32)
+      add_test(NAME library-audio-session COMMAND openhdk_library_audio_session_tests)
+    endif()
     add_executable(openhdk_playback_controller_tests tests/playback_controller_tests.cpp)
     target_include_directories(openhdk_playback_controller_tests PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
     target_compile_features(openhdk_playback_controller_tests PRIVATE cxx_std_20)
