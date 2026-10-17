@@ -506,3 +506,30 @@ Preserve submitted receipts and rerun samples into new files. No application
 NCN normalizer exists; the evidence gate remains OPEN. Runtime/suite counts,
 checkboxes, historical bundles and storage acceptances do not change. Windows
 checkpoint acknowledgment remains BLOCKED.
+
+## First playback controller slice (OHK-CLI-030 step 5)
+
+The [step 5 plan](LIBRARY-CLI-ORCHESTRATION-PLAN.md) now has its first
+implemented slice: a serialized control-path `app/PlaybackController` that
+retains an owning `PreparedSong` with its snapshot revision identity, starts
+through the existing `AudioBackend` acknowledged-generation interface, and binds
+`LyricClockObserver` only with the admitted start generation. A start rejected
+while active preserves the current binding and playback untouched; idle starts
+clear the observer before the backend start; zero or non-monotonic
+acknowledgements and failed binds stop the observer before the backend stop
+and release the prepared handle once the backend stop confirms; an unconfirmed
+stop (false return or exception) keeps the prepared handle, keeps library
+mutations excluded, surfaces the backend failure and allows an explicit stop()
+retry, with the destructor attempting the ordered stop once more and then the
+backend's noexcept shutdown(). Terminal clock phases keep the controller gated
+until an explicit stop, and same-backend generation reuse and Exhausted
+replacement rules are documented at the controller seam. `pollDisplay()`
+performs one committed clock read per call on the control thread and follows
+the existing observer phase contract. `libraryMutationAllowed()` is the mutation/play
+exclusion boundary for later CLI wiring; `LibraryCliSession` and application
+entry points are unchanged in this slice. Tests are hardware-free with a fake
+backend, the real publication cell and synthetic in-memory SMF/KAR fixtures;
+the new target raises current counts to 33 core / 36 audio-enabled. No native or
+manual playback evidence is claimed by this slice; affected evidence, NCN and
+manual validation remain open, and the Windows checkpoint acknowledgment stays
+BLOCKED.
