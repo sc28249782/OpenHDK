@@ -15,9 +15,8 @@ The durable service implements Create/Open, metadata overrides and all five
 root/song mutations. Scoped mutation acceptance binds revision `54f404a` to the
 recorded WSL2 `/dev/sdd` ext4 environment. The original `OpenHDK` audio
 executable still plays an arbitrary MIDI path through `readMidiBytes`; it has
-no library command. The separate
-`OpenHDKLibraryAudio` entry connects the service and backend.
-The service now exposes a read-only preparation query. The original proposal
+no library command. The separate `OpenHDKLibraryAudio` entry connects the
+service and backend. The service now exposes a read-only preparation query. The original proposal
 was docs-only; implementation progress is recorded below. These later slices
 do not complete a release checkbox.
 
