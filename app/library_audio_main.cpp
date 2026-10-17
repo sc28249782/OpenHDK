@@ -2,8 +2,8 @@
 // Copyright (C) 2026 OpenHDK contributors
 // Audio-enabled library session entry (OHK-CLI-030 step 5, slice 2). Owns the
 // durable service, the guarded management session, the concrete FluidSynth
-// backend and the playback controller in a lifetime order where the backend
-// outlives the controller and both die before the service. A failed backend
+// backend and the playback controller. Destruction stops the controller before
+// closing the service; the backend outlives the controller. A failed backend
 // initialization is a clear process failure; the library-only OpenHDKLibrary
 // entry remains usable without audio.
 #include "app/LibraryAudioSession.hpp"
@@ -20,6 +20,10 @@
 namespace {
 constexpr int kRuntimeError = 1;
 constexpr int kUsageError = 64;
+struct CloseServiceAfterPlayback {
+  OpenHDK::LibraryCliSession& session;
+  ~CloseServiceAfterPlayback() { static_cast<void>(session.service().close()); }
+};
 struct Entry {
   std::string storeDir, storeName, soundFont;
   bool create{false};
@@ -88,9 +92,14 @@ int main(int argc, char** argv) {
       std::cerr << "Audio initialization failed: " << initFailure << '\n';
       return kRuntimeError;
     }
-    PlaybackController controller(backend);
+    PlaybackController* activeController = nullptr;
     LibraryCliSession session(std::move(opened.service),
-        [&controller] { return controller.libraryMutationAllowed(); });
+        [&activeController] {
+          return activeController != nullptr && activeController->libraryMutationAllowed();
+        });
+    CloseServiceAfterPlayback closeService{session};
+    PlaybackController controller(backend);
+    activeController = &controller;
     LibraryAudioSession audio(session, controller);
     LibraryCliJsonRecord row;
     row.text("type", "session");
@@ -109,8 +118,8 @@ int main(int argc, char** argv) {
     std::cout << *greeting.bytes << std::flush;
     if (!std::cout) return 74;
     return audio.run(std::cin, std::cout);
-    // Destruction order: audio session, guarded session, controller (ordered
-    // stop with the backend's noexcept shutdown fallback), then the backend.
+    // Destruction order: audio session, controller (ordered stop/shutdown
+    // fallback), service close guard, guarded session, then backend.
   } catch (const std::bad_alloc&) { return 74; }
     catch (const std::filesystem::filesystem_error&) { return kRuntimeError; }
 }
