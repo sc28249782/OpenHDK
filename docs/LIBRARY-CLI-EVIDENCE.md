@@ -1,8 +1,8 @@
 # Library management and preparation CLI evidence
 
-Status: fresh pinned WSL2 ext4 execution recorded from a private bundle;
-explicit scoped acceptance is Pending. This document does not accept a runtime
-revision.
+Status: explicit scoped management/preparation CLI acceptance recorded on
+2026-10-17 for tested revision `80b673ee` on the WSL2 ext4 environment below.
+The acceptance does not extend to playback or other runtime revisions.
 
 This procedure implements [OHK-CLI-030 step 4](LIBRARY-CLI-ORCHESTRATION-PLAN.md#8-implementation-order-and-review-gates).
 It uses the production `OpenHDKLibrary` executable. The executable is compiled
@@ -111,8 +111,8 @@ copy. The original log and successful verifier results remain private. This
 record is a report of supplied execution, not independent authentication of
 source, build and run. No media hash, corpus or private path is published here.
 
-Scoped native acceptance remains **Pending** until the maintainer explicitly
-decides the tested revision, environment and limits after evidence review.
+When this run was first recorded, scoped native acceptance was **Pending**.
+The explicit decision below is now authoritative for this tested scope.
 The output-loss classification is inferred from exit and subsequent state;
 there is no exactly-once delivery or power-loss claim. Prior provider,
 factory/fence and mutation acceptances are unchanged. The Windows checkpoint
@@ -139,7 +139,8 @@ Local full-matrix development checks through private seams on overlay are
 regression coverage only. The production harness has no bypass switch and refuses
 an ineligible parent. A filesystem label, successful verifier or hosted CI result
 alone does not close native acceptance. Fresh pinned maintainer execution, bundle
-review and an explicit revision/environment/limits-bound decision are still needed.
+review and an explicit revision/environment/limits-bound decision are required
+for each proposed acceptance. The decision below applies only to its recorded run.
 
 This matrix selects process/CLI/checkpoint observations, not every syscall or
 flush. No injected sync uncertainty, power-loss testing, hostile-writer isolation,
@@ -149,3 +150,29 @@ factory/fence and mutation evidence remains separate and unchanged at `6a6337d`,
 `4f69246` and `54f404a`. Windows checkpoint acknowledgment remains BLOCKED.
 Playback orchestration, NCN evidence, manual validation and release checkboxes
 remain open. CLI success on a synthetic KAR file is not NCN evidence.
+
+## Explicit scoped CLI acceptance — 2026-10-17
+
+After review of the private evidence and its redacted summary, the maintainer
+explicitly accepted OHK-CLI-030 step 4 only for tested revision
+`80b673ee5e96a423cbd5974f3b57c34a6fbf78ce`, from a clean pinned checkout on
+WSL2 `/dev/sdd` ext4 `data=ordered`, with sanitizer setting 0 and filesystem
+eligibility bypass off. Acceptance covers the selected 37-case production
+management/preparation CLI matrix, six owned child exits and the recorded
+checkpoint continuity. This closes step 4 within that scope and permits the
+separate playback-controller work in step 5.
+
+This decision relies on the reviewed private run. The redacted derived copy
+cannot be rerun through the stock receipt verifier. A single run and its
+self-consistent verifier do not provide independent source-to-binary/run
+authentication. Output-loss classification remains an inference; sanitizer
+coverage, power-loss behavior and exactly-once delivery are not established.
+No atomic pathname CAS, hostile-writer isolation, namespace-alias, bare-metal,
+NTFS, DrvFS or cross-OS acceptance follows from this decision.
+
+Documentation commits do not relabel the tested revision. Earlier Pending
+statements retain their historical meaning. Prior provider, factory/fence and
+mutation acceptances and bundles remain unchanged. Playback/controller runtime,
+NCN evidence, manual validation and release checkboxes remain open; Windows
+checkpoint acknowledgment remains BLOCKED. No private bundle or media hash is
+published by this decision.
