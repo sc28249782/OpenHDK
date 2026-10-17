@@ -704,3 +704,14 @@ Next: mutation rejection combined with clean quit, human listening and manual
 playback/lyric validation, then scoped review. Step 5 remains OPEN, NCN OPEN
 and Windows checkpoint BLOCKED. No runtime acceptance or release advancement
 is claimed; source-to-binary correspondence is not independently proven.
+
+## Mutation rejection evidence awaiting audit (2026-10-17)
+
+A [sanitized bridge report](LIBRARY-PLAYBACK-LYRIC-EVIDENCE.md#reported-mutation-rejection-with-clean-quit-2026-10-17)
+records one representative scan rejection between Playing snapshots, unchanged
+catalog revision, successful scan after stop and clean quit with the expected
+retained application exit 1. Follow-up raw-evidence audit is PENDING; this
+update must not be merged or treated as acceptance before that audit passes.
+The [manual listening procedure](LIBRARY-PLAYBACK-MANUAL-CHECK.md) is prepared
+from public source and has not been executed. The CLI exposes clock/cue counts,
+not rendered lyric text. Step 5/NCN remain OPEN; Windows checkpoint BLOCKED.

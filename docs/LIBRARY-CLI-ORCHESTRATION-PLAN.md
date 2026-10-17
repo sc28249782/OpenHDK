@@ -377,3 +377,13 @@ descriptions above record the implementation stages; this scoped decision does
 not accept playback. Earlier `6a6337d` / `4f69246` /
 `54f404a` acceptances and bundles do not advance; Windows checkpoint acknowledgment
 remains BLOCKED, and NCN/manual/release gates remain open.
+
+## Playback evidence follow-up pending review
+
+The [reported scan-rejection probe](LIBRARY-PLAYBACK-LYRIC-EVIDENCE.md#reported-mutation-rejection-with-clean-quit-2026-10-17)
+covers one mutation verb and clean quit with expected retained app exit 1.
+Its follow-up raw-evidence audit remains PENDING. A
+[manual listening/count procedure](LIBRARY-PLAYBACK-MANUAL-CHECK.md) is ready
+for review, not execution evidence. This entry has no rendered lyric display;
+clock/count evidence does not close that separate capability gap. Step 5
+acceptance and the existing NCN/Windows/manual gates do not advance.
