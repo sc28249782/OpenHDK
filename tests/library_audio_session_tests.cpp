@@ -93,6 +93,57 @@ StreamResult runStream(const fs::path& home, std::string_view name,
   return result;
 }
 } // namespace
+
+// Session-level scripted clock backend proving the ONE-read-per-status
+// guarantee: status diagnostics and observed_cues must come from the first
+// committed read; the next status consumes the next scripted read.
+class ScriptedSessionBackend final : public OpenHDK::Test::PlaybackTestBackend {
+public:
+  mutable std::uint64_t reads{0U};
+  std::vector<MediaClockReadResult> script;
+  [[nodiscard]] MediaClockReadResult mediaClock() const noexcept override {
+    if (script.empty()) return {MediaClockReadStatus::Unstable, std::nullopt};
+    const auto index = reads < script.size() ? reads : script.size() - 1U;
+    ++reads;
+    return script[static_cast<std::size_t>(index)];
+  }
+};
+
+[[nodiscard]] MediaClockReadResult sessionClockRead(std::uint64_t generation,
+    std::uint64_t microseconds, MediaClockPhase phase, std::uint64_t revision) {
+  MediaClockPayload payload;
+  payload.generation = generation;
+  payload.mediaMicroseconds = microseconds;
+  payload.source = MediaClockSource::CompiledTimeline;
+  payload.phase = phase;
+  payload.failure = MediaClockFailure::None;
+  MediaClockSnapshot result;
+  static_cast<MediaClockPayload&>(result) = payload;
+  result.revision = revision;
+  return MediaClockReadResult{MediaClockReadStatus::Snapshot, result};
+}
+
+// Backend that can return an Unstable read WITH a supplied payload, to prove
+// the status layer nulls every payload field unless the read is a Snapshot.
+class UnstablePayloadBackend final : public OpenHDK::Test::PlaybackTestBackend {
+public:
+  bool unstablePayload{false};
+  [[nodiscard]] MediaClockReadResult mediaClock() const noexcept override {
+    if (unstablePayload) {
+      MediaClockPayload payload;
+      payload.generation = 1U;
+      payload.mediaMicroseconds = 4000U;
+      payload.source = MediaClockSource::CompiledTimeline;
+      payload.phase = MediaClockPhase::Playing;
+      payload.failure = MediaClockFailure::None;
+      MediaClockSnapshot snapshot;
+      static_cast<MediaClockPayload&>(snapshot) = payload;
+      snapshot.revision = 99U;
+      return {MediaClockReadStatus::Unstable, snapshot};
+    }
+    return OpenHDK::Test::PlaybackTestBackend::mediaClock();
+  }
+};
 int main() {
   TempDir home;
   const fs::path store = home.path / "store", songs = home.path / "songs";
@@ -215,5 +266,224 @@ int main() {
       || terminal.output.find("\"type\":\"status\"") != std::string::npos);
   const auto outputLoss = runStream(home.path, "output-loss", "status\n", true);
   OPENHDK_FAIL_IF(31, outputLoss.exit != 74);
+  // 32-47: additive flat clock diagnostics in status. The same committed read
+  // drives lyric observation and the diagnostics; legacy fields unchanged.
+  {
+    const fs::path store2 = home.path / "clockdiag";
+    fs::create_directory(store2);
+    auto opened2 = Access::createNative(std::make_unique<SongDiscovery>(),
+        store2.string(), "clockdiag.ohkcat", {}, {}, 1024U);
+    OPENHDK_FAIL_IF(32, !opened2.succeeded() || !opened2.service);
+    FakeBackend backend2;
+    PlaybackController controller2(backend2);
+    LibraryCliSession session2(std::move(opened2.service),
+        [&controller2] { return controller2.libraryMutationAllowed(); });
+    LibraryAudioSession audio2(session2, controller2);
+    OPENHDK_FAIL_IF(33, audio2.dispatch("register \"" + songs.generic_string()
+        + "\"").exit != 0);
+    OPENHDK_FAIL_IF(34, audio2.dispatch("scan 1").exit != 0);
+    const auto listing2 = audio2.dispatch("songs 1 0 100");
+    OPENHDK_FAIL_IF(35, listing2.exit != 0);
+    const auto songId2 = firstSongId(listing2);
+    // Idle: the fresh cell yields a revision-0 snapshot; reported raw.
+    const auto idle2 = audio2.dispatch("status");
+    OPENHDK_FAIL_IF(36, !has(idle2, "\"clock_read\":\"Snapshot\"")
+        || !has(idle2, "\"clock_phase\":\"Unavailable\"")
+        || has(idle2, "\"clock_media_us\":null"));
+    OPENHDK_FAIL_IF(37, !backend2.publish(1U, 123456U, MediaClockPhase::Playing));
+    OPENHDK_FAIL_IF(38, audio2.dispatch("play " + std::to_string(songId2)).exit
+        != 0);
+    const auto stPlaying = audio2.dispatch("status");
+    OPENHDK_FAIL_IF(39, !has(stPlaying, "\"clock_read\":\"Snapshot\"")
+        || !has(stPlaying, "\"clock_source\":\"CompiledTimeline\"")
+        || !has(stPlaying, "\"clock_phase\":\"Playing\"")
+        || !has(stPlaying, "\"clock_generation\":1")
+        || !has(stPlaying, "\"clock_media_us\":123456")
+        || has(stPlaying, "\"clock_revision\":null")
+        || !has(stPlaying, "\"poll\":\"Advanced\"")
+        || !has(stPlaying, "\"active\":true"));
+    // Paused and Finished are directly distinguishable even though the
+    // observer stays Advanced and the controller stays active.
+    OPENHDK_FAIL_IF(40, !backend2.publish(1U, 234567U, MediaClockPhase::Paused));
+    const auto stPaused = audio2.dispatch("status");
+    OPENHDK_FAIL_IF(41, !has(stPaused, "\"clock_phase\":\"Paused\"")
+        || !has(stPaused, "\"clock_media_us\":234567")
+        || !has(stPaused, "\"poll\":\"Advanced\"")
+        || !has(stPaused, "\"active\":true"));
+    OPENHDK_FAIL_IF(42, !backend2.publish(1U, 345678U,
+        MediaClockPhase::Finished));
+    const auto stFinished = audio2.dispatch("status");
+    OPENHDK_FAIL_IF(43, !has(stFinished, "\"clock_phase\":\"Finished\"")
+        || !has(stFinished, "\"poll\":\"Advanced\"")
+        || !has(stFinished, "\"active\":true"));
+    backend2.forceUnstable = true;
+    const auto stUnstable = audio2.dispatch("status");
+    OPENHDK_FAIL_IF(44, !has(stUnstable, "\"clock_read\":\"Unstable\"")
+        || !has(stUnstable, "\"clock_source\":null")
+        || !has(stUnstable, "\"clock_phase\":null")
+        || !has(stUnstable, "\"clock_failure\":null")
+        || !has(stUnstable, "\"clock_generation\":null")
+        || !has(stUnstable, "\"clock_revision\":null")
+        || !has(stUnstable, "\"clock_media_us\":null")
+        || !has(stUnstable, "\"poll\":\"Held\""));
+    backend2.forceUnstable = false;
+    backend2.forceExhausted = true;
+    const auto stExhausted = audio2.dispatch("status");
+    OPENHDK_FAIL_IF(45, !has(stExhausted, "\"clock_read\":\"Exhausted\"")
+        || !has(stExhausted, "\"clock_media_us\":null")
+        || !has(stExhausted, "\"poll\":\"Exhausted\"")
+        || !has(stExhausted, "\"active\":true"));
+    backend2.forceExhausted = false;
+    const auto stopped2 = audio2.dispatch("stop");
+    OPENHDK_FAIL_IF(46, stopped2.exit != 0
+        || !has(stopped2, "\"type\":\"stopped\""));
+    const auto stAfterStop = audio2.dispatch("status");
+    OPENHDK_FAIL_IF(47, !has(stAfterStop, "\"active\":false")
+        || !has(stAfterStop, "\"poll\":\"Unbound\"")
+        || !has(stAfterStop, "\"generation\":null"));
+  }
+  // 48-53: an Unstable read that carries a supplied payload must still emit
+  // every payload field null from the status layer.
+  {
+    const fs::path store3 = home.path / "clockdiag2";
+    fs::create_directory(store3);
+    auto opened3 = Access::createNative(std::make_unique<SongDiscovery>(),
+        store3.string(), "clockdiag2.ohkcat", {}, {}, 1024U);
+    OPENHDK_FAIL_IF(48, !opened3.succeeded() || !opened3.service);
+    UnstablePayloadBackend backend3;
+    PlaybackController controller3(backend3);
+    LibraryCliSession session3(std::move(opened3.service),
+        [&controller3] { return controller3.libraryMutationAllowed(); });
+    LibraryAudioSession audio3(session3, controller3);
+    OPENHDK_FAIL_IF(49, audio3.dispatch("register \"" + songs.generic_string()
+        + "\"").exit != 0 || audio3.dispatch("scan 1").exit != 0);
+    const auto listing3 = audio3.dispatch("songs 1 0 100");
+    OPENHDK_FAIL_IF(50, listing3.exit != 0);
+    const auto songId3 = firstSongId(listing3);
+    OPENHDK_FAIL_IF(51, !backend3.publish(1U, 1000U, MediaClockPhase::Playing));
+    OPENHDK_FAIL_IF(52, audio3.dispatch("play " + std::to_string(songId3)).exit
+        != 0);
+    backend3.unstablePayload = true;
+    const auto stUnstablePayload = audio3.dispatch("status");
+    OPENHDK_FAIL_IF(53, !has(stUnstablePayload, "\"clock_read\":\"Unstable\"")
+        || !has(stUnstablePayload, "\"clock_source\":null")
+        || !has(stUnstablePayload, "\"clock_phase\":null")
+        || !has(stUnstablePayload, "\"clock_failure\":null")
+        || !has(stUnstablePayload, "\"clock_generation\":null")
+        || !has(stUnstablePayload, "\"clock_revision\":null")
+        || !has(stUnstablePayload, "\"clock_media_us\":null")
+        || !has(stUnstablePayload, "\"poll\":\"Held\"")
+        || !has(stUnstablePayload, "\"active\":true"));
+  }
+  // 54-63: one committed read per status request. Status diagnostics and
+  // observed_cues come from the FIRST read; each later status consumes the
+  // next scripted read. Fixture song.kar holds cues at 0/166666 microseconds
+  // (indices 0,1); raw clock_generation is reported separately from the
+  // observer's expected generation.
+  {
+    const fs::path store4 = home.path / "clockdiag3";
+    fs::create_directory(store4);
+    auto opened4 = Access::createNative(std::make_unique<SongDiscovery>(),
+        store4.string(), "clockdiag3.ohkcat", {}, {}, 1024U);
+    OPENHDK_FAIL_IF(54, !opened4.succeeded() || !opened4.service);
+    ScriptedSessionBackend backend4;
+    backend4.script.push_back(sessionClockRead(1U, 0U, MediaClockPhase::Playing,
+        2U));
+    backend4.script.push_back(sessionClockRead(1U, 166666U,
+        MediaClockPhase::Paused, 4U));
+    PlaybackController controller4(backend4);
+    LibraryCliSession session4(std::move(opened4.service),
+        [&controller4] { return controller4.libraryMutationAllowed(); });
+    LibraryAudioSession audio4(session4, controller4);
+    OPENHDK_FAIL_IF(55, audio4.dispatch("register \"" + songs.generic_string()
+        + "\"").exit != 0 || audio4.dispatch("scan 1").exit != 0);
+    const auto listing4 = audio4.dispatch("songs 1 0 100");
+    OPENHDK_FAIL_IF(56, listing4.exit != 0);
+    const auto songId4 = firstSongId(listing4);
+    OPENHDK_FAIL_IF(57, audio4.dispatch("play " + std::to_string(songId4)).exit
+        != 0);
+    const auto stFirst = audio4.dispatch("status");
+    OPENHDK_FAIL_IF(58, !has(stFirst, "\"clock_read\":\"Snapshot\"")
+        || !has(stFirst, "\"clock_phase\":\"Playing\"")
+        || !has(stFirst, "\"clock_generation\":1")
+        || !has(stFirst, "\"clock_revision\":2")
+        || !has(stFirst, "\"clock_media_us\":0")
+        || !has(stFirst, "\"observed_cues\":1")
+        || !has(stFirst, "\"poll\":\"Advanced\"")
+        || backend4.reads != 1U);
+    const auto stSecond = audio4.dispatch("status");
+    OPENHDK_FAIL_IF(59, !has(stSecond, "\"clock_phase\":\"Paused\"")
+        || !has(stSecond, "\"clock_media_us\":166666")
+        || !has(stSecond, "\"clock_revision\":4")
+        || !has(stSecond, "\"observed_cues\":2")
+        || !has(stSecond, "\"poll\":\"Advanced\"")
+        || backend4.reads != 2U);
+    // Raw generation passes through even when it mismatches the observer's
+    // expected generation: diagnostics stay raw, observer clears.
+    backend4.script.push_back(sessionClockRead(2U, 200000U,
+        MediaClockPhase::Finished, 6U));
+    const auto stMismatch = audio4.dispatch("status");
+    OPENHDK_FAIL_IF(60, !has(stMismatch, "\"clock_generation\":2")
+        || !has(stMismatch, "\"clock_phase\":\"Finished\"")
+        || !has(stMismatch, "\"poll\":\"Cleared\"")
+        || has(stMismatch, "\"clock_generation\":null")
+        || backend4.reads != 3U);
+    // Snapshot WITHOUT a snapshot: read status still Snapshot, observer
+    // InvalidSnapshot, every payload field null.
+    backend4.script.push_back(
+        MediaClockReadResult{MediaClockReadStatus::Snapshot, std::nullopt});
+    const auto stNullPayload = audio4.dispatch("status");
+    OPENHDK_FAIL_IF(61, !has(stNullPayload, "\"clock_read\":\"Snapshot\"")
+        || !has(stNullPayload, "\"clock_source\":null")
+        || !has(stNullPayload, "\"clock_phase\":null")
+        || !has(stNullPayload, "\"clock_failure\":null")
+        || !has(stNullPayload, "\"clock_generation\":null")
+        || !has(stNullPayload, "\"clock_revision\":null")
+        || !has(stNullPayload, "\"clock_media_us\":null")
+        || !has(stNullPayload, "\"poll\":\"InvalidSnapshot\"")
+        || backend4.reads != 4U);
+    // Exhausted WITH a supplied malformed payload: still all six null.
+    MediaClockPayload payload5;
+    payload5.generation = 1U;
+    payload5.mediaMicroseconds = 4000U;
+    payload5.source = MediaClockSource::CompiledTimeline;
+    payload5.phase = MediaClockPhase::Playing;
+    payload5.failure = MediaClockFailure::None;
+    MediaClockSnapshot snapshot5;
+    static_cast<MediaClockPayload&>(snapshot5) = payload5;
+    snapshot5.revision = 99U;
+    backend4.script.push_back(
+        MediaClockReadResult{MediaClockReadStatus::Exhausted, snapshot5});
+    const auto stExhaustedPayload = audio4.dispatch("status");
+    OPENHDK_FAIL_IF(62, !has(stExhaustedPayload, "\"clock_read\":\"Exhausted\"")
+        || !has(stExhaustedPayload, "\"clock_source\":null")
+        || !has(stExhaustedPayload, "\"clock_phase\":null")
+        || !has(stExhaustedPayload, "\"clock_failure\":null")
+        || !has(stExhaustedPayload, "\"clock_generation\":null")
+        || !has(stExhaustedPayload, "\"clock_revision\":null")
+        || !has(stExhaustedPayload, "\"clock_media_us\":null")
+        || !has(stExhaustedPayload, "\"poll\":\"Exhausted\"")
+        || backend4.reads != 5U);
+    // Out-of-contract enum value falls back to Unknown in the name field.
+    MediaClockPayload payload6;
+    payload6.generation = 1U;
+    payload6.mediaMicroseconds = 5000U;
+    payload6.source = static_cast<MediaClockSource>(99U);
+    payload6.phase = MediaClockPhase::Playing;
+    payload6.failure = MediaClockFailure::None;
+    MediaClockSnapshot snapshot6;
+    static_cast<MediaClockPayload&>(snapshot6) = payload6;
+    snapshot6.revision = 98U;
+    backend4.script.push_back(
+        MediaClockReadResult{MediaClockReadStatus::Snapshot, snapshot6});
+    const auto stUnknown = audio4.dispatch("status");
+    OPENHDK_FAIL_IF(63, !has(stUnknown, "\"clock_source\":\"Unknown\"")
+        || !has(stUnknown, "\"clock_phase\":\"Playing\"")
+        || backend4.reads != 6U);
+    // Stop contract unchanged after all cleared/exhausted reads.
+    const auto stopped4 = audio4.dispatch("stop");
+    OPENHDK_FAIL_IF(64, stopped4.exit != 0
+        || !has(stopped4, "\"type\":\"stopped\""));
+  }
   return 0;
 }
