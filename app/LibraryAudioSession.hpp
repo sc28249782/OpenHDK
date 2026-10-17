@@ -123,7 +123,8 @@ private:
 
   // Exactly one committed clock read per status request, on this thread.
   [[nodiscard]] LibraryCliResponse statusLine() {
-    const auto poll = controller_.pollDisplay();
+    const auto display = controller_.pollDisplayWithClock();
+    const auto& poll = display.observer;
     LibraryCliOutputBatch batch;
     LibraryCliJsonRecord record;
     record.text("type", "status");
@@ -133,8 +134,83 @@ private:
       record.number("generation", *controller_.expectedGeneration());
     else record.null("generation");
     record.number("observed_cues", controller_.observed().cues().size());
+    appendClockDiagnostics(record, display.clock);
     batch.add(record);
     return complete(std::move(batch));
+  }
+
+  // Additive flat diagnostics from the ONE committed clock read that also
+  // drove lyric observation on this serialized status request. Anything but a
+  // Snapshot read with a present snapshot emits every payload field null, even
+  // if a malformed fake read supplied payload bytes; enum-name fields fall
+  // back to "Unknown" for values outside the current contract enums. No
+  // interpolation, no session state access, no second backend read.
+  static void appendClockDiagnostics(LibraryCliJsonRecord& record,
+      const MediaClockReadResult& clock) {
+    record.text("clock_read", clockReadStatusName(clock.status));
+    if (clock.status != MediaClockReadStatus::Snapshot || !clock.snapshot) {
+      record.null("clock_source");
+      record.null("clock_phase");
+      record.null("clock_failure");
+      record.null("clock_generation");
+      record.null("clock_revision");
+      record.null("clock_media_us");
+      return;
+    }
+    const auto& payload = *clock.snapshot;
+    record.text("clock_source", mediaClockSourceName(payload.source));
+    record.text("clock_phase", mediaClockPhaseName(payload.phase));
+    record.text("clock_failure", mediaClockFailureName(payload.failure));
+    record.number("clock_generation", payload.generation);
+    record.number("clock_revision", payload.revision);
+    record.number("clock_media_us", payload.mediaMicroseconds);
+  }
+
+  [[nodiscard]] static std::string_view clockReadStatusName(
+      MediaClockReadStatus status) noexcept {
+    switch (status) {
+    case MediaClockReadStatus::Snapshot: return "Snapshot";
+    case MediaClockReadStatus::Unstable: return "Unstable";
+    case MediaClockReadStatus::Exhausted: return "Exhausted";
+    }
+    return "Unknown";
+  }
+
+  [[nodiscard]] static std::string_view mediaClockSourceName(
+      MediaClockSource value) noexcept {
+    switch (value) {
+    case MediaClockSource::None: return "None";
+    case MediaClockSource::CompiledTimeline: return "CompiledTimeline";
+    case MediaClockSource::LegacyPlayer: return "LegacyPlayer";
+    }
+    return "Unknown";
+  }
+
+  [[nodiscard]] static std::string_view mediaClockPhaseName(
+      MediaClockPhase value) noexcept {
+    switch (value) {
+    case MediaClockPhase::Unavailable: return "Unavailable";
+    case MediaClockPhase::Preparing: return "Preparing";
+    case MediaClockPhase::Playing: return "Playing";
+    case MediaClockPhase::Paused: return "Paused";
+    case MediaClockPhase::Finished: return "Finished";
+    case MediaClockPhase::Stopped: return "Stopped";
+    case MediaClockPhase::Failed: return "Failed";
+    }
+    return "Unknown";
+  }
+
+  [[nodiscard]] static std::string_view mediaClockFailureName(
+      MediaClockFailure value) noexcept {
+    switch (value) {
+    case MediaClockFailure::None: return "None";
+    case MediaClockFailure::PrepareFailed: return "PrepareFailed";
+    case MediaClockFailure::DeviceStartFailed: return "DeviceStartFailed";
+    case MediaClockFailure::DispatchFailed: return "DispatchFailed";
+    case MediaClockFailure::RenderFailed: return "RenderFailed";
+    case MediaClockFailure::CompletionFailed: return "CompletionFailed";
+    }
+    return "Unknown";
   }
 
   [[nodiscard]] static std::optional<std::uint64_t> parseSongId(
