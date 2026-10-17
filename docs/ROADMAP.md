@@ -613,3 +613,28 @@ children, then obtain fresh pinned production evidence. This audit identifies
 evidence-tool defects; it does not establish an OpenHDK engine defect or runtime
 acceptance. Step 5, NCN and manual gates remain open; the Windows checkpoint
 remains BLOCKED.
+
+### Local verifier repair checkpoint (2026-10-17)
+
+A local replacement, runner4c, adds latched failures, command-result checks,
+strict numeric types, capped raw capture, actual EOF checks and before/after
+runner and executable pins. Review also found a false rejection of clean EOF
+after a delayed quit; the final patch accepts that EOF while continuing to
+reject extra records and partial tails. A sanitized source copy was checked
+independently with nine synthetic child cases covering normal and delayed
+completion, the earlier false-PASS paths, trailing data and numeric errors.
+
+The bridge reports that the final WSL synthetic suite completed with 25/25
+outcomes matching expectations under an outer watchdog, stable runner bytes and
+no remaining owned test processes. Three earlier attempts aborted on test-driver
+or child-fixture authoring errors; those attempts remain separate from the final
+suite. This count describes verifier checks, including expected rejections,
+rather than successful production playback cases.
+
+The replacement source, test infrastructure and receipts remain local; they are
+not delivered by this documentation change. These offline results do not
+authenticate the original pilot, prove source-to-binary correspondence or
+supply a fresh production replay. Next: obtain and review fresh pinned
+production evidence with the repaired verifier, then cover the remaining lyric
+and human-heard audio requirements before scoped acceptance. Step 5 remains
+open; NCN is OPEN and the Windows checkpoint is BLOCKED.
