@@ -717,3 +717,13 @@ This covers one mutation verb and does not establish runtime acceptance.
 The [manual listening procedure](LIBRARY-PLAYBACK-MANUAL-CHECK.md) is prepared
 from public source and has not been executed. The CLI exposes clock/cue counts,
 not rendered lyric text. Step 5/NCN remain OPEN; Windows checkpoint BLOCKED.
+
+## User-attended synthetic listening result (2026-10-17)
+
+A [bounded listening observation](LIBRARY-PLAYBACK-LYRIC-EVIDENCE.md#user-attended-synthetic-listening-observation-2026-10-17)
+records the maintainer's confirmation of brief audio through the intended
+headphones without observed distortion or interruption. The bridge separately
+reports actual Finished, explicit stop/quit, zero exits, EOF and cleanup for
+that single run. This is an attended automated probe, not the full interactive
+manual procedure or general audio-quality validation. Review remaining scoped
+step 5 requirements; Step 5/NCN remain OPEN, Windows checkpoint BLOCKED.

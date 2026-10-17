@@ -96,9 +96,11 @@ It is retained in the local evidence rather than removed from the result.
 
 ## Remaining work
 
-The retained mutation-rejection/clean-quit probe has been audited below. Perform
-the planned [manual listening and clock observation](LIBRARY-PLAYBACK-MANUAL-CHECK.md)
-before any scoped step 5 acceptance. Count-prefix evidence does not establish
+The retained mutation-rejection/clean-quit probe has been audited below.
+A later user-attended synthetic listening observation is recorded at the end
+of this document. The [interactive manual procedure](LIBRARY-PLAYBACK-MANUAL-CHECK.md)
+and broader manual playback scope remain distinct from that short run.
+Review the remaining scoped requirements before any step 5 acceptance. Count-prefix evidence does not establish
 display text rendering, output quality or user acceptance. Windows playback
 validation remains separate from the blocked Windows checkpoint protocol.
 
@@ -149,3 +151,51 @@ and attempts. Original evidence and tools remain local. The audit checked table 
 page equality, mode routing, pins, exits, actual EOF and process
 identity/cleanup, plus the preliminary/final verifier-control reports.
 No fresh execution or human listening is claimed by this documentation change.
+
+## User-attended synthetic listening observation (2026-10-17)
+
+The maintainer reported hearing a brief sound, then confirmed that it came
+through the intended headphones without audible distortion or interruption.
+These are the maintainer's observations from one short synthetic run, not
+an automated assessment of hearing or measured audio quality.
+
+The bridge reports one execution, without retry, after local command approval.
+The wrapper interval was 2026-10-17 14:50:31.419Z to 14:50:35.205Z
+(21:50:31.419 to 21:50:35.205 Asia/Bangkok). This interval includes process
+setup and cleanup; it is not an exact measured acoustic playback interval.
+The fixture's last-event time remains 1500000 microseconds.
+
+The tested source/executable/runner4f and public SoundFont pins are the same
+as the earlier stop/finish probe above. The bridge's sanitized result reports
+the following samples, with generation 1, Snapshot/CompiledTimeline and
+failure None:
+
+| clock_phase | clock_media_us | clock_revision | observed_cues |
+| --- | ---: | ---: | ---: |
+| Playing | 355873 | 44 | 2 |
+| Playing | 730476 | 84 | 3 |
+| Playing | 1067619 | 120 | 4 |
+| Playing | 1423492 | 158 | 4 |
+| Finished | 1517142 | 168 | 4 |
+
+The reported sequence then receives stopped acknowledgment, inactive/Unbound
+status with null generation and quit acknowledgment. App and runner exit zero;
+both streams reach actual EOF, the child is reaped and not alive, and the
+wrapper reports no leftover owned processes or watchdog expiry. Stderr retains
+only the public SoundFont ROM warning. These are bridge-reported control-path
+observations, distinct from the maintainer's listening report.
+
+This documentation uses the returned sanitized execution result and the
+maintainer's chat confirmations. It does not claim a new raw-evidence audit
+of this listening run. Earlier raw-evidence audits retain their own scopes.
+The local approval command did not present a choice menu according to the
+maintainer; the same pending run subsequently completed. No second playback
+was started in response to that report.
+
+This is a user-attended automated finish probe, not execution of every command
+in the interactive manual procedure. It establishes a narrow reported audible
+result on the intended headphones. It does not establish longer playback,
+musical fidelity, rendered lyric text/highlighting, native Windows playback
+or overall step 5 runtime acceptance. Step 5 and NCN remain OPEN, Windows
+checkpoint acknowledgment remains BLOCKED, and
+source_to_binary_independently_proven remains false.

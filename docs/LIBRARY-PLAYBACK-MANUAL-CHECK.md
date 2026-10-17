@@ -1,6 +1,11 @@
 # Manual listening and clock observation
 
-Status: procedure prepared from public source; NOT executed or accepted.
+Status: this interactive procedure is prepared from public source and has
+not been executed in full or accepted. A later
+[user-attended automated finish probe](LIBRARY-PLAYBACK-LYRIC-EVIDENCE.md#user-attended-synthetic-listening-observation-2026-10-17)
+has a maintainer report of brief audible output on the intended headphones,
+without observed distortion or interruption. That report does not imply
+execution of all commands below or visual lyric rendering.
 This is a WSL2 Linux audio-session check. It does not validate native Windows
 playback or Windows checkpoint persistence. Keep Step 5 and NCN OPEN, and
 Windows checkpoint acknowledgment BLOCKED.

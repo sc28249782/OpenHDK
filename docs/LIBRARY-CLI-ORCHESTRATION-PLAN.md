@@ -389,3 +389,12 @@ against retained records. This covers one mutation verb, not the full matrix. A
 for review, not execution evidence. This entry has no rendered lyric display;
 clock/count evidence does not close that separate capability gap. Step 5
 acceptance and the existing NCN/Windows/manual gates do not advance.
+
+## User-attended listening report
+
+The [2026-10-17 listening observation](LIBRARY-PLAYBACK-LYRIC-EVIDENCE.md#user-attended-synthetic-listening-observation-2026-10-17)
+adds a maintainer report of brief synthetic audio on the intended headphones
+without observed distortion or interruption, separate from bridge-reported
+clock/exit/cleanup results. It does not execute the complete interactive manual
+procedure or add rendered lyrics. Step 5/NCN remain OPEN, Windows checkpoint
+BLOCKED; no runtime acceptance or independent source-to-binary proof advances.
