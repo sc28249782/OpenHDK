@@ -1,19 +1,25 @@
 # Durable library CLI and playback orchestration plan
 
 **Plan:** OHK-CLI-030
-**Status:** Accepted by review and merge of PR #85; pure grammar/output models
-and owning management session/executable plus service-owned preparation implemented.
-Playback integration and fresh native CLI session evidence remain pending.
+**Status:** Accepted by review and merge of PR #85. Management CLI and
+service-owned preparation are implemented; step 4 has scoped native acceptance
+for its pinned revision. PR #103 added the controller and PR #104 added the
+first audio-enabled library entry. Step 5 native/manual playback evidence
+remains pending.
+
 **Target:** OHK-DURABLE-030 slice 4, after scoped mutation acceptance.
 
 ## 1. Purpose and current boundary
 
 The durable service implements Create/Open, metadata overrides and all five
 root/song mutations. Scoped mutation acceptance binds revision `54f404a` to the
-recorded WSL2 `/dev/sdd` ext4 environment. The current audio executable still
-plays an arbitrary MIDI path through `readMidiBytes`; it has no library command.
-The service exposes snapshots but no preparation query. The original proposal was docs-only; implementation progress is recorded below.
-This step adds no dependency, version change or completed release checkbox.
+recorded WSL2 `/dev/sdd` ext4 environment. The original `OpenHDK` audio
+executable still plays an arbitrary MIDI path through `readMidiBytes`; it has
+no library command. The separate
+`OpenHDKLibraryAudio` entry connects the service and backend.
+The service now exposes a read-only preparation query. The original proposal
+was docs-only; implementation progress is recorded below. These later slices
+do not complete a release checkbox.
 
 Use the existing service as the only mutation authority. Do not create a second
 catalog owner, import detached IDs as live authority, edit checkpoint bytes,
@@ -21,10 +27,11 @@ save after an in-memory mutation, or bypass the native admission fence.
 
 The first executable is a separate hardware-free `OpenHDKLibrary` control tool.
 It can build with `OPENHDK_BUILD_AUDIO_POC=OFF`, without FluidSynth/miniaudio.
-The existing `OpenHDK` playback options remain compatible. Playback integration
-follows management and preparation slices; do not require audio dependencies to
-create or inspect a library. No GUI, NCN normalizer, MIDI hardware, VST or
-Windows checkpoint implementation is added by this plan.
+The existing `OpenHDK` playback options remain compatible. Audio integration
+uses the separate `OpenHDKLibraryAudio` entry; audio dependencies are not
+required to create or inspect a library with `OpenHDKLibrary`. No GUI, NCN
+normalizer, MIDI hardware, VST or Windows checkpoint implementation is added
+by this plan.
 
 ## 2. Entry modes and session lifetime
 
@@ -348,9 +355,11 @@ The [explicit scoped CLI acceptance](LIBRARY-CLI-EVIDENCE.md#explicit-scoped-cli
 on 2026-10-17 closes step 4 only for tested revision
 `80b673ee5e96a423cbd5974f3b57c34a6fbf78ce` on the recorded WSL2 ext4 environment,
 with sanitizer setting 0 and eligibility bypass off. The private evidence and
-redacted-copy limits remain part of that decision. Next: the separate step 5
-playback controller, its generation/lifetime tests and affected native/manual
-evidence. Earlier Pending descriptions above record the implementation stages;
-this scoped decision does not accept playback. Earlier `6a6337d` / `4f69246` /
+redacted-copy limits remain part of that decision. PR #103 subsequently added
+the generation-bound controller, and PR #104 connected it to an experimental
+audio-enabled library entry with synthetic integration tests. Next: real
+prepared-library playback and affected native/manual evidence. Earlier Pending
+descriptions above record the implementation stages; this scoped decision does
+not accept playback. Earlier `6a6337d` / `4f69246` /
 `54f404a` acceptances and bundles do not advance; Windows checkpoint acknowledgment
 remains BLOCKED, and NCN/manual/release gates remain open.
