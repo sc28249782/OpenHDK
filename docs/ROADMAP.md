@@ -727,3 +727,14 @@ reports actual Finished, explicit stop/quit, zero exits, EOF and cleanup for
 that single run. This is an attended automated probe, not the full interactive
 manual procedure or general audio-quality validation. Review remaining scoped
 step 5 requirements; Step 5/NCN remain OPEN, Windows checkpoint BLOCKED.
+
+## Opt-in lyric text observation (2026-10-18)
+
+The audio entry now accepts the exact bare verb `lyrics`: an opt-in, read-only
+plain-text preview of the current observed cue prefix from one committed
+clock read, with fixed bounds (4096 output bytes / 1024 cues / 4096
+operations), scalar-boundary clipping, and structured errors for invalid
+limits, inconsistent operations or non-UTF-8 assembled previews. The managed
+grammar, legacy `status` output and all clock/observer contracts are
+unchanged. This adds no GUI/highlighting rendering, no playback, no runtime
+acceptance and no release checkbox; it is hardware-free tested only.

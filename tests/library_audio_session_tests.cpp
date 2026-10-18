@@ -485,5 +485,362 @@ int main() {
     OPENHDK_FAIL_IF(64, stopped4.exit != 0
         || !has(stopped4, "\"type\":\"stopped\""));
   }
+  // Pure helper: FF 05 literal text with CRLF -> preview "A\nB", false.
+  {
+    KarLyricCue cue;
+    cue.decoded = "A\r\nB";
+    cue.operations = {
+        {LyricDisplayKind::Text, 0U, 1U},
+        {LyricDisplayKind::LineBreak, 1U, 0U},
+        {LyricDisplayKind::Text, 3U, 1U}};
+    const auto r = lyricObservationText({&cue, 1});
+    OPENHDK_FAIL_IF(65, r.failed || r.truncated || r.text != "A\nB");
+  }
+  // Named FF 01 leading markers: '/' line break, '\' paragraph break; the
+  // marker byte itself is never emitted. Action-only cues still emit breaks.
+  {
+    KarLyricCue cue;
+    cue.decoded = "/\\X";
+    cue.operations = {
+        {LyricDisplayKind::LineBreak, 0U, 0U},
+        {LyricDisplayKind::ParagraphBreak, 1U, 0U},
+        {LyricDisplayKind::Text, 2U, 1U}};
+    const auto r = lyricObservationText({&cue, 1});
+    OPENHDK_FAIL_IF(66, r.failed || r.truncated || r.text != "\n\n\nX");
+  }
+  {
+    KarLyricCue cue;
+    cue.decoded = "/\\";
+    cue.operations = {
+        {LyricDisplayKind::LineBreak, 0U, 0U},
+        {LyricDisplayKind::ParagraphBreak, 1U, 0U}};
+    const auto r = lyricObservationText({&cue, 1});
+    OPENHDK_FAIL_IF(67, r.failed || r.truncated || r.text != "\n\n\n");
+  }
+  // Tab/quote/backslash bytes pass through the helper byte-exactly.
+  {
+    KarLyricCue cue;
+    cue.decoded = std::string("a\tb\"c\\d");
+    cue.operations = {{LyricDisplayKind::Text, 0U, cue.decoded.size()}};
+    const auto r = lyricObservationText({&cue, 1});
+    OPENHDK_FAIL_IF(68, r.failed || r.truncated
+        || r.text != std::string("a\tb\"c\\d"));
+  }
+  // Thai scalars (3 UTF-8 bytes each): exact fit stays untruncated, and
+  // clipping always backs off to a whole scalar boundary.
+  {
+    KarLyricCue cue;
+    cue.decoded = "กก"; // 6 bytes
+    cue.operations = {{LyricDisplayKind::Text, 0U, 6U}};
+    const auto exact = lyricObservationText({&cue, 1},
+        {6U, 1024U, 4096U});
+    OPENHDK_FAIL_IF(69, exact.failed || exact.truncated || exact.text != "กก");
+    const auto clipped = lyricObservationText({&cue, 1},
+        {5U, 1024U, 4096U});
+    OPENHDK_FAIL_IF(70, clipped.failed || !clipped.truncated
+        || clipped.text != "ก");
+  }
+  // Operation and cue caps stop traversal immediately and mark truncated.
+  {
+    KarLyricCue a, b, c;
+    a.decoded = "x"; b.decoded = "y"; c.decoded = "z";
+    a.operations = {{LyricDisplayKind::Text, 0U, 1U}};
+    b.operations = {{LyricDisplayKind::Text, 0U, 1U},
+        {LyricDisplayKind::LineBreak, 1U, 0U}};
+    c.operations = {{LyricDisplayKind::Text, 0U, 1U}};
+    const KarLyricCue cues[] = {a, b, c};
+    const auto r = lyricObservationText(cues, {4096U, 2U});
+    OPENHDK_FAIL_IF(71, r.failed || !r.truncated || r.text != "xy\n");
+    const auto r2 = lyricObservationText(cues, {5U, 1024U, 2U});
+    OPENHDK_FAIL_IF(72, r2.failed || !r2.truncated || r2.text != "xy");
+  }
+  // Defensive bounds: out-of-range text ops and unknown kinds fail with no
+  // text and no guessed bytes. Limit hard caps: raising above the contract
+  // maximum, or zeroing a limit, fails out of band with no scanning at all;
+  // a lowered but positive limit is honored (exact lower fit stays clean).
+  {
+    KarLyricCue cue;
+    cue.decoded = "A";
+    cue.operations = {{LyricDisplayKind::Text, 2U, 2U}};
+    const auto r = lyricObservationText({&cue, 1});
+    OPENHDK_FAIL_IF(73, !r.failed || !r.text.empty());
+    KarLyricCue bad;
+    bad.decoded = "A";
+    bad.operations = {{static_cast<LyricDisplayKind>(77U), 0U, 1U}};
+    const auto r2 = lyricObservationText({&bad, 1});
+    OPENHDK_FAIL_IF(74, !r2.failed || !r2.text.empty());
+    const auto aboveMax = lyricObservationText({&cue, 1},
+        {kLyricObservationMaxOutputBytes + 1U, 1024U, 4096U});
+    OPENHDK_FAIL_IF(101, !aboveMax.failed || !aboveMax.text.empty()
+        || aboveMax.truncated);
+    const auto zeroed = lyricObservationText({&cue, 1},
+        {1U, 1024U, 0U});
+    OPENHDK_FAIL_IF(102, !zeroed.failed || !zeroed.text.empty()
+        || zeroed.truncated);
+    // A lowered positive output cap that exactly fits REAL valid content
+    // stays clean (correct oracle: a good cue, not the invalid one above).
+    KarLyricCue good;
+    good.decoded = "AB";
+    good.operations = {{LyricDisplayKind::Text, 0U, 2U}};
+    const KarLyricCue one[] = {good};
+    const auto lowered = lyricObservationText(one,
+        {2U, 1024U, 4096U});
+    OPENHDK_FAIL_IF(103, lowered.failed || lowered.truncated
+        || lowered.text != "AB");
+  }
+  // Assembled-preview UTF-8 validation: an in-bounds operation that STARTS
+  // inside a multi-byte scalar can only ever fail; it must not return a
+  // partial "success" with a split scalar.
+  {
+    KarLyricCue cue;
+    cue.decoded = "\xe0\xb8\x81"; // Thai ก (3 bytes)
+    cue.operations = {{LyricDisplayKind::Text, 1U, 2U}};
+    const auto r = lyricObservationText({&cue, 1});
+    OPENHDK_FAIL_IF(104, !r.failed || !r.text.empty());
+  }
+  // Multi-byte scalar truncation with explicit byte literals.
+  // U+00A2 (CENT SIGN, \xc2\xa2) twice = 4 bytes; cap 3 keeps one cent and
+  // reports truncated.
+  {
+    KarLyricCue cue;
+    cue.decoded = std::string("\xc2\xa2\xc2\xa2");
+    cue.operations = {{LyricDisplayKind::Text, 0U, 4U}};
+    const auto r = lyricObservationText({&cue, 1}, {3U, 1024U, 4096U});
+    OPENHDK_FAIL_IF(105, r.failed || !r.truncated
+        || r.text != std::string("\xc2\xa2"));
+  }
+  // U+1F600 twice (\xf0\x9f\x98\x80) = 8 bytes; cap 7 keeps one emoji
+  // (the incomplete second 4-byte scalar is dropped whole); exact cap 8
+  // keeps both untruncated.
+  {
+    KarLyricCue cue;
+    cue.decoded = std::string("\xf0\x9f\x98\x80\xf0\x9f\x98\x80");
+    cue.operations = {{LyricDisplayKind::Text, 0U, 8U}};
+    const auto clipped = lyricObservationText({&cue, 1},
+        {7U, 1024U, 4096U});
+    OPENHDK_FAIL_IF(106, clipped.failed || !clipped.truncated
+        || clipped.text != std::string("\xf0\x9f\x98\x80"));
+    const auto exact = lyricObservationText({&cue, 1},
+        {8U, 1024U, 4096U});
+    OPENHDK_FAIL_IF(107, exact.failed || exact.truncated
+        || exact.text != std::string("\xf0\x9f\x98\x80\xf0\x9f\x98\x80"));
+  }
+  // ASCII: exact fit (4 bytes) stays clean; cap 3 clips to "abc" truncated.
+  {
+    KarLyricCue cue;
+    cue.decoded = "abcd";
+    cue.operations = {{LyricDisplayKind::Text, 0U, 4U}};
+    const auto exact = lyricObservationText({&cue, 1}, {4U, 1024U, 4096U});
+    OPENHDK_FAIL_IF(108, exact.failed || exact.truncated || exact.text != "abcd");
+    const auto clipped = lyricObservationText({&cue, 1}, {3U, 1024U, 4096U});
+    OPENHDK_FAIL_IF(109, clipped.failed || !clipped.truncated
+        || clipped.text != "abc");
+  }
+  // Session-level: lyrics verb on the audio entry. ONE committed read per
+  // lyrics request, same-clock prefix text, repeat query, Held/Finished
+  // retention, and legacy status output unchanged. LF is escaped as \u000a
+  // by the shared JSON writer, matching every other control character.
+  {
+    const fs::path store5 = home.path / "lyricsprobe";
+    fs::create_directory(store5);
+    const fs::path songs5 = home.path / "lyricsprobe-songs";
+    fs::create_directory(songs5);
+    write(songs5 / "lyricAB.kar",
+        smf({0, 0xff, 0x51, 0x03, 0x07, 0xa1, 0x20,
+             0, 0xff, 0x05, 4, 'A', '\r', '\n', 'B',
+             3, 0xff, 0x05, 1, 'C',
+             0, 0xff, 0x2f, 0}));
+    auto opened5 = Access::createNative(std::make_unique<SongDiscovery>(),
+        store5.string(), "lyrics.ohkcat", {}, {}, 1024U);
+    OPENHDK_FAIL_IF(75, !opened5.succeeded() || !opened5.service);
+    ScriptedSessionBackend backend5;
+    backend5.script.push_back(sessionClockRead(1U, 0U,
+        MediaClockPhase::Playing, 2U));
+    backend5.script.push_back(sessionClockRead(1U, 1000000U,
+        MediaClockPhase::Playing, 4U));
+    PlaybackController controller5(backend5);
+    LibraryCliSession session5(std::move(opened5.service),
+        [&controller5] { return controller5.libraryMutationAllowed(); });
+    LibraryAudioSession audio5(session5, controller5);
+    OPENHDK_FAIL_IF(76, audio5.dispatch("register \"" +
+        songs5.generic_string() + "\"").exit != 0
+        || audio5.dispatch("scan 1").exit != 0);
+    const auto listing5 = audio5.dispatch("songs 1 0 100");
+    OPENHDK_FAIL_IF(77, listing5.exit != 0);
+    const auto songId5 = firstSongId(listing5);
+    OPENHDK_FAIL_IF(78, audio5.dispatch("play "
+        + std::to_string(songId5)).exit != 0);
+    const auto first = audio5.dispatch("lyrics");
+    OPENHDK_FAIL_IF(79, first.exit != 0 || backend5.reads != 1U);
+    OPENHDK_FAIL_IF(80, !has(first, "\"type\":\"lyrics\"")
+        || !has(first, "\"active\":true")
+        || !has(first, "\"poll\":\"Advanced\"")
+        || !has(first, "\"generation\":1")
+        || !has(first, "\"observed_cues\":1")
+        || !has(first, "\"clock_read\":\"Snapshot\"")
+        || !has(first, "\"clock_phase\":\"Playing\"")
+        || !has(first, "\"clock_media_us\":0")
+        || !has(first, "\"text\":\"A\\u000aB\"")
+        || !has(first, "\"text_truncated\":false"));
+    // Legacy status output is unchanged: still no text field, and each
+    // status call continues to consume exactly one committed read.
+    const auto legacy = audio5.dispatch("status");
+    OPENHDK_FAIL_IF(81, !has(legacy, "\"type\":\"status\"")
+        || !has(legacy, "\"observed_cues\":2")
+        || has(legacy, "\"text\":")
+        || backend5.reads != 2U);
+    const auto second = audio5.dispatch("lyrics");
+    OPENHDK_FAIL_IF(82, !has(second, "\"observed_cues\":2")
+        || !has(second, "\"text\":\"A\\u000aBC\"")
+        || !has(second, "\"text_truncated\":false")
+        || backend5.reads != 3U);
+    backend5.script.push_back(sessionClockRead(1U, 1000000U,
+        MediaClockPhase::Playing, 4U));
+    // Reading position unchanged -> same prefix, same text (never stale or
+    // duplicated); every lyrics call still consumes exactly one read.
+    const auto repeat = audio5.dispatch("lyrics");
+    OPENHDK_FAIL_IF(83, !has(repeat, "\"text\":\"A\\u000aBC\"")
+        || !has(repeat, "\"observed_cues\":2")
+        || backend5.reads != 4U);
+    // Held retains the prefix and the text for BOTH Held sources: an
+    // Unstable read and a Preparing snapshot.
+    backend5.script.push_back(
+        MediaClockReadResult{MediaClockReadStatus::Unstable, std::nullopt});
+    const auto held = audio5.dispatch("lyrics");
+    OPENHDK_FAIL_IF(84, !has(held, "\"poll\":\"Held\"")
+        || !has(held, "\"text\":\"A\\u000aBC\"")
+        || !has(held, "\"observed_cues\":2")
+        || backend5.reads != 5U);
+    backend5.script.push_back(sessionClockRead(1U, 700000U,
+        MediaClockPhase::Preparing, 6U));
+    const auto heldPreparing = audio5.dispatch("lyrics");
+    OPENHDK_FAIL_IF(85, !has(heldPreparing, "\"poll\":\"Held\"")
+        || !has(heldPreparing, "\"clock_phase\":\"Preparing\"")
+        || !has(heldPreparing, "\"text\":\"A\\u000aBC\"")
+        || !has(heldPreparing, "\"observed_cues\":2")
+        || backend5.reads != 6U);
+    // Unstable WITH a supplied payload stays Held, all payload fields null.
+    MediaClockPayload payload7;
+    payload7.generation = 1U;
+    payload7.mediaMicroseconds = 900000U;
+    payload7.source = MediaClockSource::CompiledTimeline;
+    payload7.phase = MediaClockPhase::Playing;
+    payload7.failure = MediaClockFailure::None;
+    MediaClockSnapshot snapshot7;
+    static_cast<MediaClockPayload&>(snapshot7) = payload7;
+    snapshot7.revision = 98U;
+    backend5.script.push_back(
+        MediaClockReadResult{MediaClockReadStatus::Unstable, snapshot7});
+    const auto heldPayload = audio5.dispatch("lyrics");
+    OPENHDK_FAIL_IF(86, !has(heldPayload, "\"poll\":\"Held\"")
+        || !has(heldPayload, "\"clock_media_us\":null")
+        || !has(heldPayload, "\"text\":\"A\\u000aBC\"")
+        || backend5.reads != 7U);
+    // A real Finished sample retains the prefix and its text.
+    backend5.script.push_back(sessionClockRead(1U, 2000000U,
+        MediaClockPhase::Finished, 6U));
+    const auto finished = audio5.dispatch("lyrics");
+    OPENHDK_FAIL_IF(87, !has(finished, "\"clock_phase\":\"Finished\"")
+        || !has(finished, "\"poll\":\"Advanced\"")
+        || !has(finished, "\"text\":\"A\\u000aBC\"")
+        || !has(finished, "\"observed_cues\":2")
+        || backend5.reads != 8U);
+    // Generation mismatch on a later snapshot (observer still bound): cleared
+    // prefix, empty text, with the raw clock generation reported in diagnostics.
+    backend5.script.push_back(sessionClockRead(99U, 3000000U,
+        MediaClockPhase::Playing, 8U));
+    const auto mismatch = audio5.dispatch("lyrics");
+    OPENHDK_FAIL_IF(88, !has(mismatch, "\"poll\":\"Cleared\"")
+        || !has(mismatch, "\"clock_generation\":99")
+        || !has(mismatch, "\"observed_cues\":0")
+        || !has(mismatch, "\"text\":\"\""));
+    // Exhausted read surfaces Exhausted (read-status checks precede the
+    // unbound check) and clears the current prefix: empty text.
+    backend5.script.push_back(
+        MediaClockReadResult{MediaClockReadStatus::Exhausted, std::nullopt});
+    const auto exhausted = audio5.dispatch("lyrics");
+    OPENHDK_FAIL_IF(89, !has(exhausted, "\"poll\":\"Exhausted\"")
+        || !has(exhausted, "\"observed_cues\":0")
+        || !has(exhausted, "\"text\":\"\"")
+        || backend5.reads != 10U);
+    // Stop while active (a cleared display does not stop the controller):
+    // idle Unbound with an empty current prefix.
+    const auto stopped5 = audio5.dispatch("stop");
+    OPENHDK_FAIL_IF(90, stopped5.exit != 0);
+    backend5.script.push_back(sessionClockRead(1U, 3000000U,
+        MediaClockPhase::Finished, 10U));
+    const auto idle = audio5.dispatch("lyrics");
+    OPENHDK_FAIL_IF(91, !has(idle, "\"active\":false")
+        || !has(idle, "\"poll\":\"Unbound\"")
+        || !has(idle, "\"generation\":null")
+        || !has(idle, "\"observed_cues\":0")
+        || !has(idle, "\"text\":\"\"")
+        || !has(idle, "\"text_truncated\":false"));
+  }
+  // Composer escape path: DEL (0x7f) and C1 (U+009f) render as escaped JSON.
+  {
+    const fs::path store7 = home.path / "lyricsesc";
+    fs::create_directory(store7);
+    const fs::path songs7 = home.path / "lyricsesc-songs";
+    fs::create_directory(songs7);
+    write(songs7 / "esc.mid",
+        smf({0, 0xff, 0x51, 0x03, 0x07, 0xa1, 0x20,
+             0, 0xff, 0x05, 5, 'x', 0x7f, 0xc2, 0x9f, 'y',
+             0, 0xff, 0x2f, 0}));
+    auto opened7 = Access::createNative(std::make_unique<SongDiscovery>(),
+        store7.string(), "esc.ohkcat", {}, {}, 1024U);
+    OPENHDK_FAIL_IF(92, !opened7.succeeded() || !opened7.service);
+    ScriptedSessionBackend backend7;
+    backend7.script.push_back(sessionClockRead(1U, 0U,
+        MediaClockPhase::Playing, 2U));
+    PlaybackController controller7(backend7);
+    LibraryCliSession session7(std::move(opened7.service),
+        [&controller7] { return controller7.libraryMutationAllowed(); });
+    LibraryAudioSession audio7(session7, controller7);
+    OPENHDK_FAIL_IF(93, audio7.dispatch("register \"" +
+        songs7.generic_string() + "\"").exit != 0
+        || audio7.dispatch("scan 1").exit != 0);
+    const auto listing7 = audio7.dispatch("songs 1 0 100");
+    OPENHDK_FAIL_IF(94, listing7.exit != 0);
+    const auto songId7 = firstSongId(listing7);
+    OPENHDK_FAIL_IF(95, audio7.dispatch("play "
+        + std::to_string(songId7)).exit != 0);
+    const auto esc = audio7.dispatch("lyrics");
+    OPENHDK_FAIL_IF(96, !has(esc, "\"text\":\"x\\u007f\\u009fy\"")
+        || !has(esc, "\"text_truncated\":false"));
+  }
+  // NoLyrics: empty text with false truncation, disambiguated by the
+  // existing observed_cues/poll fields.
+  {
+    const fs::path store6 = home.path / "nolyrics";
+    fs::create_directory(store6);
+    const fs::path songs6 = home.path / "nolyrics-songs";
+    fs::create_directory(songs6);
+    write(songs6 / "plain.mid",
+        smf({0, 0xff, 0x51, 0x03, 0x07, 0xa1, 0x20,
+             0, 0x90, 0x3c, 0x64,
+             3, 0x80, 0x3c, 0x00,
+             0, 0xff, 0x2f, 0}));
+    auto opened6 = Access::createNative(std::make_unique<SongDiscovery>(),
+        store6.string(), "nolyr.ohkcat", {}, {}, 1024U);
+    OPENHDK_FAIL_IF(97, !opened6.succeeded() || !opened6.service);
+    FakeBackend backend6;
+    PlaybackController controller6(backend6);
+    LibraryCliSession session6(std::move(opened6.service),
+        [&controller6] { return controller6.libraryMutationAllowed(); });
+    LibraryAudioSession audio6(session6, controller6);
+    OPENHDK_FAIL_IF(98, audio6.dispatch("register \"" +
+        songs6.generic_string() + "\"").exit != 0
+        || audio6.dispatch("scan 1").exit != 0);
+    const auto listing6 = audio6.dispatch("songs 1 0 100");
+    const auto songId6 = firstSongId(listing6);
+    OPENHDK_FAIL_IF(99, audio6.dispatch("play "
+        + std::to_string(songId6)).exit != 0);
+    const auto noLyrics = audio6.dispatch("lyrics");
+    OPENHDK_FAIL_IF(100, !has(noLyrics, "\"type\":\"lyrics\"")
+        || !has(noLyrics, "\"observed_cues\":0")
+        || !has(noLyrics, "\"text\":\"\"")
+        || !has(noLyrics, "\"text_truncated\":false"));
+  }
   return 0;
 }

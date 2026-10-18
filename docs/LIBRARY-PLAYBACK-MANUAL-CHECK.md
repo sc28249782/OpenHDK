@@ -121,3 +121,14 @@ A user report can support only the specific audible/manual observations
 actually made. Display text/highlighting, full mutation-verb coverage,
 native Windows playback and broader runtime acceptance remain separate.
 Source-to-binary correspondence remains not independently proven.
+
+## Relationship to the audio-entry `lyrics` verb
+
+A later implementation adds the exact bare verb `lyrics` to the audio entry:
+one opt-in, read-only JSON preview (fields `text` and `text_truncated` beside
+the same status fields) of the current observed cue prefix, with fixed caps
+and LF/LF-LF plain-text break representation. It did not exist during the
+historical runs recorded here, so those observations remain count-only and
+stay true as recorded. `lyrics` is still not rendering or highlighting: it
+returns bounded text, not a screen layout, and the interactive procedure
+above remains the manual path.
