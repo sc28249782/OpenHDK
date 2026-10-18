@@ -434,3 +434,17 @@ query rebuilds whatever prefix is current. These caps are logical application
 bounds inside the existing `kCallerBytes` allowance, not a process-memory
 claim. This boundary does not implement rendering, highlighting or the full
 interactive manual procedure, and it does not advance any acceptance gate.
+
+## Real-executable lyric text evidence (2026-10-18)
+
+The [bounded ASCII prefix probe](LIBRARY-PLAYBACK-LYRIC-EVIDENCE.md#real-executable-lyric-text-prefix-probe-2026-10-18)
+records one bridge-reported live execution of the opt-in `lyrics` command
+at `06b7ee5aec6fce4ef9e36a97aed73c8a913d65c8`: ab/abc/abcd agree with
+same-record clock positions, actual Finished retains abcd, and explicit
+stop clears the prefix before quit, exit zero, actual EOF and owned-process
+cleanup. The retained preflight setup failure and 15 offline verifier-control
+outcomes are documented separately from that single live pass.
+This is plain-text ASCII observation and record-consistency evidence, not
+a new listening report or full manual/Windows playback acceptance.
+Step 5/NCN remain OPEN, Windows checkpoint BLOCKED, and
+source_to_binary_independently_proven remains false.

@@ -199,3 +199,105 @@ musical fidelity, rendered lyric text/highlighting, native Windows playback
 or overall step 5 runtime acceptance. Step 5 and NCN remain OPEN, Windows
 checkpoint acknowledgment remains BLOCKED, and
 source_to_binary_independently_proven remains false.
+
+## Real-executable lyric text prefix probe (2026-10-18)
+
+This is bridge-reported execution and retained-record consistency evidence for
+the opt-in `lyrics` command added in PR #114. It covers generated ASCII cue
+text, clock alignment, natural finish and explicit stop/quit cleanup on WSL2
+ext4. It is not a new human-listening report, GUI/highlighting validation,
+independent original-run authentication or overall runtime acceptance.
+
+| Item | Pin or scope |
+| --- | --- |
+| Tested source | `06b7ee5aec6fce4ef9e36a97aed73c8a913d65c8` |
+| Source tree | `b9a6ab0c7816f69bd29d5c3f5f7a4f0a83867c8c` |
+| Audio executable SHA256 | `bddc4e9b5bd923f393664e69efa1b3db5c910dcdec00567ed1415e869cbec8b2` |
+| Management executable SHA256 | `a5f0eaac7b5bc10ab3e71f2358b421e1eefbeafc806292daa4b4f528ea7d1726` |
+| Runner5b SHA256 | `8156f52e7cb17a98434a06b59f4f169129be9a6e627e54a6cef3269dd1247d14` |
+| Preserved runner5a SHA256 | `1880e39c22ed3ab5c770ca92d9e2967a215ea392e055dce630d254c3fc88a74e` |
+| Generated fixture SHA256 | `2605ec101a762e9b50cf97e243a5b54d687a27972ba3f6a4e2beae05d0af220d` |
+| Public SoundFont SHA256 | `52132b2b83994f0067d3a66b93b4f1b67d53ff8c0d3be90d39f23f92b4585cdd` |
+
+The fresh strict build used AUDIO ON and `-Wall -Wextra -Werror -pedantic`;
+only the audio and management executable targets were built, with tests OFF.
+This build is not a fresh 38-suite CTest run. The public SoundFont is
+FluidSynth's `VintageDreamsWaves-v2.sf2`, pinned upstream at
+`3ede3f7c8ffc5d16e5d28f416cbfd71f3ad2b814`. Executable and runner pins were
+reported stable before/after execution. Source-to-binary independently proven
+remains `false`.
+
+### Verifier review and setup failure
+
+Runner5b is an immutable successor to runner5a and the retained runner4f
+baseline above. Review found that runner5a could count Paused prefixes toward
+Playing progression. Runner5b only counts actual Playing samples; it also
+requires integer idle counts, an explicit null idle generation and complete
+Held diagnostics. Preparing/Held may retain a prefix while raw media time is
+lower; it must not be treated as a newly committed Playing position.
+
+The bridge reports 15 final offline control outcomes matching expectations
+(two expected passes and thirteen expected failures). Controls reject wrong,
+future or premature text; missing, true or numeric truncation flags; generation
+mismatch; missing finish; stale post-stop text; Paused-only progression;
+missing Held diagnostics; float idle counts; and missing idle generation.
+The valid path and a retained-prefix Preparing/Held path pass. Earlier failed
+control/setup attempts and all runner versions remain local. These are
+verifier checks, not fifteen production playback runs.
+
+The first management preflight failed before audio spawn because its store
+parent directory had been removed during setup. Its retained error was service
+code 5, store code 7, native error "2". No audio attempt occurred in that
+failed setup. The corrected preflight used a new exclusive evidence directory,
+an existing store parent and an absent primary file; old failure logs were
+preserved. It exited zero with one candidate, zero diagnostics, 65 source
+bytes, eight events, four cues, profile 1, track 0, utf8 and last event
+1500000 microseconds. The synthetic format-0 fixture uses PPQN 480,
+tempo 500000 and invented FF05 labels a/b/c/d at
+0/350000/700000/1050000 microseconds.
+
+### Single live result and record comparison
+
+One live execution followed the corrected preflight, without a live retry.
+The reported wrapper interval is 2026-10-18 04:31:40.013Z to 04:31:43.772Z;
+it includes setup and cleanup, not a measured acoustic interval. The runner
+budget was 25 seconds with a 60-second outer watchdog, which did not expire.
+
+Each selected `lyrics` record reports Snapshot / CompiledTimeline / failure
+None, generation 1 matching the play acknowledgment and
+`text_truncated:false`. Counts and text are checked against cue times less
+than or equal to `clock_media_us` in that same record.
+
+| clock_phase | clock_media_us | clock_revision | observed_cues | text |
+| --- | ---: | ---: | ---: | --- |
+| Playing | 355873 | 44 | 2 | ab |
+| Playing | 711746 | 82 | 3 | abc |
+| Playing | 1067619 | 120 | 4 | abcd |
+| Playing | 1404761 | 156 | 4 | abcd |
+| Finished | 1517142 | 168 | 4 | abcd |
+
+The first poll sees two cues together; no separate one-cue observation is
+claimed. Distinct Playing counts are 2, 3 and 4. Finished comes directly from
+the clock record and retains the full current prefix; it is not inferred
+from elapsed time or activity.
+
+Explicit stop is acknowledged, followed by an inactive/Unbound `lyrics`
+record with null generation, integer zero observed cues, empty text and
+`text_truncated:false`, then quit acknowledgment. App and runner exit zero.
+Both streams reach actual EOF, the owned child is reaped and no longer alive,
+and exact-token process checks report no owned leftovers before/after.
+The public SoundFont ROM warning remains in stderr.
+
+The bridge reports comparison of all fifteen raw stdout response records
+with the transcript and runner/wrapper receipts. This is retained-record
+consistency evidence, not independent execution authentication. Original
+synthetic evidence, failure logs and local verifier tools remain local;
+this document is a sanitized summary rather than a reproducible verifier
+package. No private media or private paths/hashes are published.
+
+The earlier listening report retains its earlier executable scope. This new
+run establishes bounded ASCII plain-text prefix observations only; it does
+not demonstrate Thai display, line/paragraph layout, clipping in live playback,
+native Windows playback or the complete interactive manual procedure.
+Step 5 and NCN remain OPEN, Windows checkpoint acknowledgment remains BLOCKED,
+and no release or runtime-acceptance checkbox advances.
