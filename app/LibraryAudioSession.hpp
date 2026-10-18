@@ -3,6 +3,7 @@
 #pragma once
 #include "app/LibraryCliSession.hpp"
 #include "app/PlaybackController.hpp"
+#include "app/LyricObservationText.hpp"
 #include <algorithm>
 #include <cstdint>
 #include <istream>
@@ -33,7 +34,23 @@ public:
   [[nodiscard]] LibraryCliResponse dispatch(std::string_view line) {
     if (line == "stop") return stopLine();
     if (line == "status") return statusLine();
+    if (line == "lyrics") return lyricsLine();
     if (line.rfind("play ", 0) == 0) return playLine(line.substr(5));
+    // Audio-entry-only help: the management help record must stay unchanged,
+    // so this entry answers help locally and lists its own verbs additively.
+    // Mirrors the management verb list; any future management verb must be
+    // added here too. If the record cannot render, complete() degrades to the
+    // normal structured output error exactly like every other line.
+    if (line == "help") {
+      LibraryCliOutputBatch batch;
+      LibraryCliJsonRecord record;
+      record.text("type", "help");
+      record.text("commands",
+          "help quit roots songs register reattach scan relocate remove "
+          "overrides prepare play status stop lyrics");
+      batch.add(record);
+      return complete(std::move(batch));
+    }
     return session_.dispatch(line);
   }
 
@@ -137,6 +154,45 @@ private:
     appendClockDiagnostics(record, display.clock);
     batch.add(record);
     return complete(std::move(batch));
+  }
+
+  // Opt-in read-only lyric TEXT preview (audio entry only). Exactly ONE
+  // committed clock read drives lyric observation here, exactly as in
+  // statusLine; the returned diagnostics come from that same read. The text
+  // is reconstructed from the CURRENT owning observed cue prefix after that
+  // poll (never a historical batch, never the upcoming delta): repeat queries
+  // at an unchanged position return the same text, Held/Finished retain the
+  // prefix, and stop/clear/generation-mismatch/Exhausted yield an empty
+  // current prefix rather than stale text. An allocation failure on this line
+  // is reported as a structured StorageFailure error with no partial record;
+  // lineError's own allocation failure escapes to the session loop's honest
+  // exit-74 fallback. The observed clock state may already have advanced by
+  // then; the next query rebuilds whatever prefix is current. The primary
+  // line cap is a logical application bound charged to the existing
+  // kCallerBytes allowance, not a process-memory claim.
+  [[nodiscard]] LibraryCliResponse lyricsLine() {
+    try {
+      const auto display = controller_.pollDisplayWithClock();
+      const auto observed = controller_.observed();
+      const auto observedCount = observed.cues().size();
+      auto preview = lyricObservationText(observed.cues(), {});
+      if (preview.failed) return lineError("LyricTextInvalid");
+      LibraryCliOutputBatch batch;
+      LibraryCliJsonRecord record;
+      record.text("type", "lyrics");
+      record.boolean("active", controller_.playbackActive());
+      record.text("poll", pollStatusName(display.observer.status));
+      if (controller_.expectedGeneration())
+        record.number("generation", *controller_.expectedGeneration());
+      else record.null("generation");
+      record.number("observed_cues",
+          static_cast<std::uint64_t>(observedCount));
+      appendClockDiagnostics(record, display.clock);
+      record.text("text", preview.text);
+      record.boolean("text_truncated", preview.truncated);
+      batch.add(record);
+      return complete(std::move(batch));
+    } catch (const std::bad_alloc&) { return lineError("StorageFailure"); }
   }
 
   // Additive flat diagnostics from the ONE committed clock read that also

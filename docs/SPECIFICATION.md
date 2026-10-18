@@ -234,7 +234,16 @@ pure bounded lyric text decoder and KAR selection/immutable cue extractor
 described in lyric contract section 8, plus the pure media-clock consumer in
 section 9. The consumer returns once-only whole-cue batches and an emitted
 prefix as current display state; reset/stop clears that state. These helpers
-are control/observation-path only. Single-song SMF/KAR preparation now
+are control/observation-path only.
+
+The audio-enabled entry exposes an opt-in read-only `lyrics` query that
+reports the CURRENT emitted prefix as one bounded plain-text JSON preview
+(text plus `text_truncated`) with fixed caps (4096 output bytes, 1024 cues,
+4096 operations), LF/LF-LF break representation and a scalar-boundary clip.
+It is reconstructed from one committed clock read exactly as status, and
+rejects invalid limits, inconsistent operations or a non-UTF-8 assembled
+preview with structured errors. This is not a rendering or highlighting
+contract. Single-song SMF/KAR preparation now
 rejects absent/foreign snapshot lineage before filesystem access, resolves
 SongId from an acquired catalog snapshot, rechecks source revision
 and containment, and owns canonical MIDI and explicit-policy KAR timelines.

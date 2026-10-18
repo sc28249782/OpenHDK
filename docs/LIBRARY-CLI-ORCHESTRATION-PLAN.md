@@ -398,3 +398,39 @@ without observed distortion or interruption, separate from bridge-reported
 clock/exit/cleanup results. It does not execute the complete interactive manual
 procedure or add rendered lyrics. Step 5/NCN remain OPEN, Windows checkpoint
 BLOCKED; no runtime acceptance or independent source-to-binary proof advances.
+
+## Opt-in lyric text observation (audio entry)
+
+The audio entry accepts the exact bare verb `lyrics` as an opt-in, read-only
+bounded preview of the CURRENT observed lyric cue prefix. It is a plain-text
+JSON preview, not a GUI/highlighting/screen-layout contract and not a change
+to the management grammar: `OpenHDKLibrary` rejects the same token and the
+legacy `status` output stays byte-identical. One `lyrics` dispatch calls
+`PlaybackController::pollDisplayWithClock()` exactly once; the same committed
+read drives lyric observation AND the additive clock diagnostics, and the
+text is reconstructed from the retained owning prefix `observed()` after that
+poll. Repeated queries at an unchanged position return the same text; Held
+(Unstable or Preparing) and Finished retain it; stop, clear, generation
+mismatch or Exhausted yield an empty current prefix, never a stale historical
+batch. Empty observed prefix (idle or NoLyrics) reports an empty text with
+`text_truncated:false`, disambiguated by the existing fields.
+
+Reconstruction (`app/LyricObservationText.hpp`) walks the observed cues in
+order: Text operations take the exact decoded byte range (no inferred spaces,
+no normalization, no raw marker bytes), LineBreak emits LF and ParagraphBreak
+emits LF LF as an explicitly documented plain-text representation. Fixed
+caps: at most 4096 emitted UTF-8 bytes, 1024 cues visited and 4096 operations
+visited; callers may only lower these bounds (a zero or above-maximum limit
+is rejected out of band with no scanning). Traversal stops on the first cap
+that binds and reports `text_truncated:true` when any observed operation or
+output could not be represented; exact fits stay `false`. Clipping backs off
+to a whole UTF-8 scalar (no splitThai or partial sequences) and the assembled
+preview is validated as UTF-8 with the shared CLI validator; an internally
+inconsistent operation (out-of-range offsets or an unknown kind), invalid
+limits, or an invalid assembled preview produce the structured error
+`LyricTextInvalid` (or an allocation-failure `StorageFailure`) with no
+partial record — the committed read may already have advanced, and the next
+query rebuilds whatever prefix is current. These caps are logical application
+bounds inside the existing `kCallerBytes` allowance, not a process-memory
+claim. This boundary does not implement rendering, highlighting or the full
+interactive manual procedure, and it does not advance any acceptance gate.
