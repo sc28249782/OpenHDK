@@ -60,6 +60,7 @@ See the [roadmap status](ROADMAP.md#audio-enabled-library-session-slice-ohk-cli-
 | [RELEASE-CHECKLIST](RELEASE-CHECKLIST.md) | Reusable signed source-release procedure. |
 | [CHANGELOG](../CHANGELOG.md) | Historical release scope; released sections remain unchanged. |
 | [ROADMAP](ROADMAP.md) | Completed milestones, future ordering, and exit gates. |
+| [HANDYKARAOKE-SOUNDCRAFT-PLAN](HANDYKARAOKE-SOUNDCRAFT-PLAN.md) | Pinned legacy-player/DSP comparison, existing baseline distinctions and proposed slices with evidence gates. |
 | [SOUNDCRAFT-REFERENCE](SOUNDCRAFT-REFERENCE.md) | Pinned mixer/DSP source lessons for 0.5/0.6; planning only, no dependency or accepted detailed contract. |
 | [MIXER-REFERENCE](MIXER-REFERENCE.md) | Pinned Buai Music Mixer snapshots, update lessons, and planning decisions. |
 | [MIGRATION-BOUNDARY](MIGRATION-BOUNDARY.md) | Source-port provenance and excluded legacy artifacts. |

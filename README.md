@@ -22,7 +22,11 @@ See the [step 5 roadmap status](docs/ROADMAP.md#audio-enabled-library-session-sl
 The [v0.2.0 source release](https://github.com/sc28249782/OpenHDK/releases/tag/v0.2.0)
 contains source archives only. No prebuilt binary, MIDI, or SoundFont is bundled.
 Start with the [documentation index](docs/INDEX.md) for contracts, operations,
-release evidence, and future work.
+release evidence, and future work. The
+[HandyKaraoke/SoundCraft implementation guidance](docs/HANDYKARAOKE-SOUNDCRAFT-PLAN.md)
+compares legacy karaoke workflows with DSP study inputs and proposes the next
+mixer stages. It adds no runtime feature or dependency and keeps existing
+milestone gates.
 
 Windows tests and device listening are recorded in
 [docs/V020-WINDOWS-ACCEPTANCE.md](docs/V020-WINDOWS-ACCEPTANCE.md).

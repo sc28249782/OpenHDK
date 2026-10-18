@@ -2,11 +2,15 @@
 
 ## Purpose, status and evidence boundary
 
-**Status:** Planning reference, reviewed on 2026-10-09. This document does not
+**Status:** Planning reference, initially reviewed on 2026-10-09; follow-up
+source review on 2026-10-18. This document does not
 accept a detailed mixer/DSP contract or add implemented OpenHDK behavior.
 **Upstream:** [storytold/soundcraft](https://github.com/storytold/soundcraft).
-**Pinned snapshot:** `c51e5d5ec52f11c6264b72e26661fa712feb5345`.
-**Snapshot version:** 0.3.0 in Cargo.toml; README describes pre-alpha status.
+**Initial pinned snapshot:** `c51e5d5ec52f11c6264b72e26661fa712feb5345`.
+**Initial snapshot version:** 0.3.0 in Cargo.toml; its README describes pre-alpha status.
+**Follow-up snapshot:** `c1bf044a85b55e9aa083624c39fabddbb08dadeb`,
+version 0.9.0 in Cargo.toml. The source map and real-time lessons below describe
+the initial snapshot; the dated follow-up records the newer observations.
 
 [SPECIFICATION.md](SPECIFICATION.md) remains the normative authority.
 [ROADMAP.md](ROADMAP.md) assigns milestone order. This reference informs future
@@ -148,6 +152,34 @@ command schemas, validation, authorization and serialization contracts. It does
 not enter 0.3.0 or authorize a network control service now. SoundCraft's SMF,
 synth, cpal, egui and CLAP/VST3/AU hosting do not replace existing components or
 select a framework/dependency for OpenHDK.
+
+## 2026-10-18 follow-up source review
+
+This review inspected the newer pinned source, not every intervening commit.
+No upstream build, tests, listening comparison or performance measurement ran.
+The [HandyKaraoke comparison and work sequence](HANDYKARAOKE-SOUNDCRAFT-PLAN.md)
+separates karaoke requirements from DSP implementation study.
+
+| Pinned source at `c1bf044a85b55e9aa083624c39fabddbb08dadeb` | Observation and implication |
+| --- | --- |
+| [Smoother](https://github.com/storytold/soundcraft/blob/c1bf044a85b55e9aa083624c39fabddbb08dadeb/crates/dsp/src/util.rs), [parameters](https://github.com/storytold/soundcraft/blob/c1bf044a85b55e9aa083624c39fabddbb08dadeb/crates/dsp/src/params.rs) | One-pole smoothing and bounded parameter descriptions are useful small primitives. OpenHDK request validation and mute/stop policy need separate contracts. |
+| [EQ](https://github.com/storytold/soundcraft/blob/c1bf044a85b55e9aa083624c39fabddbb08dadeb/crates/dsp/src/plugins/eq.rs) | Parametric 1/7-band EQ does not reproduce HandyKaraoke graphic 15/31-band EQ. Build a separate graphic topology if required. |
+| [Sampler](https://github.com/storytold/soundcraft/blob/c1bf044a85b55e9aa083624c39fabddbb08dadeb/crates/dsp/src/plugins/sampler.rs) | One sample across keys with 32 voices; it is not a replacement for the current SF2 backend or legacy multi-SoundFont mapping. |
+| [SMF reader](https://github.com/storytold/soundcraft/blob/c1bf044a85b55e9aa083624c39fabddbb08dadeb/crates/midi/src/smf.rs) | Converts to PPQ 960, approximates SMPTE at 120 BPM and reads format 2 best-effort on one timeline. Do not replace OpenHDK strict format-0/1 parsing or timing with these policies. |
+| [Pitch shifter](https://github.com/storytold/soundcraft/blob/c1bf044a85b55e9aa083624c39fabddbb08dadeb/crates/dsp/src/plugins/pitch.rs) | Two crossfaded delay taps with a 50 ms window and reported latency near 25 ms. Source inspection does not establish full-mix quality. MIDI transpose is a separate operation. |
+| [Playback](https://github.com/storytold/soundcraft/blob/c1bf044a85b55e9aa083624c39fabddbb08dadeb/crates/playback/src/lib.rs), [mix](https://github.com/storytold/soundcraft/blob/c1bf044a85b55e9aa083624c39fabddbb08dadeb/crates/mix/src/lib.rs) | Callback session adoption can construct buffers; meters use try_lock and commands use standard channels. Built-in instances can be created during sync. Steady-state claims do not prove the complete OpenHDK callback contract. |
+| [Devices](https://github.com/storytold/soundcraft/blob/c1bf044a85b55e9aa083624c39fabddbb08dadeb/crates/playback/src/devices.rs), [architecture](https://github.com/storytold/soundcraft/blob/c1bf044a85b55e9aa083624c39fabddbb08dadeb/docs/architecture.md) | Source has device/rate/buffer configuration, while architecture text still describes default-only I/O. Prefer inspected code plus tests; neither proves driver/platform support. |
+| [Plugin tests](https://github.com/storytold/soundcraft/blob/c1bf044a85b55e9aa083624c39fabddbb08dadeb/crates/dsp/tests/plugins.rs), [meter tests](https://github.com/storytold/soundcraft/blob/c1bf044a85b55e9aa083624c39fabddbb08dadeb/crates/dsp/tests/offline_meters.rs), [property tests](https://github.com/storytold/soundcraft/blob/c1bf044a85b55e9aa083624c39fabddbb08dadeb/crates/dsp/tests/fuzz.rs) | Sine/impulse/silence and hostile parameter cases are useful test patterns. Author independent expected results and allocation/retirement checks for OpenHDK. These tests were read, not executed here. |
+
+The newer [NOTICE](https://github.com/storytold/soundcraft/blob/c1bf044a85b55e9aa083624c39fabddbb08dadeb/NOTICE),
+[MIT license](https://github.com/storytold/soundcraft/blob/c1bf044a85b55e9aa083624c39fabddbb08dadeb/LICENSE-MIT)
+and [attribution](https://github.com/storytold/soundcraft/blob/c1bf044a85b55e9aa083624c39fabddbb08dadeb/ATTRIBUTION.md)
+retain the MIT OR Apache-2.0 covered-code offer and separate brand/material
+boundaries. No source port or dependency is approved by this follow-up.
+Existing gain, limiter, clocks, flags-only presets and acceptance gates remain
+unchanged. A small master meter and smoothing design may precede per-group
+effects; isolated PCM outputs and a prepared graph remain prerequisites for
+those effects.
 
 ## License, assets and provenance
 
