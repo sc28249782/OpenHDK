@@ -763,3 +763,17 @@ limits, inconsistent operations or non-UTF-8 assembled previews. The managed
 grammar, legacy `status` output and all clock/observer contracts are
 unchanged. This adds no GUI/highlighting rendering, no playback, no runtime
 acceptance and no release checkbox; it is hardware-free tested only.
+
+## Real-executable lyric text evidence (2026-10-18)
+
+The [bounded ASCII prefix probe](LIBRARY-PLAYBACK-LYRIC-EVIDENCE.md#real-executable-lyric-text-prefix-probe-2026-10-18)
+records one bridge-reported live execution of the opt-in `lyrics` command
+at `06b7ee5aec6fce4ef9e36a97aed73c8a913d65c8`: ab/abc/abcd agree with
+same-record clock positions, actual Finished retains abcd, and explicit
+stop clears the prefix before quit, exit zero, actual EOF and owned-process
+cleanup. The retained preflight setup failure and 15 offline verifier-control
+outcomes are documented separately from that single live pass.
+This is plain-text ASCII observation and record-consistency evidence, not
+a new listening report or full manual/Windows playback acceptance.
+Step 5/NCN remain OPEN, Windows checkpoint BLOCKED, and
+source_to_binary_independently_proven remains false.
