@@ -236,6 +236,19 @@ separate topology from mutable DSP state, and specify latency independently of
 committed media position. Processor, pan and meter policies require accepted
 contracts before implementation. FluidSynth/miniaudio remain the adapter path.
 
+The [HandyKaraoke/SoundCraft comparison](HANDYKARAOKE-SOUNDCRAFT-PLAN.md)
+adds a proposed sequence within those milestones. Keep source MIDI controllers,
+runtime channel controls and future PCM strip/bus/master gain separate.
+Legacy volume lock is not the current runtime-gain contract. The inspected
+legacy mixer meters display note velocity; future PCM meters must have explicit
+dBFS units and pre/post-limiter placement.
+
+Before per-instrument processing, prove isolated synthesis outputs and note
+ownership across program, route, sustain and stop/seek changes. A small
+master-only meter does not require stems. Prepare smoothing state and bounded
+meter handoff outside rendering. The current stateless linked stereo limiter
+and media-clock/lyric observation contracts remain unchanged.
+
 ## Deferred layers
 
 Multi-SoundFont layers and mappings, instrument grouping, bus routing, effects,

@@ -130,11 +130,21 @@ checks pass. If a gate remains open, do not claim full 0.3.0 support.
 
 ## 0.4.0 — multi-SoundFont synthesis
 
+Use the [HandyKaraoke/SoundCraft implementation guidance](HANDYKARAOKE-SOUNDCRAFT-PLAN.md)
+as a behavior matrix and proposed slice sequence. Existing 0.3.0 gates retain
+priority. Reference counts and presets are not OpenHDK capacity requirements.
+
 - Specify a backend-independent SoundFont library, identity, load/unload, and
   per-SoundFont gain contract before implementation.
 - Add deterministic GM program, bank, and drum mappings to SoundFont layers.
 - Add an instrument-family classifier only as a documented, testable mapping;
   it MUST NOT replace source MIDI events or controller state.
+- Define how independently addressable PCM outputs reach later mixer strips.
+  Compare bounded backend-output or synth-instance strategies with recorded
+  CPU/RAM limits. Start with a small instrument/drum isolation pilot before
+  per-group effects; do not assume one synth per legacy strip.
+- Specify note ownership across program/route changes, controller fan-out,
+  sustain, stop/seek and failure cleanup before implementing isolated outputs.
 - Add headless coverage for mapping selection, missing SoundFonts, and fallback
   errors without requiring a physical audio device.
 
@@ -143,10 +153,18 @@ hardware-free tests; no BASS-family API or asset enters the repository.
 
 ## 0.5.0 — mixer and bus engine
 
-Use [SoundCraft source lessons](SOUNDCRAFT-REFERENCE.md) alongside the Buai mixer
-feature reference when proposing contracts. These references do not select code,
+Use [SoundCraft source lessons](SOUNDCRAFT-REFERENCE.md), the Buai mixer
+feature reference and the [legacy-player comparison](HANDYKARAOKE-SOUNDCRAFT-PLAN.md)
+when proposing contracts. These references do not select code,
 dependencies or detailed semantics, and do not change 0.3.0 work order.
 
+- Begin with small parameter-smoothing and master peak/hold/clip observation
+  contracts. Specify dBFS units, pre/post-limiter placement, reset and bounded
+  observation handoff. A master-only meter needs no isolated stems; full UI
+  presentation remains 0.8.0. Preserve mute/stop safety and the limiter ceiling.
+- Keep source MIDI controllers, current runtime gain and future PCM gain
+  separate. Legacy CC7 lock and transpose/drum overrides need separate
+  compatibility policies; they do not alter existing controls or presets.
 - Specify backend-independent mixer strips, instrument groups, named groups,
   mute/solo/gain/pan, and a directed bus-routing graph before implementation.
 - Add configurable buses incrementally, beginning with a small deterministic
@@ -175,9 +193,13 @@ conformance or callback safety.
 
 - Specify insert, send, return, parameter, bypass, and preset contracts before
   adding effects.
-- Use the 0.2.0 master limiter as the foundation, then add parametric EQ,
-  compressor, and reverb/chorus in that order. Add per-bus inserts and
-  send/return paths only after those contracts are stable.
+- Preserve the implemented 0.2.0 linked stereo safety limiter, then add
+  parametric EQ, compressor, and reverb/chorus in that order. Add per-bus inserts
+  and send/return paths only after those contracts are stable.
+- Treat legacy graphic 15/31-band EQ as a separate topology from SoundCraft
+  parametric 1/7-band EQ. Delay and graphic-EQ slices need their own response,
+  bounds and latency contracts. Do not transfer legacy effect presets by name
+  or raw parameter values without a reviewed conversion.
 - Keep an optional VST3-host feasibility study isolated from the playback
   process and outside the default product path.
 
@@ -196,6 +218,9 @@ conformance or callback safety.
 - Select a UI framework only after the mixer and routing contracts are stable.
 - Add mixer strips, meters, faders, group/bus routing, and System/Dark/Light
   themes through design tokens rather than copied UI code.
+- Distinguish MIDI note activity from measured PCM level. Legacy velocity
+  displays do not establish dBFS level, clipping or loudness. Advanced LUFS and
+  true-peak displays need independently validated measurements first.
 - Show named bus destinations on mixer strips without requiring a dialog;
   expose master volume and route/fallback state with accessible labels.
 - Consider a mixer-only companion mode only after the required MIDI/IPC input

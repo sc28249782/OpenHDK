@@ -14,7 +14,11 @@ behavior. `ROADMAP.md` assigns future work but does not make it available.
 The complementary [SoundCraft reference](SOUNDCRAFT-REFERENCE.md) studies mixer,
 DSP and rendering architecture. This Buai reference supplies karaoke-domain and
 routing UX requirements. Neither reference accepts detailed OpenHDK contracts
-or replaces FluidSynth/miniaudio.
+or replaces FluidSynth/miniaudio. The complementary
+[HandyKaraoke/SoundCraft plan](HANDYKARAOKE-SOUNDCRAFT-PLAN.md) records the
+original player's two mixer levels, SoundFont mappings, meter distinction and
+proposed implementation slices. Legacy counts are observations, not capacity
+requirements for OpenHDK.
 
 **Initial snapshot:** HandyMixer `main` commit `8b730d2`, reviewed on
 2026-10-05. The repository is now named Buai-Music-Mixer. The original URL

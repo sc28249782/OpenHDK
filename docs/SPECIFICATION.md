@@ -412,6 +412,12 @@ mutation, provider acceptance and playback behavior are unchanged.
 inputs for future mixer/DSP contracts. It adds no implemented behavior, accepted
 processor/graph API or dependency and does not change 0.3.0 gates. Existing
 synth gain, limiter, playback and committed-clock semantics remain unchanged.
+The [HandyKaraoke/SoundCraft work sequence](HANDYKARAOKE-SOUNDCRAFT-PLAN.md)
+adds proposed behavior comparisons and acceptance inputs only. Legacy volume
+lock, instrument/drum strips, multiple SoundFont mappings, smoothing and PCM
+meters are not added by that plan. Each needs a separately reviewed contract;
+existing source-controller, runtime-gain and flags-only preset semantics remain
+in force.
 
 The following require separate designs and acceptance before they may be
 claimed as supported: multi-SoundFont libraries and mappings, instrument
